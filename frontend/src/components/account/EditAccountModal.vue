@@ -34,15 +34,7 @@
             v-model="editBaseUrl"
             type="text"
             class="input"
-            :placeholder="
-              account.platform === 'openai'
-                ? 'https://api.openai.com'
-                : account.platform === 'gemini'
-                  ? 'https://generativelanguage.googleapis.com'
-                  : account.platform === 'antigravity'
-                    ? 'https://cloudcode-pa.googleapis.com'
-                    : 'https://api.anthropic.com'
-            "
+            :placeholder="defaultBaseURLForPlatform(account.platform) || 'https://upstream.example.com'"
           />
           <p class="input-hint">{{ baseUrlHint }}</p>
         </div>
@@ -56,15 +48,7 @@
             data-1p-ignore
             data-lpignore="true"
             data-bwignore="true"
-            :placeholder="
-              account.platform === 'openai'
-                ? 'sk-proj-...'
-                : account.platform === 'gemini'
-                  ? 'AIza...'
-                  : account.platform === 'antigravity'
-                    ? 'sk-...'
-                    : 'sk-ant-...'
-            "
+            :placeholder="apiKeyPlaceholderForPlatform(account.platform)"
           />
           <p class="input-hint">{{ t('admin.accounts.leaveEmptyToKeep') }}</p>
         </div>
@@ -72,6 +56,12 @@
         <!-- Model Restriction Section (不适用于 Antigravity) -->
         <div v-if="account.platform !== 'antigravity'" class="border-t border-gray-200 pt-4 dark:border-dark-600">
           <label class="input-label">{{ t('admin.accounts.modelRestriction') }}</label>
+
+          <div v-if="account.platform === 'video'" class="mb-3 rounded-lg bg-purple-50 p-3 dark:bg-purple-900/20">
+            <p class="text-xs text-purple-700 dark:text-purple-400">
+              {{ t('admin.accounts.videoModelMappingHint') }}
+            </p>
+          </div>
 
           <div
             v-if="isOpenAIModelRestrictionDisabled"
@@ -83,8 +73,8 @@
           </div>
 
           <template v-else>
-            <!-- Mode Toggle -->
-            <div class="mb-4 flex gap-2">
+            <!-- Mode Toggle (video 仅支持 mapping，隐藏切换) -->
+            <div v-if="account.platform !== 'video'" class="mb-4 flex gap-2">
               <button
                 type="button"
                 @click="modelRestrictionMode = 'whitelist'"
@@ -217,6 +207,17 @@
                 </button>
               </div>
             </div>
+
+            <button
+              v-if="account.platform === 'video'"
+              type="button"
+              @click="fetchVideoUpstreamModels"
+              :disabled="fetchingVideoModels"
+              class="mb-3 w-full rounded-lg border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 transition-colors hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300"
+            >
+              <Icon name="refresh" size="sm" class="mr-1.5 inline" :class="fetchingVideoModels ? 'animate-spin' : ''" />
+              {{ fetchingVideoModels ? t('admin.accounts.syncUpstreamModelsLoading') : t('admin.accounts.videoFetchUpstreamModels') }}
+            </button>
 
             <button
               type="button"
@@ -2401,7 +2402,7 @@ import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
 import { applyInterceptWarmup } from '@/components/account/credentialsBuilder'
 import { formatDateTime, formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/utils/format'
 import { createStableObjectKeyResolver } from '@/utils/stableObjectKey'
-import { VERTEX_LOCATION_OPTIONS } from '@/constants/account'
+import { VERTEX_LOCATION_OPTIONS, apiKeyPlaceholderForPlatform, defaultBaseURLForPlatform } from '@/constants/account'
 import {
   OPENAI_WS_MODE_CTX_POOL,
   OPENAI_WS_MODE_OFF,
@@ -2441,6 +2442,7 @@ const baseUrlHint = computed(() => {
   if (!props.account) return t('admin.accounts.baseUrlHint')
   if (props.account.platform === 'openai') return t('admin.accounts.openai.baseUrlHint')
   if (props.account.platform === 'gemini') return t('admin.accounts.gemini.baseUrlHint')
+  if (props.account.platform === 'video') return '视频上游服务根地址，例如 https://api.example.com；调用模板只配置路径。'
   return t('admin.accounts.baseUrlHint')
 })
 
@@ -2840,9 +2842,7 @@ const tempUnschedPresets = computed(() => [
 
 // Computed: default base URL based on platform
 const defaultBaseUrl = computed(() => {
-  if (props.account?.platform === 'openai') return 'https://api.openai.com'
-  if (props.account?.platform === 'gemini') return 'https://generativelanguage.googleapis.com'
-  return 'https://api.anthropic.com'
+  return defaultBaseURLForPlatform(props.account?.platform || 'anthropic')
 })
 
 const mixedChannelWarningMessageText = computed(() => {
@@ -3092,16 +3092,18 @@ const syncFormFromAccount = (newAccount: Account | null) => {
   // Initialize API Key fields for apikey type
   if (newAccount.type === 'apikey' && newAccount.credentials) {
     const credentials = newAccount.credentials as Record<string, unknown>
-    const platformDefaultUrl =
-      newAccount.platform === 'openai'
-        ? 'https://api.openai.com'
-        : newAccount.platform === 'gemini'
-          ? 'https://generativelanguage.googleapis.com'
-          : 'https://api.anthropic.com'
+    const platformDefaultUrl = defaultBaseURLForPlatform(newAccount.platform)
     editBaseUrl.value = (credentials.base_url as string) || platformDefaultUrl
 
     // Load model mappings and detect mode
-    loadModelRestrictionFromMapping(credentials.model_mapping as Record<string, unknown> | undefined)
+    if (newAccount.platform === 'video') {
+      // Video reuses model mapping (public → upstream); always mapping mode.
+      loadModelRestrictionFromMapping(credentials.model_mapping as Record<string, unknown> | undefined)
+      modelRestrictionMode.value = 'mapping'
+      allowedModels.value = []
+    } else {
+      loadModelRestrictionFromMapping(credentials.model_mapping as Record<string, unknown> | undefined)
+    }
 
     // Load pool mode
     poolModeEnabled.value = credentials.pool_mode === true
@@ -3160,12 +3162,7 @@ const syncFormFromAccount = (newAccount: Account | null) => {
     // Load model mappings for service_account
     loadModelRestrictionFromMapping(credentials.model_mapping as Record<string, unknown> | undefined)
   } else {
-    const platformDefaultUrl =
-      newAccount.platform === 'openai'
-        ? 'https://api.openai.com'
-        : newAccount.platform === 'gemini'
-          ? 'https://generativelanguage.googleapis.com'
-          : 'https://api.anthropic.com'
+    const platformDefaultUrl = defaultBaseURLForPlatform(newAccount.platform)
     editBaseUrl.value = platformDefaultUrl
 
     // Load model mappings for OpenAI OAuth accounts
@@ -3283,6 +3280,40 @@ const syncAntigravityUpstreamModels = async () => {
     appStore.showError(t('admin.accounts.syncUpstreamModelsError', { message }))
   } finally {
     isSyncingAntigravityUpstream.value = false
+  }
+}
+
+// Video: fetch upstream models and prefill mapping rows (from = to = upstream
+// model name). Reuses the shared sync-upstream-models API on the saved account.
+const fetchingVideoModels = ref(false)
+const fetchVideoUpstreamModels = async () => {
+  if (!props.account?.id || fetchingVideoModels.value) return
+  fetchingVideoModels.value = true
+  try {
+    const result = await adminAPI.accounts.syncUpstreamModels(props.account.id)
+    const models = (result.models || []).map((m) => m.trim()).filter(Boolean)
+    if (models.length === 0) {
+      appStore.showInfo(t('admin.accounts.syncUpstreamModelsEmpty'))
+      return
+    }
+    let addedCount = 0
+    for (const model of models) {
+      const exists = modelMappings.value.some((mapping) => mapping.from === model)
+      if (!exists) {
+        modelMappings.value.push({ from: model, to: model })
+        addedCount += 1
+      }
+    }
+    if (addedCount > 0) {
+      appStore.showSuccess(t('admin.accounts.syncUpstreamModelsSuccess', { count: addedCount, total: models.length }))
+    } else {
+      appStore.showInfo(t('admin.accounts.syncUpstreamModelsNoChanges', { count: models.length }))
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t('admin.accounts.syncUpstreamModelsFailed')
+    appStore.showError(t('admin.accounts.syncUpstreamModelsError', { message }))
+  } finally {
+    fetchingVideoModels.value = false
   }
 }
 

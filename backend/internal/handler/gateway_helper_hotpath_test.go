@@ -97,6 +97,30 @@ func (s *helperConcurrencyCacheStub) GetUserConcurrency(ctx context.Context, use
 	return 0, nil
 }
 
+func (s *helperConcurrencyCacheStub) AcquireVideoUserSlot(ctx context.Context, userID int64, maxConcurrency int, taskID string) (bool, error) {
+	return true, nil
+}
+
+func (s *helperConcurrencyCacheStub) ReleaseVideoUserSlot(ctx context.Context, userID int64, taskID string) error {
+	return nil
+}
+
+func (s *helperConcurrencyCacheStub) AcquireVideoAPIKeySlot(ctx context.Context, apiKeyID int64, maxConcurrency int, taskID string) (bool, error) {
+	return true, nil
+}
+
+func (s *helperConcurrencyCacheStub) ReleaseVideoAPIKeySlot(ctx context.Context, apiKeyID int64, taskID string) error {
+	return nil
+}
+
+func (s *helperConcurrencyCacheStub) AcquireVideoAccountSlot(ctx context.Context, accountID int64, maxConcurrency int, taskID string) (bool, error) {
+	return true, nil
+}
+
+func (s *helperConcurrencyCacheStub) ReleaseVideoAccountSlot(ctx context.Context, accountID int64, taskID string) error {
+	return nil
+}
+
 func (s *helperConcurrencyCacheStub) IncrementWaitCount(ctx context.Context, userID int64, maxWait int) (bool, error) {
 	s.mu.Lock()
 	s.waitIncrementCalls++

@@ -439,7 +439,60 @@
           </Select>
         </div>
 
-        <!-- Custom Key Section (only for create) -->
+        <!-- Multi-group routing -->
+        <div class="rounded-lg border border-gray-200 p-3 dark:border-dark-600">
+          <div class="flex items-center justify-between">
+            <div>
+              <label class="input-label mb-0">{{ t('keys.multiGroup.title') }}</label>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('keys.multiGroup.hint') }}</p>
+            </div>
+            <label class="relative inline-flex cursor-pointer items-center">
+              <input type="checkbox" v-model="formData.multi_group_routing" class="peer sr-only" />
+              <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full dark:bg-dark-600"></div>
+            </label>
+          </div>
+
+          <div v-if="formData.multi_group_routing" class="mt-3 space-y-2">
+            <div
+              v-for="(binding, index) in formData.group_bindings"
+              :key="index"
+              class="flex flex-wrap items-center gap-2"
+            >
+              <select v-model.number="binding.group_id" class="input h-9 flex-1 min-w-[160px]">
+                <option :value="null" disabled>{{ t('keys.selectGroup') }}</option>
+                <option v-for="g in routableGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
+              </select>
+              <input
+                v-model.number="binding.priority"
+                type="number"
+                class="input h-9 w-24"
+                :placeholder="t('keys.multiGroup.priority')"
+                :title="t('keys.multiGroup.priority')"
+              />
+              <input
+                v-model.number="binding.weight"
+                type="number"
+                min="1"
+                class="input h-9 w-24"
+                :placeholder="t('keys.multiGroup.weight')"
+                :title="t('keys.multiGroup.weight')"
+              />
+              <label class="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
+                <input type="checkbox" v-model="binding.enabled" />
+                {{ t('keys.multiGroup.enabled') }}
+              </label>
+              <button type="button" class="icon-btn text-red-500" @click="removeGroupBinding(index)">
+                <Icon name="trash" size="sm" />
+              </button>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" @click="addGroupBinding">
+              <Icon name="plus" size="sm" class="mr-1" />
+              {{ t('keys.multiGroup.addGroup') }}
+            </button>
+            <p class="text-xs text-gray-400">{{ t('keys.multiGroup.priorityHint') }}</p>
+          </div>
+        </div>
+
         <div v-if="!showEditModal" class="space-y-3">
           <div class="flex items-center justify-between">
             <label class="input-label mb-0">{{ t('keys.customKeyLabel') }}</label>
@@ -1187,7 +1240,10 @@ const formData = ref({
   rate_limit_7d: null as number | null,
   enable_expiration: false,
   expiration_preset: '30' as '7' | '30' | '90' | 'custom',
-  expiration_date: ''
+  expiration_date: '',
+  // Multi-group routing
+  multi_group_routing: false,
+  group_bindings: [] as { group_id: number | null; priority: number; weight: number; enabled: boolean }[]
 })
 
 // 自定义Key验证
@@ -1210,6 +1266,27 @@ const statusOptions = computed(() => [
   { value: 'active', label: t('common.active') },
   { value: 'inactive', label: t('common.inactive') }
 ])
+
+// Multi-group routing: only non-subscription (standard) groups are routable (phase 1).
+const routableGroups = computed(() =>
+  groups.value.filter((g) => g.subscription_type !== 'subscription')
+)
+function addGroupBinding() {
+  formData.value.group_bindings.push({ group_id: null, priority: 0, weight: 100, enabled: true })
+}
+function removeGroupBinding(index: number) {
+  formData.value.group_bindings.splice(index, 1)
+}
+function buildGroupBindingsPayload() {
+  return formData.value.group_bindings
+    .filter((b) => b.group_id != null)
+    .map((b) => ({
+      group_id: b.group_id as number,
+      priority: b.priority ?? 0,
+      weight: b.weight && b.weight > 0 ? b.weight : 100,
+      enabled: b.enabled
+    }))
+}
 
 // Filter dropdown options
 const groupFilterOptions = computed(() => [
@@ -1408,7 +1485,14 @@ const editKey = (key: ApiKey) => {
     rate_limit_7d: key.rate_limit_7d || null,
     enable_expiration: hasExpiration,
     expiration_preset: 'custom',
-    expiration_date: key.expires_at ? formatDateTimeLocal(key.expires_at) : ''
+    expiration_date: key.expires_at ? formatDateTimeLocal(key.expires_at) : '',
+    multi_group_routing: key.multi_group_routing === true,
+    group_bindings: (key.group_bindings || []).map((b) => ({
+      group_id: b.group_id,
+      priority: b.priority,
+      weight: b.weight,
+      enabled: b.enabled
+    }))
   }
   showEditModal.value = true
 }
@@ -1553,6 +1637,8 @@ const handleSubmit = async () => {
         rate_limit_5h: rateLimitData.rate_limit_5h,
         rate_limit_1d: rateLimitData.rate_limit_1d,
         rate_limit_7d: rateLimitData.rate_limit_7d,
+        multi_group_routing: formData.value.multi_group_routing,
+        group_bindings: buildGroupBindingsPayload(),
       })
       appStore.showSuccess(t('keys.keyUpdatedSuccess'))
     } else {
@@ -1565,7 +1651,11 @@ const handleSubmit = async () => {
         ipBlacklist,
         quota,
         expiresInDays,
-        rateLimitData
+        rateLimitData,
+        {
+          multi_group_routing: formData.value.multi_group_routing,
+          group_bindings: buildGroupBindingsPayload(),
+        }
       )
       appStore.showSuccess(t('keys.keyCreatedSuccess'))
       // Only advance tour if active, on submit step, and creation succeeded
@@ -1625,7 +1715,9 @@ const closeModals = () => {
     rate_limit_7d: null,
     enable_expiration: false,
     expiration_preset: '30',
-    expiration_date: ''
+    expiration_date: '',
+    multi_group_routing: false,
+    group_bindings: []
   }
 }
 

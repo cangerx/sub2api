@@ -409,6 +409,13 @@ func ProvideOpsScheduledReportService(
 	return svc
 }
 
+func ProvideVideoWorker(videoService *VideoService, lockCache LeaderLockCache, db *sql.DB) *VideoWorker {
+	worker := NewVideoWorker(videoService)
+	worker.SetLeaderLock(lockCache, db)
+	worker.Start()
+	return worker
+}
+
 // ProvideAPIKeyAuthCacheInvalidator 提供 API Key 认证缓存失效能力
 func ProvideAPIKeyAuthCacheInvalidator(apiKeyService *APIKeyService) APIKeyAuthCacheInvalidator {
 	// Start Pub/Sub subscriber for L1 cache invalidation across instances
@@ -531,6 +538,8 @@ var ProviderSet = wire.NewSet(
 	NewAnnouncementService,
 	NewAdminService,
 	NewGatewayService,
+	NewGroupCooldownStore,
+	NewGroupRouter,
 	NewOpenAIGatewayService,
 	wire.Bind(new(AccountRuntimeBlocker), new(*OpenAIGatewayService)),
 	NewOAuthService,
@@ -597,6 +606,8 @@ var ProviderSet = wire.NewSet(
 	NewGroupCapacityService,
 	NewChannelService,
 	NewModelPricingResolver,
+	NewVideoService,
+	ProvideVideoWorker,
 	NewContentModerationService,
 	NewAffiliateService,
 	ProvidePaymentConfigService,

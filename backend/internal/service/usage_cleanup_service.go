@@ -213,7 +213,7 @@ func (s *UsageCleanupService) executeTask(ctx context.Context, task *UsageCleanu
 		}
 
 		batchNum++
-		deleted, err := s.repo.DeleteUsageLogsBatch(ctx, task.Filters, batchSize)
+		deletedLogs, err := s.repo.DeleteUsageLogsBatch(ctx, task.Filters, batchSize)
 		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				// 任务被中断（例如服务停止/超时），保持 running 状态，后续通过 stale reclaim 续跑。
@@ -223,6 +223,16 @@ func (s *UsageCleanupService) executeTask(ctx context.Context, task *UsageCleanu
 			s.markTaskFailed(task.ID, deletedTotal, err)
 			return
 		}
+		deletedVideoTasks, err := s.repo.DeleteVideoTasksBatch(ctx, task.Filters, batchSize)
+		if err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				logger.LegacyPrintf("service.usage_cleanup", "[UsageCleanup] task interrupted: task=%d err=%v", task.ID, err)
+				return
+			}
+			s.markTaskFailed(task.ID, deletedTotal, err)
+			return
+		}
+		deleted := deletedLogs + deletedVideoTasks
 		deletedTotal += deleted
 		if deleted > 0 {
 			updateCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -232,9 +242,9 @@ func (s *UsageCleanupService) executeTask(ctx context.Context, task *UsageCleanu
 			cancel()
 		}
 		if batchNum <= 3 || batchNum%20 == 0 || deleted < int64(batchSize) {
-			logger.LegacyPrintf("service.usage_cleanup", "[UsageCleanup] task batch done: task=%d batch=%d deleted=%d deleted_total=%d", task.ID, batchNum, deleted, deletedTotal)
+			logger.LegacyPrintf("service.usage_cleanup", "[UsageCleanup] task batch done: task=%d batch=%d deleted=%d usage_logs=%d video_tasks=%d deleted_total=%d", task.ID, batchNum, deleted, deletedLogs, deletedVideoTasks, deletedTotal)
 		}
-		if deleted == 0 || deleted < int64(batchSize) {
+		if deletedLogs < int64(batchSize) && deletedVideoTasks < int64(batchSize) {
 			break
 		}
 	}

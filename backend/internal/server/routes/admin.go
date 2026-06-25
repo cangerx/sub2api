@@ -98,11 +98,36 @@ func RegisterAdminRoutes(
 		// 渠道监控
 		registerChannelMonitorRoutes(admin, h)
 
+		// 视频模型网关
+		registerVideoGatewayAdminRoutes(admin, h)
+
 		// 风控中心
 		registerContentModerationRoutes(admin, h)
 
 		// 邀请返利（专属用户管理）
 		registerAffiliateRoutes(admin, h)
+	}
+}
+
+func registerVideoGatewayAdminRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	video := admin.Group("/video")
+	{
+		video.GET("/templates", h.Admin.Video.ListTemplates)
+		video.POST("/templates", h.Admin.Video.CreateTemplate)
+		video.PUT("/templates/:id", h.Admin.Video.UpdateTemplate)
+		video.DELETE("/templates/:id", h.Admin.Video.DeleteTemplate)
+		video.POST("/templates/test-create", h.Admin.Video.TestTemplateCreate)
+		video.POST("/templates/test-query", h.Admin.Video.TestTemplateQuery)
+		video.POST("/templates/recognize", h.Admin.Video.RecognizeTemplate)
+		video.GET("/request-shapes", h.Admin.Video.RequestShapes)
+		video.GET("/models", h.Admin.Video.ListModels)
+		video.POST("/models", h.Admin.Video.CreateModel)
+		video.PUT("/models/:id", h.Admin.Video.UpdateModel)
+		video.DELETE("/models/:id", h.Admin.Video.DeleteModel)
+		video.GET("/tasks", h.Admin.Video.ListTasks)
+		video.GET("/tasks/:id", h.Admin.Video.GetTask)
+		video.POST("/tasks/:id/requeue", h.Admin.Video.RequeueTask)
+		video.POST("/tasks/:id/fail", h.Admin.Video.FailTask)
 	}
 }
 

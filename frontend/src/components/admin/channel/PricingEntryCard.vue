@@ -221,6 +221,36 @@
             />
           </div>
         </div>
+
+        <!-- Video mode (second / segment) -->
+        <div v-else-if="entry.billing_mode === 'second' || entry.billing_mode === 'segment'">
+          <label class="mt-3 block text-xs font-medium text-gray-500 dark:text-gray-400">
+            {{ entry.billing_mode === 'second'
+              ? t('admin.channels.form.videoSecondPrice', '每秒价格')
+              : t('admin.channels.form.videoSegmentPrice', '每区间价格') }}
+            <span class="ml-1 font-normal text-gray-400">$</span>
+          </label>
+          <div class="mt-1 w-48">
+            <input :value="entry.per_request_price" @input="emitField('per_request_price', ($event.target as HTMLInputElement).value)"
+              type="number" step="any" min="0" class="input text-sm" :placeholder="t('admin.channels.form.pricePlaceholder', '默认')" />
+          </div>
+
+          <template v-if="entry.billing_mode === 'segment'">
+            <label class="mt-3 block text-xs font-medium text-gray-500 dark:text-gray-400">
+              {{ t('admin.channels.form.unitSeconds', '区间单位秒数') }}
+            </label>
+            <div class="mt-1 w-48">
+              <input :value="entry.unit_seconds" @input="emitField('unit_seconds', ($event.target as HTMLInputElement).value)"
+                type="number" step="any" min="0" class="input text-sm" :placeholder="t('admin.channels.form.unitSecondsPlaceholder', '如 5')" />
+            </div>
+          </template>
+
+          <p class="mt-2 text-xs text-gray-400">
+            {{ entry.billing_mode === 'second'
+              ? t('admin.channels.form.videoSecondHint', '费用 = 每秒价格 × 视频秒数')
+              : t('admin.channels.form.videoSegmentHint', '费用 = ⌈秒数 / 单位秒数⌉ × 每区间价格') }}
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -256,7 +286,9 @@ const collapsed = ref(props.entry.models.length > 0)
 const billingModeOptions = computed(() => [
   { value: 'token', label: 'Token' },
   { value: 'per_request', label: t('admin.channels.billingMode.perRequest', '按次') },
-  { value: 'image', label: t('admin.channels.billingMode.image', '图片（按次）') }
+  { value: 'image', label: t('admin.channels.billingMode.image', '图片（按次）') },
+  { value: 'second', label: t('admin.channels.billingMode.second', '视频（按秒）') },
+  { value: 'segment', label: t('admin.channels.billingMode.segment', '视频（按区间）') }
 ])
 
 const billingModeLabel = computed(() => {

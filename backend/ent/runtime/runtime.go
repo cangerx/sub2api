@@ -10,6 +10,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/announcement"
 	"github.com/Wei-Shaw/sub2api/ent/announcementread"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
+	"github.com/Wei-Shaw/sub2api/ent/apikeygroupbinding"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
@@ -41,6 +42,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
 	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
+	"github.com/Wei-Shaw/sub2api/ent/videocalltemplate"
+	"github.com/Wei-Shaw/sub2api/ent/videogenerationtask"
+	"github.com/Wei-Shaw/sub2api/ent/videomodel"
 	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
@@ -103,44 +107,75 @@ func init() {
 			return nil
 		}
 	}()
+	// apikeyDescMultiGroupRouting is the schema descriptor for multi_group_routing field.
+	apikeyDescMultiGroupRouting := apikeyFields[4].Descriptor()
+	// apikey.DefaultMultiGroupRouting holds the default value on creation for the multi_group_routing field.
+	apikey.DefaultMultiGroupRouting = apikeyDescMultiGroupRouting.Default.(bool)
 	// apikeyDescStatus is the schema descriptor for status field.
-	apikeyDescStatus := apikeyFields[4].Descriptor()
+	apikeyDescStatus := apikeyFields[5].Descriptor()
 	// apikey.DefaultStatus holds the default value on creation for the status field.
 	apikey.DefaultStatus = apikeyDescStatus.Default.(string)
 	// apikey.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	apikey.StatusValidator = apikeyDescStatus.Validators[0].(func(string) error)
 	// apikeyDescQuota is the schema descriptor for quota field.
-	apikeyDescQuota := apikeyFields[8].Descriptor()
+	apikeyDescQuota := apikeyFields[9].Descriptor()
 	// apikey.DefaultQuota holds the default value on creation for the quota field.
 	apikey.DefaultQuota = apikeyDescQuota.Default.(float64)
 	// apikeyDescQuotaUsed is the schema descriptor for quota_used field.
-	apikeyDescQuotaUsed := apikeyFields[9].Descriptor()
+	apikeyDescQuotaUsed := apikeyFields[10].Descriptor()
 	// apikey.DefaultQuotaUsed holds the default value on creation for the quota_used field.
 	apikey.DefaultQuotaUsed = apikeyDescQuotaUsed.Default.(float64)
 	// apikeyDescRateLimit5h is the schema descriptor for rate_limit_5h field.
-	apikeyDescRateLimit5h := apikeyFields[11].Descriptor()
+	apikeyDescRateLimit5h := apikeyFields[12].Descriptor()
 	// apikey.DefaultRateLimit5h holds the default value on creation for the rate_limit_5h field.
 	apikey.DefaultRateLimit5h = apikeyDescRateLimit5h.Default.(float64)
 	// apikeyDescRateLimit1d is the schema descriptor for rate_limit_1d field.
-	apikeyDescRateLimit1d := apikeyFields[12].Descriptor()
+	apikeyDescRateLimit1d := apikeyFields[13].Descriptor()
 	// apikey.DefaultRateLimit1d holds the default value on creation for the rate_limit_1d field.
 	apikey.DefaultRateLimit1d = apikeyDescRateLimit1d.Default.(float64)
 	// apikeyDescRateLimit7d is the schema descriptor for rate_limit_7d field.
-	apikeyDescRateLimit7d := apikeyFields[13].Descriptor()
+	apikeyDescRateLimit7d := apikeyFields[14].Descriptor()
 	// apikey.DefaultRateLimit7d holds the default value on creation for the rate_limit_7d field.
 	apikey.DefaultRateLimit7d = apikeyDescRateLimit7d.Default.(float64)
 	// apikeyDescUsage5h is the schema descriptor for usage_5h field.
-	apikeyDescUsage5h := apikeyFields[14].Descriptor()
+	apikeyDescUsage5h := apikeyFields[15].Descriptor()
 	// apikey.DefaultUsage5h holds the default value on creation for the usage_5h field.
 	apikey.DefaultUsage5h = apikeyDescUsage5h.Default.(float64)
 	// apikeyDescUsage1d is the schema descriptor for usage_1d field.
-	apikeyDescUsage1d := apikeyFields[15].Descriptor()
+	apikeyDescUsage1d := apikeyFields[16].Descriptor()
 	// apikey.DefaultUsage1d holds the default value on creation for the usage_1d field.
 	apikey.DefaultUsage1d = apikeyDescUsage1d.Default.(float64)
 	// apikeyDescUsage7d is the schema descriptor for usage_7d field.
-	apikeyDescUsage7d := apikeyFields[16].Descriptor()
+	apikeyDescUsage7d := apikeyFields[17].Descriptor()
 	// apikey.DefaultUsage7d holds the default value on creation for the usage_7d field.
 	apikey.DefaultUsage7d = apikeyDescUsage7d.Default.(float64)
+	apikeygroupbindingMixin := schema.APIKeyGroupBinding{}.Mixin()
+	apikeygroupbindingMixinFields0 := apikeygroupbindingMixin[0].Fields()
+	_ = apikeygroupbindingMixinFields0
+	apikeygroupbindingFields := schema.APIKeyGroupBinding{}.Fields()
+	_ = apikeygroupbindingFields
+	// apikeygroupbindingDescCreatedAt is the schema descriptor for created_at field.
+	apikeygroupbindingDescCreatedAt := apikeygroupbindingMixinFields0[0].Descriptor()
+	// apikeygroupbinding.DefaultCreatedAt holds the default value on creation for the created_at field.
+	apikeygroupbinding.DefaultCreatedAt = apikeygroupbindingDescCreatedAt.Default.(func() time.Time)
+	// apikeygroupbindingDescUpdatedAt is the schema descriptor for updated_at field.
+	apikeygroupbindingDescUpdatedAt := apikeygroupbindingMixinFields0[1].Descriptor()
+	// apikeygroupbinding.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	apikeygroupbinding.DefaultUpdatedAt = apikeygroupbindingDescUpdatedAt.Default.(func() time.Time)
+	// apikeygroupbinding.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	apikeygroupbinding.UpdateDefaultUpdatedAt = apikeygroupbindingDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// apikeygroupbindingDescPriority is the schema descriptor for priority field.
+	apikeygroupbindingDescPriority := apikeygroupbindingFields[2].Descriptor()
+	// apikeygroupbinding.DefaultPriority holds the default value on creation for the priority field.
+	apikeygroupbinding.DefaultPriority = apikeygroupbindingDescPriority.Default.(int)
+	// apikeygroupbindingDescWeight is the schema descriptor for weight field.
+	apikeygroupbindingDescWeight := apikeygroupbindingFields[3].Descriptor()
+	// apikeygroupbinding.DefaultWeight holds the default value on creation for the weight field.
+	apikeygroupbinding.DefaultWeight = apikeygroupbindingDescWeight.Default.(int)
+	// apikeygroupbindingDescEnabled is the schema descriptor for enabled field.
+	apikeygroupbindingDescEnabled := apikeygroupbindingFields[4].Descriptor()
+	// apikeygroupbinding.DefaultEnabled holds the default value on creation for the enabled field.
+	apikeygroupbinding.DefaultEnabled = apikeygroupbindingDescEnabled.Default.(bool)
 	accountMixin := schema.Account{}.Mixin()
 	accountMixinHooks1 := accountMixin[1].Hooks()
 	account.Hooks[0] = accountMixinHooks1[0]
@@ -2109,6 +2144,354 @@ func init() {
 	usersubscriptionDescAssignedAt := usersubscriptionFields[12].Descriptor()
 	// usersubscription.DefaultAssignedAt holds the default value on creation for the assigned_at field.
 	usersubscription.DefaultAssignedAt = usersubscriptionDescAssignedAt.Default.(func() time.Time)
+	videocalltemplateMixin := schema.VideoCallTemplate{}.Mixin()
+	videocalltemplateMixinFields0 := videocalltemplateMixin[0].Fields()
+	_ = videocalltemplateMixinFields0
+	videocalltemplateFields := schema.VideoCallTemplate{}.Fields()
+	_ = videocalltemplateFields
+	// videocalltemplateDescCreatedAt is the schema descriptor for created_at field.
+	videocalltemplateDescCreatedAt := videocalltemplateMixinFields0[0].Descriptor()
+	// videocalltemplate.DefaultCreatedAt holds the default value on creation for the created_at field.
+	videocalltemplate.DefaultCreatedAt = videocalltemplateDescCreatedAt.Default.(func() time.Time)
+	// videocalltemplateDescUpdatedAt is the schema descriptor for updated_at field.
+	videocalltemplateDescUpdatedAt := videocalltemplateMixinFields0[1].Descriptor()
+	// videocalltemplate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	videocalltemplate.DefaultUpdatedAt = videocalltemplateDescUpdatedAt.Default.(func() time.Time)
+	// videocalltemplate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	videocalltemplate.UpdateDefaultUpdatedAt = videocalltemplateDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// videocalltemplateDescName is the schema descriptor for name field.
+	videocalltemplateDescName := videocalltemplateFields[0].Descriptor()
+	// videocalltemplate.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	videocalltemplate.NameValidator = func() func(string) error {
+		validators := videocalltemplateDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// videocalltemplateDescCreateMethod is the schema descriptor for create_method field.
+	videocalltemplateDescCreateMethod := videocalltemplateFields[1].Descriptor()
+	// videocalltemplate.DefaultCreateMethod holds the default value on creation for the create_method field.
+	videocalltemplate.DefaultCreateMethod = videocalltemplateDescCreateMethod.Default.(string)
+	// videocalltemplate.CreateMethodValidator is a validator for the "create_method" field. It is called by the builders before save.
+	videocalltemplate.CreateMethodValidator = videocalltemplateDescCreateMethod.Validators[0].(func(string) error)
+	// videocalltemplateDescCreatePath is the schema descriptor for create_path field.
+	videocalltemplateDescCreatePath := videocalltemplateFields[2].Descriptor()
+	// videocalltemplate.CreatePathValidator is a validator for the "create_path" field. It is called by the builders before save.
+	videocalltemplate.CreatePathValidator = func() func(string) error {
+		validators := videocalltemplateDescCreatePath.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(create_path string) error {
+			for _, fn := range fns {
+				if err := fn(create_path); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// videocalltemplateDescQueryMethod is the schema descriptor for query_method field.
+	videocalltemplateDescQueryMethod := videocalltemplateFields[3].Descriptor()
+	// videocalltemplate.DefaultQueryMethod holds the default value on creation for the query_method field.
+	videocalltemplate.DefaultQueryMethod = videocalltemplateDescQueryMethod.Default.(string)
+	// videocalltemplate.QueryMethodValidator is a validator for the "query_method" field. It is called by the builders before save.
+	videocalltemplate.QueryMethodValidator = videocalltemplateDescQueryMethod.Validators[0].(func(string) error)
+	// videocalltemplateDescQueryPath is the schema descriptor for query_path field.
+	videocalltemplateDescQueryPath := videocalltemplateFields[4].Descriptor()
+	// videocalltemplate.QueryPathValidator is a validator for the "query_path" field. It is called by the builders before save.
+	videocalltemplate.QueryPathValidator = func() func(string) error {
+		validators := videocalltemplateDescQueryPath.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(query_path string) error {
+			for _, fn := range fns {
+				if err := fn(query_path); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// videocalltemplateDescContentMethod is the schema descriptor for content_method field.
+	videocalltemplateDescContentMethod := videocalltemplateFields[5].Descriptor()
+	// videocalltemplate.ContentMethodValidator is a validator for the "content_method" field. It is called by the builders before save.
+	videocalltemplate.ContentMethodValidator = videocalltemplateDescContentMethod.Validators[0].(func(string) error)
+	// videocalltemplateDescContentPath is the schema descriptor for content_path field.
+	videocalltemplateDescContentPath := videocalltemplateFields[6].Descriptor()
+	// videocalltemplate.ContentPathValidator is a validator for the "content_path" field. It is called by the builders before save.
+	videocalltemplate.ContentPathValidator = videocalltemplateDescContentPath.Validators[0].(func(string) error)
+	// videocalltemplateDescCancelMethod is the schema descriptor for cancel_method field.
+	videocalltemplateDescCancelMethod := videocalltemplateFields[7].Descriptor()
+	// videocalltemplate.CancelMethodValidator is a validator for the "cancel_method" field. It is called by the builders before save.
+	videocalltemplate.CancelMethodValidator = videocalltemplateDescCancelMethod.Validators[0].(func(string) error)
+	// videocalltemplateDescCancelPath is the schema descriptor for cancel_path field.
+	videocalltemplateDescCancelPath := videocalltemplateFields[8].Descriptor()
+	// videocalltemplate.CancelPathValidator is a validator for the "cancel_path" field. It is called by the builders before save.
+	videocalltemplate.CancelPathValidator = videocalltemplateDescCancelPath.Validators[0].(func(string) error)
+	// videocalltemplateDescStatusMapping is the schema descriptor for status_mapping field.
+	videocalltemplateDescStatusMapping := videocalltemplateFields[9].Descriptor()
+	// videocalltemplate.DefaultStatusMapping holds the default value on creation for the status_mapping field.
+	videocalltemplate.DefaultStatusMapping = videocalltemplateDescStatusMapping.Default.(map[string]string)
+	// videocalltemplateDescResultMapping is the schema descriptor for result_mapping field.
+	videocalltemplateDescResultMapping := videocalltemplateFields[10].Descriptor()
+	// videocalltemplate.DefaultResultMapping holds the default value on creation for the result_mapping field.
+	videocalltemplate.DefaultResultMapping = videocalltemplateDescResultMapping.Default.(map[string]string)
+	// videocalltemplateDescErrorMapping is the schema descriptor for error_mapping field.
+	videocalltemplateDescErrorMapping := videocalltemplateFields[11].Descriptor()
+	// videocalltemplate.DefaultErrorMapping holds the default value on creation for the error_mapping field.
+	videocalltemplate.DefaultErrorMapping = videocalltemplateDescErrorMapping.Default.(map[string]string)
+	// videocalltemplateDescPollConfig is the schema descriptor for poll_config field.
+	videocalltemplateDescPollConfig := videocalltemplateFields[12].Descriptor()
+	// videocalltemplate.DefaultPollConfig holds the default value on creation for the poll_config field.
+	videocalltemplate.DefaultPollConfig = videocalltemplateDescPollConfig.Default.(func() map[string]interface{})
+	// videocalltemplateDescTimeoutConfig is the schema descriptor for timeout_config field.
+	videocalltemplateDescTimeoutConfig := videocalltemplateFields[13].Descriptor()
+	// videocalltemplate.DefaultTimeoutConfig holds the default value on creation for the timeout_config field.
+	videocalltemplate.DefaultTimeoutConfig = videocalltemplateDescTimeoutConfig.Default.(func() map[string]interface{})
+	// videocalltemplateDescStatus is the schema descriptor for status field.
+	videocalltemplateDescStatus := videocalltemplateFields[14].Descriptor()
+	// videocalltemplate.DefaultStatus holds the default value on creation for the status field.
+	videocalltemplate.DefaultStatus = videocalltemplateDescStatus.Default.(string)
+	// videocalltemplate.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	videocalltemplate.StatusValidator = videocalltemplateDescStatus.Validators[0].(func(string) error)
+	videogenerationtaskFields := schema.VideoGenerationTask{}.Fields()
+	_ = videogenerationtaskFields
+	// videogenerationtaskDescPublicID is the schema descriptor for public_id field.
+	videogenerationtaskDescPublicID := videogenerationtaskFields[0].Descriptor()
+	// videogenerationtask.PublicIDValidator is a validator for the "public_id" field. It is called by the builders before save.
+	videogenerationtask.PublicIDValidator = func() func(string) error {
+		validators := videogenerationtaskDescPublicID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(public_id string) error {
+			for _, fn := range fns {
+				if err := fn(public_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// videogenerationtaskDescRequestedModel is the schema descriptor for requested_model field.
+	videogenerationtaskDescRequestedModel := videogenerationtaskFields[7].Descriptor()
+	// videogenerationtask.RequestedModelValidator is a validator for the "requested_model" field. It is called by the builders before save.
+	videogenerationtask.RequestedModelValidator = func() func(string) error {
+		validators := videogenerationtaskDescRequestedModel.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(requested_model string) error {
+			for _, fn := range fns {
+				if err := fn(requested_model); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// videogenerationtaskDescUpstreamModel is the schema descriptor for upstream_model field.
+	videogenerationtaskDescUpstreamModel := videogenerationtaskFields[8].Descriptor()
+	// videogenerationtask.UpstreamModelValidator is a validator for the "upstream_model" field. It is called by the builders before save.
+	videogenerationtask.UpstreamModelValidator = func() func(string) error {
+		validators := videogenerationtaskDescUpstreamModel.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(upstream_model string) error {
+			for _, fn := range fns {
+				if err := fn(upstream_model); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// videogenerationtaskDescUpstreamTaskID is the schema descriptor for upstream_task_id field.
+	videogenerationtaskDescUpstreamTaskID := videogenerationtaskFields[9].Descriptor()
+	// videogenerationtask.UpstreamTaskIDValidator is a validator for the "upstream_task_id" field. It is called by the builders before save.
+	videogenerationtask.UpstreamTaskIDValidator = videogenerationtaskDescUpstreamTaskID.Validators[0].(func(string) error)
+	// videogenerationtaskDescStatus is the schema descriptor for status field.
+	videogenerationtaskDescStatus := videogenerationtaskFields[10].Descriptor()
+	// videogenerationtask.DefaultStatus holds the default value on creation for the status field.
+	videogenerationtask.DefaultStatus = videogenerationtaskDescStatus.Default.(string)
+	// videogenerationtask.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	videogenerationtask.StatusValidator = videogenerationtaskDescStatus.Validators[0].(func(string) error)
+	// videogenerationtaskDescProgress is the schema descriptor for progress field.
+	videogenerationtaskDescProgress := videogenerationtaskFields[11].Descriptor()
+	// videogenerationtask.DefaultProgress holds the default value on creation for the progress field.
+	videogenerationtask.DefaultProgress = videogenerationtaskDescProgress.Default.(int)
+	// videogenerationtaskDescBillingState is the schema descriptor for billing_state field.
+	videogenerationtaskDescBillingState := videogenerationtaskFields[12].Descriptor()
+	// videogenerationtask.DefaultBillingState holds the default value on creation for the billing_state field.
+	videogenerationtask.DefaultBillingState = videogenerationtaskDescBillingState.Default.(string)
+	// videogenerationtask.BillingStateValidator is a validator for the "billing_state" field. It is called by the builders before save.
+	videogenerationtask.BillingStateValidator = videogenerationtaskDescBillingState.Validators[0].(func(string) error)
+	// videogenerationtaskDescRequestPayload is the schema descriptor for request_payload field.
+	videogenerationtaskDescRequestPayload := videogenerationtaskFields[13].Descriptor()
+	// videogenerationtask.DefaultRequestPayload holds the default value on creation for the request_payload field.
+	videogenerationtask.DefaultRequestPayload = videogenerationtaskDescRequestPayload.Default.(func() map[string]interface{})
+	// videogenerationtaskDescErrorCode is the schema descriptor for error_code field.
+	videogenerationtaskDescErrorCode := videogenerationtaskFields[17].Descriptor()
+	// videogenerationtask.ErrorCodeValidator is a validator for the "error_code" field. It is called by the builders before save.
+	videogenerationtask.ErrorCodeValidator = videogenerationtaskDescErrorCode.Validators[0].(func(string) error)
+	// videogenerationtaskDescBillingMode is the schema descriptor for billing_mode field.
+	videogenerationtaskDescBillingMode := videogenerationtaskFields[22].Descriptor()
+	// videogenerationtask.BillingModeValidator is a validator for the "billing_mode" field. It is called by the builders before save.
+	videogenerationtask.BillingModeValidator = func() func(string) error {
+		validators := videogenerationtaskDescBillingMode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(billing_mode string) error {
+			for _, fn := range fns {
+				if err := fn(billing_mode); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// videogenerationtaskDescUnitPrice is the schema descriptor for unit_price field.
+	videogenerationtaskDescUnitPrice := videogenerationtaskFields[23].Descriptor()
+	// videogenerationtask.DefaultUnitPrice holds the default value on creation for the unit_price field.
+	videogenerationtask.DefaultUnitPrice = videogenerationtaskDescUnitPrice.Default.(float64)
+	// videogenerationtaskDescReservedCost is the schema descriptor for reserved_cost field.
+	videogenerationtaskDescReservedCost := videogenerationtaskFields[27].Descriptor()
+	// videogenerationtask.DefaultReservedCost holds the default value on creation for the reserved_cost field.
+	videogenerationtask.DefaultReservedCost = videogenerationtaskDescReservedCost.Default.(float64)
+	// videogenerationtaskDescEstimatedCost is the schema descriptor for estimated_cost field.
+	videogenerationtaskDescEstimatedCost := videogenerationtaskFields[28].Descriptor()
+	// videogenerationtask.DefaultEstimatedCost holds the default value on creation for the estimated_cost field.
+	videogenerationtask.DefaultEstimatedCost = videogenerationtaskDescEstimatedCost.Default.(float64)
+	// videogenerationtaskDescActualCost is the schema descriptor for actual_cost field.
+	videogenerationtaskDescActualCost := videogenerationtaskFields[29].Descriptor()
+	// videogenerationtask.DefaultActualCost holds the default value on creation for the actual_cost field.
+	videogenerationtask.DefaultActualCost = videogenerationtaskDescActualCost.Default.(float64)
+	// videogenerationtaskDescIdempotencyKey is the schema descriptor for idempotency_key field.
+	videogenerationtaskDescIdempotencyKey := videogenerationtaskFields[30].Descriptor()
+	// videogenerationtask.IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
+	videogenerationtask.IdempotencyKeyValidator = videogenerationtaskDescIdempotencyKey.Validators[0].(func(string) error)
+	// videogenerationtaskDescPollCount is the schema descriptor for poll_count field.
+	videogenerationtaskDescPollCount := videogenerationtaskFields[36].Descriptor()
+	// videogenerationtask.DefaultPollCount holds the default value on creation for the poll_count field.
+	videogenerationtask.DefaultPollCount = videogenerationtaskDescPollCount.Default.(int)
+	// videogenerationtaskDescCreatedAt is the schema descriptor for created_at field.
+	videogenerationtaskDescCreatedAt := videogenerationtaskFields[38].Descriptor()
+	// videogenerationtask.DefaultCreatedAt holds the default value on creation for the created_at field.
+	videogenerationtask.DefaultCreatedAt = videogenerationtaskDescCreatedAt.Default.(func() time.Time)
+	// videogenerationtaskDescUpdatedAt is the schema descriptor for updated_at field.
+	videogenerationtaskDescUpdatedAt := videogenerationtaskFields[39].Descriptor()
+	// videogenerationtask.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	videogenerationtask.DefaultUpdatedAt = videogenerationtaskDescUpdatedAt.Default.(func() time.Time)
+	// videogenerationtask.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	videogenerationtask.UpdateDefaultUpdatedAt = videogenerationtaskDescUpdatedAt.UpdateDefault.(func() time.Time)
+	videomodelMixin := schema.VideoModel{}.Mixin()
+	videomodelMixinFields0 := videomodelMixin[0].Fields()
+	_ = videomodelMixinFields0
+	videomodelFields := schema.VideoModel{}.Fields()
+	_ = videomodelFields
+	// videomodelDescCreatedAt is the schema descriptor for created_at field.
+	videomodelDescCreatedAt := videomodelMixinFields0[0].Descriptor()
+	// videomodel.DefaultCreatedAt holds the default value on creation for the created_at field.
+	videomodel.DefaultCreatedAt = videomodelDescCreatedAt.Default.(func() time.Time)
+	// videomodelDescUpdatedAt is the schema descriptor for updated_at field.
+	videomodelDescUpdatedAt := videomodelMixinFields0[1].Descriptor()
+	// videomodel.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	videomodel.DefaultUpdatedAt = videomodelDescUpdatedAt.Default.(func() time.Time)
+	// videomodel.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	videomodel.UpdateDefaultUpdatedAt = videomodelDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// videomodelDescPublicModel is the schema descriptor for public_model field.
+	videomodelDescPublicModel := videomodelFields[0].Descriptor()
+	// videomodel.PublicModelValidator is a validator for the "public_model" field. It is called by the builders before save.
+	videomodel.PublicModelValidator = func() func(string) error {
+		validators := videomodelDescPublicModel.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(public_model string) error {
+			for _, fn := range fns {
+				if err := fn(public_model); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// videomodelDescDisplayName is the schema descriptor for display_name field.
+	videomodelDescDisplayName := videomodelFields[1].Descriptor()
+	// videomodel.DisplayNameValidator is a validator for the "display_name" field. It is called by the builders before save.
+	videomodel.DisplayNameValidator = videomodelDescDisplayName.Validators[0].(func(string) error)
+	// videomodelDescUpstreamModelID is the schema descriptor for upstream_model_id field.
+	videomodelDescUpstreamModelID := videomodelFields[3].Descriptor()
+	// videomodel.UpstreamModelIDValidator is a validator for the "upstream_model_id" field. It is called by the builders before save.
+	videomodel.UpstreamModelIDValidator = videomodelDescUpstreamModelID.Validators[0].(func(string) error)
+	// videomodelDescRequestShape is the schema descriptor for request_shape field.
+	videomodelDescRequestShape := videomodelFields[4].Descriptor()
+	// videomodel.RequestShapeValidator is a validator for the "request_shape" field. It is called by the builders before save.
+	videomodel.RequestShapeValidator = func() func(string) error {
+		validators := videomodelDescRequestShape.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(request_shape string) error {
+			for _, fn := range fns {
+				if err := fn(request_shape); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// videomodelDescStatus is the schema descriptor for status field.
+	videomodelDescStatus := videomodelFields[5].Descriptor()
+	// videomodel.DefaultStatus holds the default value on creation for the status field.
+	videomodel.DefaultStatus = videomodelDescStatus.Default.(string)
+	// videomodel.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	videomodel.StatusValidator = videomodelDescStatus.Validators[0].(func(string) error)
+	// videomodelDescCapabilities is the schema descriptor for capabilities field.
+	videomodelDescCapabilities := videomodelFields[6].Descriptor()
+	// videomodel.DefaultCapabilities holds the default value on creation for the capabilities field.
+	videomodel.DefaultCapabilities = videomodelDescCapabilities.Default.(func() map[string]interface{})
+	// videomodelDescDefaults is the schema descriptor for defaults field.
+	videomodelDescDefaults := videomodelFields[7].Descriptor()
+	// videomodel.DefaultDefaults holds the default value on creation for the defaults field.
+	videomodel.DefaultDefaults = videomodelDescDefaults.Default.(func() map[string]interface{})
+	// videomodelDescLimits is the schema descriptor for limits field.
+	videomodelDescLimits := videomodelFields[8].Descriptor()
+	// videomodel.DefaultLimits holds the default value on creation for the limits field.
+	videomodel.DefaultLimits = videomodelDescLimits.Default.(func() map[string]interface{})
+	// videomodelDescSupportedOptions is the schema descriptor for supported_options field.
+	videomodelDescSupportedOptions := videomodelFields[9].Descriptor()
+	// videomodel.DefaultSupportedOptions holds the default value on creation for the supported_options field.
+	videomodel.DefaultSupportedOptions = videomodelDescSupportedOptions.Default.(func() map[string]interface{})
+	// videomodelDescExtraBodyAllow is the schema descriptor for extra_body_allow field.
+	videomodelDescExtraBodyAllow := videomodelFields[10].Descriptor()
+	// videomodel.DefaultExtraBodyAllow holds the default value on creation for the extra_body_allow field.
+	videomodel.DefaultExtraBodyAllow = videomodelDescExtraBodyAllow.Default.([]string)
+	// videomodelDescSortOrder is the schema descriptor for sort_order field.
+	videomodelDescSortOrder := videomodelFields[11].Descriptor()
+	// videomodel.DefaultSortOrder holds the default value on creation for the sort_order field.
+	videomodel.DefaultSortOrder = videomodelDescSortOrder.Default.(int)
 }
 
 const (

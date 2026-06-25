@@ -44,6 +44,9 @@ func (APIKey) Fields() []ent.Field {
 		field.Int64("group_id").
 			Optional().
 			Nillable(),
+		field.Bool("multi_group_routing").
+			Default(false).
+			Comment("Enable multi-group routing: route across multiple groups by priority/weight"),
 		field.String("status").
 			MaxLen(20).
 			Default(domain.StatusActive),
@@ -130,6 +133,8 @@ func (APIKey) Edges() []ent.Edge {
 			Field("group_id").
 			Unique(),
 		edge.To("usage_logs", UsageLog.Type),
+		edge.To("video_generation_tasks", VideoGenerationTask.Type),
+		edge.To("group_bindings", APIKeyGroupBinding.Type),
 	}
 }
 

@@ -75,6 +75,8 @@ const (
 	EdgeAllowedGroups = "allowed_groups"
 	// EdgeUsageLogs holds the string denoting the usage_logs edge name in mutations.
 	EdgeUsageLogs = "usage_logs"
+	// EdgeVideoGenerationTasks holds the string denoting the video_generation_tasks edge name in mutations.
+	EdgeVideoGenerationTasks = "video_generation_tasks"
 	// EdgeAttributeValues holds the string denoting the attribute_values edge name in mutations.
 	EdgeAttributeValues = "attribute_values"
 	// EdgePromoCodeUsages holds the string denoting the promo_code_usages edge name in mutations.
@@ -138,6 +140,13 @@ const (
 	UsageLogsInverseTable = "usage_logs"
 	// UsageLogsColumn is the table column denoting the usage_logs relation/edge.
 	UsageLogsColumn = "user_id"
+	// VideoGenerationTasksTable is the table that holds the video_generation_tasks relation/edge.
+	VideoGenerationTasksTable = "video_generation_tasks"
+	// VideoGenerationTasksInverseTable is the table name for the VideoGenerationTask entity.
+	// It exists in this package in order to avoid circular dependency with the "videogenerationtask" package.
+	VideoGenerationTasksInverseTable = "video_generation_tasks"
+	// VideoGenerationTasksColumn is the table column denoting the video_generation_tasks relation/edge.
+	VideoGenerationTasksColumn = "user_id"
 	// AttributeValuesTable is the table that holds the attribute_values relation/edge.
 	AttributeValuesTable = "user_attribute_values"
 	// AttributeValuesInverseTable is the table name for the UserAttributeValue entity.
@@ -508,6 +517,20 @@ func ByUsageLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByVideoGenerationTasksCount orders the results by video_generation_tasks count.
+func ByVideoGenerationTasksCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVideoGenerationTasksStep(), opts...)
+	}
+}
+
+// ByVideoGenerationTasks orders the results by video_generation_tasks terms.
+func ByVideoGenerationTasks(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVideoGenerationTasksStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByAttributeValuesCount orders the results by attribute_values count.
 func ByAttributeValuesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -652,6 +675,13 @@ func newUsageLogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsageLogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, UsageLogsTable, UsageLogsColumn),
+	)
+}
+func newVideoGenerationTasksStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VideoGenerationTasksInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, VideoGenerationTasksTable, VideoGenerationTasksColumn),
 	)
 }
 func newAttributeValuesStep() *sqlgraph.Step {

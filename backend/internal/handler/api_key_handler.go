@@ -42,6 +42,40 @@ type CreateAPIKeyRequest struct {
 	RateLimit5h *float64 `json:"rate_limit_5h"`
 	RateLimit1d *float64 `json:"rate_limit_1d"`
 	RateLimit7d *float64 `json:"rate_limit_7d"`
+
+	// Multi-group routing
+	MultiGroupRouting bool                      `json:"multi_group_routing"`
+	GroupBindings     []APIKeyGroupBindingInput `json:"group_bindings"`
+}
+
+// APIKeyGroupBindingInput is a multi-group-routing binding in API requests.
+type APIKeyGroupBindingInput struct {
+	GroupID  int64 `json:"group_id" binding:"required"`
+	Priority int   `json:"priority"`
+	Weight   int   `json:"weight"`
+	Enabled  *bool `json:"enabled"`
+}
+
+// toServiceGroupBindings converts request bindings to the service layer form.
+// Returns nil for nil input so callers can treat "absent" as "no change".
+func toServiceGroupBindings(in []APIKeyGroupBindingInput) []service.APIKeyGroupBindingInput {
+	if in == nil {
+		return nil
+	}
+	out := make([]service.APIKeyGroupBindingInput, 0, len(in))
+	for _, b := range in {
+		enabled := true
+		if b.Enabled != nil {
+			enabled = *b.Enabled
+		}
+		out = append(out, service.APIKeyGroupBindingInput{
+			GroupID:  b.GroupID,
+			Priority: b.Priority,
+			Weight:   b.Weight,
+			Enabled:  enabled,
+		})
+	}
+	return out
 }
 
 // UpdateAPIKeyRequest represents the update API key request payload
@@ -60,6 +94,10 @@ type UpdateAPIKeyRequest struct {
 	RateLimit1d         *float64 `json:"rate_limit_1d"`
 	RateLimit7d         *float64 `json:"rate_limit_7d"`
 	ResetRateLimitUsage *bool    `json:"reset_rate_limit_usage"` // 重置限速用量
+
+	// Multi-group routing (nil GroupBindings = no change)
+	MultiGroupRouting *bool                     `json:"multi_group_routing"`
+	GroupBindings     []APIKeyGroupBindingInput `json:"group_bindings"`
 }
 
 // List handles listing user's API keys with pagination
@@ -154,12 +192,14 @@ func (h *APIKeyHandler) Create(c *gin.Context) {
 	}
 
 	svcReq := service.CreateAPIKeyRequest{
-		Name:          req.Name,
-		GroupID:       req.GroupID,
-		CustomKey:     req.CustomKey,
-		IPWhitelist:   req.IPWhitelist,
-		IPBlacklist:   req.IPBlacklist,
-		ExpiresInDays: req.ExpiresInDays,
+		Name:              req.Name,
+		GroupID:           req.GroupID,
+		CustomKey:         req.CustomKey,
+		IPWhitelist:       req.IPWhitelist,
+		IPBlacklist:       req.IPBlacklist,
+		ExpiresInDays:     req.ExpiresInDays,
+		MultiGroupRouting: req.MultiGroupRouting,
+		GroupBindings:     toServiceGroupBindings(req.GroupBindings),
 	}
 	if req.Quota != nil {
 		svcReq.Quota = *req.Quota
@@ -213,6 +253,8 @@ func (h *APIKeyHandler) Update(c *gin.Context) {
 		RateLimit1d:         req.RateLimit1d,
 		RateLimit7d:         req.RateLimit7d,
 		ResetRateLimitUsage: req.ResetRateLimitUsage,
+		MultiGroupRouting:   req.MultiGroupRouting,
+		GroupBindings:       toServiceGroupBindings(req.GroupBindings),
 	}
 	if req.Name != "" {
 		svcReq.Name = &req.Name
@@ -290,6 +332,34 @@ func (h *APIKeyHandler) GetAvailableGroups(c *gin.Context) {
 		out = append(out, *dto.GroupFromService(&groups[i]))
 	}
 	response.Success(c, out)
+}
+
+// GetUserFeatures returns coarse feature availability for the current user.
+// GET /api/v1/user/features
+func (h *APIKeyHandler) GetUserFeatures(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	groups, err := h.apiKeyService.GetAvailableGroups(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	videoEnabled := false
+	for i := range groups {
+		if groups[i].Platform == service.PlatformVideo {
+			videoEnabled = true
+			break
+		}
+	}
+
+	response.Success(c, gin.H{
+		"video_enabled": videoEnabled,
+	})
 }
 
 // GetUserGroupRates 获取当前用户的专属分组倍率配置

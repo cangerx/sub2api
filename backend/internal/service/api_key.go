@@ -28,14 +28,18 @@ func IsWindowExpired(windowStart *time.Time, duration time.Duration) bool {
 }
 
 type APIKey struct {
-	ID          int64
-	UserID      int64
-	Key         string
-	Name        string
-	GroupID     *int64
-	Status      string
-	IPWhitelist []string
-	IPBlacklist []string
+	ID      int64
+	UserID  int64
+	Key     string
+	Name    string
+	GroupID *int64
+	Status  string
+	// MultiGroupRouting: 开启后按 GroupBindings 的优先级/权重在多个分组间路由。
+	MultiGroupRouting bool
+	// GroupBindings: 多分组路由的分组绑定列表（仅 MultiGroupRouting=true 时使用）。
+	GroupBindings []APIKeyGroupBinding
+	IPWhitelist   []string
+	IPBlacklist   []string
 	// 预编译的 IP 规则，用于认证热路径避免重复 ParseIP/ParseCIDR。
 	CompiledIPWhitelist *ip.CompiledIPRules `json:"-"`
 	CompiledIPBlacklist *ip.CompiledIPRules `json:"-"`
@@ -60,6 +64,16 @@ type APIKey struct {
 	Window5hStart *time.Time // Start of current 5h window
 	Window1dStart *time.Time // Start of current 1d window
 	Window7dStart *time.Time // Start of current 7d window
+}
+
+// APIKeyGroupBinding binds an API key to a group for multi-group routing.
+type APIKeyGroupBinding struct {
+	ID       int64
+	GroupID  int64
+	Priority int // lower = higher priority
+	Weight   int // weight within the same priority bucket (>0)
+	Enabled  bool
+	Group    *Group // optionally eager-loaded
 }
 
 func (k *APIKey) IsActive() bool {

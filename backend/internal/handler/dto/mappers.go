@@ -117,6 +117,20 @@ func APIKeyFromService(k *service.APIKey) *APIKey {
 		t := k.Window7dStart.Add(service.RateLimitWindow7d)
 		out.Reset7dAt = &t
 	}
+	out.MultiGroupRouting = k.MultiGroupRouting
+	if len(k.GroupBindings) > 0 {
+		out.GroupBindings = make([]APIKeyGroupBinding, 0, len(k.GroupBindings))
+		for i := range k.GroupBindings {
+			b := &k.GroupBindings[i]
+			out.GroupBindings = append(out.GroupBindings, APIKeyGroupBinding{
+				GroupID:  b.GroupID,
+				Priority: b.Priority,
+				Weight:   b.Weight,
+				Enabled:  b.Enabled,
+				Group:    GroupFromServiceShallow(b.Group),
+			})
+		}
+	}
 	return out
 }
 

@@ -102,6 +102,10 @@ func (s *cleanupRepoStub) DeleteUsageLogsBatch(ctx context.Context, filters serv
 	return 0, nil
 }
 
+func (s *cleanupRepoStub) DeleteVideoTasksBatch(ctx context.Context, filters service.UsageCleanupFilters, limit int) (int64, error) {
+	return 0, nil
+}
+
 var _ service.UsageCleanupRepository = (*cleanupRepoStub)(nil)
 
 func setupCleanupRouter(cleanupService *service.UsageCleanupService, userID int64) *gin.Engine {

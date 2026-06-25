@@ -1463,6 +1463,29 @@ func HasAPIKeysWith(preds ...predicate.APIKey) predicate.Group {
 	})
 }
 
+// HasAPIKeyGroupBindings applies the HasEdge predicate on the "api_key_group_bindings" edge.
+func HasAPIKeyGroupBindings() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, APIKeyGroupBindingsTable, APIKeyGroupBindingsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAPIKeyGroupBindingsWith applies the HasEdge predicate on the "api_key_group_bindings" edge with a given conditions (other predicates).
+func HasAPIKeyGroupBindingsWith(preds ...predicate.APIKeyGroupBinding) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newAPIKeyGroupBindingsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasRedeemCodes applies the HasEdge predicate on the "redeem_codes" edge.
 func HasRedeemCodes() predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
@@ -1524,6 +1547,29 @@ func HasUsageLogs() predicate.Group {
 func HasUsageLogsWith(preds ...predicate.UsageLog) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
 		step := newUsageLogsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasVideoGenerationTasks applies the HasEdge predicate on the "video_generation_tasks" edge.
+func HasVideoGenerationTasks() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, VideoGenerationTasksTable, VideoGenerationTasksColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasVideoGenerationTasksWith applies the HasEdge predicate on the "video_generation_tasks" edge with a given conditions (other predicates).
+func HasVideoGenerationTasksWith(preds ...predicate.VideoGenerationTask) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newVideoGenerationTasksStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

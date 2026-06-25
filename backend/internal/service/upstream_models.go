@@ -129,6 +129,8 @@ func (s *AccountTestService) FetchUpstreamSupportedModels(ctx context.Context, a
 
 func (s *AccountTestService) buildUpstreamModelsRequest(ctx context.Context, account *Account) (*http.Request, error) {
 	switch {
+	case account.Platform == PlatformVideo:
+		return s.buildVideoUpstreamModelsRequest(ctx, account)
 	case account.Platform == PlatformAntigravity:
 		return s.buildAntigravityAPIKeyModelsRequest(ctx, account)
 	case account.IsOpenAI():
@@ -142,6 +144,46 @@ func (s *AccountTestService) buildUpstreamModelsRequest(ctx context.Context, acc
 			fmt.Sprintf("Unsupported platform for upstream model sync: %s", account.Platform), nil,
 		)
 	}
+}
+
+// buildVideoUpstreamModelsRequest builds a GET /v1/models request against a
+// video account's upstream. Video accounts are OpenAI-style: base_url + a
+// bearer credential (api_key / authorization / access_token), matching how
+// the video gateway calls the upstream (see applyVideoAuth/videoAccountBaseURL).
+func (s *AccountTestService) buildVideoUpstreamModelsRequest(ctx context.Context, account *Account) (*http.Request, error) {
+	if account.Type != AccountTypeAPIKey {
+		return nil, newUpstreamModelSyncUnsupportedError(
+			fmt.Sprintf("Unsupported video account type for upstream model sync: %s", account.Type), nil,
+		)
+	}
+	baseURL := strings.TrimSpace(account.GetCredential("base_url"))
+	if baseURL == "" {
+		return nil, newUpstreamModelSyncConfigError("No video upstream base URL is configured", nil)
+	}
+	normalizedBaseURL, err := s.validateUpstreamBaseURL(baseURL)
+	if err != nil {
+		return nil, newUpstreamModelSyncConfigError("Invalid video upstream base URL", err)
+	}
+
+	authValue := strings.TrimSpace(account.GetCredential("authorization"))
+	if authValue == "" {
+		if token := strings.TrimSpace(account.GetCredential("access_token")); token != "" {
+			authValue = "Bearer " + token
+		} else if apiKey := strings.TrimSpace(account.GetCredential("api_key")); apiKey != "" {
+			authValue = "Bearer " + apiKey
+		}
+	}
+	if authValue == "" {
+		return nil, newUpstreamModelSyncConfigError("No video upstream credential is available", nil)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, buildV1ModelsURL(normalizedBaseURL), nil)
+	if err != nil {
+		return nil, newUpstreamModelSyncConfigError("Invalid video model list URL", err)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", authValue)
+	return req, nil
 }
 
 func (s *AccountTestService) buildAnthropicUpstreamModelsRequest(ctx context.Context, account *Account) (*http.Request, error) {

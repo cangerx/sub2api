@@ -79,6 +79,8 @@ const (
 	EdgeProxy = "proxy"
 	// EdgeUsageLogs holds the string denoting the usage_logs edge name in mutations.
 	EdgeUsageLogs = "usage_logs"
+	// EdgeVideoGenerationTasks holds the string denoting the video_generation_tasks edge name in mutations.
+	EdgeVideoGenerationTasks = "video_generation_tasks"
 	// EdgeAccountGroups holds the string denoting the account_groups edge name in mutations.
 	EdgeAccountGroups = "account_groups"
 	// Table holds the table name of the account in the database.
@@ -102,6 +104,13 @@ const (
 	UsageLogsInverseTable = "usage_logs"
 	// UsageLogsColumn is the table column denoting the usage_logs relation/edge.
 	UsageLogsColumn = "account_id"
+	// VideoGenerationTasksTable is the table that holds the video_generation_tasks relation/edge.
+	VideoGenerationTasksTable = "video_generation_tasks"
+	// VideoGenerationTasksInverseTable is the table name for the VideoGenerationTask entity.
+	// It exists in this package in order to avoid circular dependency with the "videogenerationtask" package.
+	VideoGenerationTasksInverseTable = "video_generation_tasks"
+	// VideoGenerationTasksColumn is the table column denoting the video_generation_tasks relation/edge.
+	VideoGenerationTasksColumn = "account_id"
 	// AccountGroupsTable is the table that holds the account_groups relation/edge.
 	AccountGroupsTable = "account_groups"
 	// AccountGroupsInverseTable is the table name for the AccountGroup entity.
@@ -381,6 +390,20 @@ func ByUsageLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByVideoGenerationTasksCount orders the results by video_generation_tasks count.
+func ByVideoGenerationTasksCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVideoGenerationTasksStep(), opts...)
+	}
+}
+
+// ByVideoGenerationTasks orders the results by video_generation_tasks terms.
+func ByVideoGenerationTasks(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVideoGenerationTasksStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByAccountGroupsCount orders the results by account_groups count.
 func ByAccountGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -413,6 +436,13 @@ func newUsageLogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsageLogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, UsageLogsTable, UsageLogsColumn),
+	)
+}
+func newVideoGenerationTasksStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VideoGenerationTasksInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, VideoGenerationTasksTable, VideoGenerationTasksColumn),
 	)
 }
 func newAccountGroupsStep() *sqlgraph.Step {

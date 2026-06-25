@@ -19,20 +19,22 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
+	"github.com/Wei-Shaw/sub2api/ent/videogenerationtask"
 )
 
 // AccountQuery is the builder for querying Account entities.
 type AccountQuery struct {
 	config
-	ctx               *QueryContext
-	order             []account.OrderOption
-	inters            []Interceptor
-	predicates        []predicate.Account
-	withGroups        *GroupQuery
-	withProxy         *ProxyQuery
-	withUsageLogs     *UsageLogQuery
-	withAccountGroups *AccountGroupQuery
-	modifiers         []func(*sql.Selector)
+	ctx                      *QueryContext
+	order                    []account.OrderOption
+	inters                   []Interceptor
+	predicates               []predicate.Account
+	withGroups               *GroupQuery
+	withProxy                *ProxyQuery
+	withUsageLogs            *UsageLogQuery
+	withVideoGenerationTasks *VideoGenerationTaskQuery
+	withAccountGroups        *AccountGroupQuery
+	modifiers                []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -128,6 +130,28 @@ func (_q *AccountQuery) QueryUsageLogs() *UsageLogQuery {
 			sqlgraph.From(account.Table, account.FieldID, selector),
 			sqlgraph.To(usagelog.Table, usagelog.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, account.UsageLogsTable, account.UsageLogsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVideoGenerationTasks chains the current query on the "video_generation_tasks" edge.
+func (_q *AccountQuery) QueryVideoGenerationTasks() *VideoGenerationTaskQuery {
+	query := (&VideoGenerationTaskClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(account.Table, account.FieldID, selector),
+			sqlgraph.To(videogenerationtask.Table, videogenerationtask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, account.VideoGenerationTasksTable, account.VideoGenerationTasksColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -344,15 +368,16 @@ func (_q *AccountQuery) Clone() *AccountQuery {
 		return nil
 	}
 	return &AccountQuery{
-		config:            _q.config,
-		ctx:               _q.ctx.Clone(),
-		order:             append([]account.OrderOption{}, _q.order...),
-		inters:            append([]Interceptor{}, _q.inters...),
-		predicates:        append([]predicate.Account{}, _q.predicates...),
-		withGroups:        _q.withGroups.Clone(),
-		withProxy:         _q.withProxy.Clone(),
-		withUsageLogs:     _q.withUsageLogs.Clone(),
-		withAccountGroups: _q.withAccountGroups.Clone(),
+		config:                   _q.config,
+		ctx:                      _q.ctx.Clone(),
+		order:                    append([]account.OrderOption{}, _q.order...),
+		inters:                   append([]Interceptor{}, _q.inters...),
+		predicates:               append([]predicate.Account{}, _q.predicates...),
+		withGroups:               _q.withGroups.Clone(),
+		withProxy:                _q.withProxy.Clone(),
+		withUsageLogs:            _q.withUsageLogs.Clone(),
+		withVideoGenerationTasks: _q.withVideoGenerationTasks.Clone(),
+		withAccountGroups:        _q.withAccountGroups.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -389,6 +414,17 @@ func (_q *AccountQuery) WithUsageLogs(opts ...func(*UsageLogQuery)) *AccountQuer
 		opt(query)
 	}
 	_q.withUsageLogs = query
+	return _q
+}
+
+// WithVideoGenerationTasks tells the query-builder to eager-load the nodes that are connected to
+// the "video_generation_tasks" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *AccountQuery) WithVideoGenerationTasks(opts ...func(*VideoGenerationTaskQuery)) *AccountQuery {
+	query := (&VideoGenerationTaskClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withVideoGenerationTasks = query
 	return _q
 }
 
@@ -481,10 +517,11 @@ func (_q *AccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Acco
 	var (
 		nodes       = []*Account{}
 		_spec       = _q.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			_q.withGroups != nil,
 			_q.withProxy != nil,
 			_q.withUsageLogs != nil,
+			_q.withVideoGenerationTasks != nil,
 			_q.withAccountGroups != nil,
 		}
 	)
@@ -526,6 +563,15 @@ func (_q *AccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Acco
 		if err := _q.loadUsageLogs(ctx, query, nodes,
 			func(n *Account) { n.Edges.UsageLogs = []*UsageLog{} },
 			func(n *Account, e *UsageLog) { n.Edges.UsageLogs = append(n.Edges.UsageLogs, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withVideoGenerationTasks; query != nil {
+		if err := _q.loadVideoGenerationTasks(ctx, query, nodes,
+			func(n *Account) { n.Edges.VideoGenerationTasks = []*VideoGenerationTask{} },
+			func(n *Account, e *VideoGenerationTask) {
+				n.Edges.VideoGenerationTasks = append(n.Edges.VideoGenerationTasks, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -647,6 +693,36 @@ func (_q *AccountQuery) loadUsageLogs(ctx context.Context, query *UsageLogQuery,
 	}
 	query.Where(predicate.UsageLog(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(account.UsageLogsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.AccountID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "account_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *AccountQuery) loadVideoGenerationTasks(ctx context.Context, query *VideoGenerationTaskQuery, nodes []*Account, init func(*Account), assign func(*Account, *VideoGenerationTask)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*Account)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(videogenerationtask.FieldAccountID)
+	}
+	query.Where(predicate.VideoGenerationTask(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(account.VideoGenerationTasksColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

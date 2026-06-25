@@ -88,12 +88,16 @@ const (
 	FieldRpmLimit = "rpm_limit"
 	// EdgeAPIKeys holds the string denoting the api_keys edge name in mutations.
 	EdgeAPIKeys = "api_keys"
+	// EdgeAPIKeyGroupBindings holds the string denoting the api_key_group_bindings edge name in mutations.
+	EdgeAPIKeyGroupBindings = "api_key_group_bindings"
 	// EdgeRedeemCodes holds the string denoting the redeem_codes edge name in mutations.
 	EdgeRedeemCodes = "redeem_codes"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
 	EdgeSubscriptions = "subscriptions"
 	// EdgeUsageLogs holds the string denoting the usage_logs edge name in mutations.
 	EdgeUsageLogs = "usage_logs"
+	// EdgeVideoGenerationTasks holds the string denoting the video_generation_tasks edge name in mutations.
+	EdgeVideoGenerationTasks = "video_generation_tasks"
 	// EdgeAccounts holds the string denoting the accounts edge name in mutations.
 	EdgeAccounts = "accounts"
 	// EdgeAllowedUsers holds the string denoting the allowed_users edge name in mutations.
@@ -111,6 +115,13 @@ const (
 	APIKeysInverseTable = "api_keys"
 	// APIKeysColumn is the table column denoting the api_keys relation/edge.
 	APIKeysColumn = "group_id"
+	// APIKeyGroupBindingsTable is the table that holds the api_key_group_bindings relation/edge.
+	APIKeyGroupBindingsTable = "api_key_group_bindings"
+	// APIKeyGroupBindingsInverseTable is the table name for the APIKeyGroupBinding entity.
+	// It exists in this package in order to avoid circular dependency with the "apikeygroupbinding" package.
+	APIKeyGroupBindingsInverseTable = "api_key_group_bindings"
+	// APIKeyGroupBindingsColumn is the table column denoting the api_key_group_bindings relation/edge.
+	APIKeyGroupBindingsColumn = "group_id"
 	// RedeemCodesTable is the table that holds the redeem_codes relation/edge.
 	RedeemCodesTable = "redeem_codes"
 	// RedeemCodesInverseTable is the table name for the RedeemCode entity.
@@ -132,6 +143,13 @@ const (
 	UsageLogsInverseTable = "usage_logs"
 	// UsageLogsColumn is the table column denoting the usage_logs relation/edge.
 	UsageLogsColumn = "group_id"
+	// VideoGenerationTasksTable is the table that holds the video_generation_tasks relation/edge.
+	VideoGenerationTasksTable = "video_generation_tasks"
+	// VideoGenerationTasksInverseTable is the table name for the VideoGenerationTask entity.
+	// It exists in this package in order to avoid circular dependency with the "videogenerationtask" package.
+	VideoGenerationTasksInverseTable = "video_generation_tasks"
+	// VideoGenerationTasksColumn is the table column denoting the video_generation_tasks relation/edge.
+	VideoGenerationTasksColumn = "group_id"
 	// AccountsTable is the table that holds the accounts relation/edge. The primary key declared below.
 	AccountsTable = "account_groups"
 	// AccountsInverseTable is the table name for the Account entity.
@@ -462,6 +480,20 @@ func ByAPIKeys(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByAPIKeyGroupBindingsCount orders the results by api_key_group_bindings count.
+func ByAPIKeyGroupBindingsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAPIKeyGroupBindingsStep(), opts...)
+	}
+}
+
+// ByAPIKeyGroupBindings orders the results by api_key_group_bindings terms.
+func ByAPIKeyGroupBindings(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAPIKeyGroupBindingsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByRedeemCodesCount orders the results by redeem_codes count.
 func ByRedeemCodesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -501,6 +533,20 @@ func ByUsageLogsCount(opts ...sql.OrderTermOption) OrderOption {
 func ByUsageLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newUsageLogsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByVideoGenerationTasksCount orders the results by video_generation_tasks count.
+func ByVideoGenerationTasksCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVideoGenerationTasksStep(), opts...)
+	}
+}
+
+// ByVideoGenerationTasks orders the results by video_generation_tasks terms.
+func ByVideoGenerationTasks(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVideoGenerationTasksStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -566,6 +612,13 @@ func newAPIKeysStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, APIKeysTable, APIKeysColumn),
 	)
 }
+func newAPIKeyGroupBindingsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(APIKeyGroupBindingsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, APIKeyGroupBindingsTable, APIKeyGroupBindingsColumn),
+	)
+}
 func newRedeemCodesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -585,6 +638,13 @@ func newUsageLogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsageLogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, UsageLogsTable, UsageLogsColumn),
+	)
+}
+func newVideoGenerationTasksStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VideoGenerationTasksInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, VideoGenerationTasksTable, VideoGenerationTasksColumn),
 	)
 }
 func newAccountsStep() *sqlgraph.Step {

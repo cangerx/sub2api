@@ -50,6 +50,7 @@ type GatewayHandler struct {
 	contentModerationService  *service.ContentModerationService
 	concurrencyHelper         *ConcurrencyHelper
 	userMsgQueueHelper        *UserMsgQueueHelper
+	groupRouter               *service.GroupRouter
 	maxAccountSwitches        int
 	maxAccountSwitchesGemini  int
 	cfg                       *config.Config
@@ -72,6 +73,7 @@ func NewGatewayHandler(
 	userMsgQueueService *service.UserMessageQueueService,
 	cfg *config.Config,
 	settingService *service.SettingService,
+	groupRouter *service.GroupRouter,
 ) *GatewayHandler {
 	pingInterval := time.Duration(0)
 	maxAccountSwitches := 10
@@ -105,6 +107,7 @@ func NewGatewayHandler(
 		contentModerationService:  contentModerationService,
 		concurrencyHelper:         NewConcurrencyHelper(concurrencyService, SSEPingFormatClaude, pingInterval),
 		userMsgQueueHelper:        umqHelper,
+		groupRouter:               groupRouter,
 		maxAccountSwitches:        maxAccountSwitches,
 		maxAccountSwitchesGemini:  maxAccountSwitchesGemini,
 		cfg:                       cfg,
@@ -254,11 +257,32 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 
 	// 获取平台：优先使用强制平台（/antigravity 路由，中间件已设置 request.Context），否则使用分组平台
 	platform := ""
+	forcePlatformSet := false
 	if forcePlatform, ok := middleware2.GetForcePlatformFromContext(c); ok {
 		platform = forcePlatform
+		forcePlatformSet = true
 	} else if apiKey.Group != nil {
 		platform = apiKey.Group.Platform
 	}
+
+	// 多分组路由：按优先级/权重选定本次请求的有效分组（单组 Key 透传，零变化）。
+	// Messages 路径仅做"初始选组 + 冷却感知"；组内账号 failover 与既有 fallback 分组
+	// 机制保持不变（避免与 sticky session / fallbackGroup 双重跨组逻辑冲突）。
+	// 强制平台路由（/antigravity）不参与多分组。
+	if !forcePlatformSet {
+		gf := h.newGroupFailover(c.Request.Context(), apiKey, platform)
+		if gf.enabled && gf.group() != nil {
+			routedKey := *apiKey
+			routedKey.Group = gf.group()
+			routedKey.GroupID = &gf.group().ID
+			apiKey = &routedKey
+			if gf.platformOf() != "" {
+				platform = gf.platformOf()
+			}
+			channelMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
+		}
+	}
+
 	sessionKey := sessionHash
 	if platform == service.PlatformGemini && sessionHash != "" {
 		sessionKey = "gemini:" + sessionHash

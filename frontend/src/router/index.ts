@@ -218,6 +218,20 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/video',
+    name: 'VideoStudio',
+    alias: '/videos',
+    component: () => import('@/views/user/VideoStudioView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      requiresVideoFeature: true,
+      title: 'Video Studio',
+      titleKey: 'videoStudio.title',
+      descriptionKey: 'videoStudio.description'
+    }
+  },
+  {
     path: '/redeem',
     name: 'Redeem',
     component: () => import('@/views/user/RedeemView.vue'),
@@ -453,6 +467,22 @@ const routes: RouteRecordRaw[] = [
       titleKey: 'admin.channelMonitor.title',
       descriptionKey: 'admin.channelMonitor.description'
     }
+  },
+  {
+    path: '/admin/channels/video',
+    redirect: { path: '/admin/accounts', query: { tab: 'video' } }
+  },
+  {
+    path: '/admin/video-templates',
+    redirect: { path: '/admin/accounts', query: { tab: 'video' } }
+  },
+  {
+    path: '/admin/video-models',
+    redirect: { path: '/admin/accounts', query: { tab: 'video' } }
+  },
+  {
+    path: '/admin/video-tasks',
+    redirect: { path: '/admin/accounts', query: { tab: 'video' } }
   },
   {
     path: '/monitor',
@@ -826,6 +856,21 @@ router.beforeEach(async (to, _from, next) => {
     const riskControlEnabled = appStore.cachedPublicSettings?.risk_control_enabled === true
     if (!riskControlEnabled) {
       next(authStore.isAdmin ? '/admin/settings' : '/dashboard')
+      return
+    }
+  }
+
+  if (to.meta.requiresVideoFeature) {
+    if (!authStore.featuresLoaded) {
+      try {
+        await authStore.refreshFeatures()
+      } catch {
+        next('/dashboard')
+        return
+      }
+    }
+    if (!authStore.videoEnabled) {
+      next('/dashboard')
       return
     }
   }

@@ -525,7 +525,7 @@ const trendChartData = computed(() => {
       {
         label: t('usage.userBilled') + ' (USD)',
         data: stats.value.history.map((h) => h.user_cost),
-        borderColor: '#10b981',
+        borderColor: '#3b82f6',
         backgroundColor: 'rgba(16, 185, 129, 0.08)',
         fill: false,
         tension: 0.3,

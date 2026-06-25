@@ -1619,6 +1619,29 @@ func HasUsageLogsWith(preds ...predicate.UsageLog) predicate.Account {
 	})
 }
 
+// HasVideoGenerationTasks applies the HasEdge predicate on the "video_generation_tasks" edge.
+func HasVideoGenerationTasks() predicate.Account {
+	return predicate.Account(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, VideoGenerationTasksTable, VideoGenerationTasksColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasVideoGenerationTasksWith applies the HasEdge predicate on the "video_generation_tasks" edge with a given conditions (other predicates).
+func HasVideoGenerationTasksWith(preds ...predicate.VideoGenerationTask) predicate.Account {
+	return predicate.Account(func(s *sql.Selector) {
+		step := newVideoGenerationTasksStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasAccountGroups applies the HasEdge predicate on the "account_groups" edge.
 func HasAccountGroups() predicate.Account {
 	return predicate.Account(func(s *sql.Selector) {

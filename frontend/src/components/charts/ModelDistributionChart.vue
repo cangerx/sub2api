@@ -332,7 +332,7 @@ const activeView = ref<'model_distribution' | 'spending_ranking'>('model_distrib
 
 const chartColors = [
   '#3b82f6',
-  '#10b981',
+  '#3b82f6',
   '#f59e0b',
   '#ef4444',
   '#8b5cf6',
@@ -340,7 +340,7 @@ const chartColors = [
   '#14b8a6',
   '#f97316',
   '#6366f1',
-  '#84cc16',
+  '#818cf8',
   '#06b6d4',
   '#a855f7'
 ]

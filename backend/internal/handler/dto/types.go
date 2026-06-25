@@ -80,6 +80,19 @@ type APIKey struct {
 
 	User  *User  `json:"user,omitempty"`
 	Group *Group `json:"group,omitempty"`
+
+	// Multi-group routing
+	MultiGroupRouting bool                 `json:"multi_group_routing"`
+	GroupBindings     []APIKeyGroupBinding `json:"group_bindings,omitempty"`
+}
+
+// APIKeyGroupBinding is a multi-group-routing binding in API responses.
+type APIKeyGroupBinding struct {
+	GroupID  int64  `json:"group_id"`
+	Priority int    `json:"priority"`
+	Weight   int    `json:"weight"`
+	Enabled  bool   `json:"enabled"`
+	Group    *Group `json:"group,omitempty"`
 }
 
 type Group struct {

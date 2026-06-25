@@ -14,6 +14,44 @@ export const QUOTA_RESET_MODE_ROLLING = 'rolling' as const
 export const QUOTA_RESET_MODE_FIXED = 'fixed' as const
 export type QuotaResetMode = typeof QUOTA_RESET_MODE_ROLLING | typeof QUOTA_RESET_MODE_FIXED
 
+export const ACCOUNT_PLATFORM_OPTIONS = [
+  { value: 'anthropic', label: 'Anthropic' },
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'gemini', label: 'Gemini' },
+  { value: 'antigravity', label: 'Antigravity' },
+  { value: 'video', label: 'Video' }
+] as const
+
+export const GROUP_PLATFORM_OPTIONS = ACCOUNT_PLATFORM_OPTIONS
+
+export function defaultBaseURLForPlatform(platform: string): string {
+  switch (platform) {
+    case 'openai':
+      return 'https://api.openai.com'
+    case 'gemini':
+      return 'https://generativelanguage.googleapis.com'
+    case 'antigravity':
+      return 'https://cloudcode-pa.googleapis.com'
+    case 'video':
+      return ''
+    default:
+      return 'https://api.anthropic.com'
+  }
+}
+
+export function apiKeyPlaceholderForPlatform(platform: string): string {
+  switch (platform) {
+    case 'openai':
+      return 'sk-proj-...'
+    case 'gemini':
+      return 'AIza...'
+    case 'video':
+      return '上游 API Key / Token'
+    default:
+      return 'sk-ant-...'
+  }
+}
+
 /** Vertex AI location options for Service Account accounts */
 export const VERTEX_LOCATION_OPTIONS = [
   {

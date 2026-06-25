@@ -14,12 +14,14 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/account"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
+	"github.com/Wei-Shaw/sub2api/ent/apikeygroupbinding"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
+	"github.com/Wei-Shaw/sub2api/ent/videogenerationtask"
 	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
@@ -666,6 +668,21 @@ func (_u *GroupUpdate) AddAPIKeys(v ...*APIKey) *GroupUpdate {
 	return _u.AddAPIKeyIDs(ids...)
 }
 
+// AddAPIKeyGroupBindingIDs adds the "api_key_group_bindings" edge to the APIKeyGroupBinding entity by IDs.
+func (_u *GroupUpdate) AddAPIKeyGroupBindingIDs(ids ...int64) *GroupUpdate {
+	_u.mutation.AddAPIKeyGroupBindingIDs(ids...)
+	return _u
+}
+
+// AddAPIKeyGroupBindings adds the "api_key_group_bindings" edges to the APIKeyGroupBinding entity.
+func (_u *GroupUpdate) AddAPIKeyGroupBindings(v ...*APIKeyGroupBinding) *GroupUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAPIKeyGroupBindingIDs(ids...)
+}
+
 // AddRedeemCodeIDs adds the "redeem_codes" edge to the RedeemCode entity by IDs.
 func (_u *GroupUpdate) AddRedeemCodeIDs(ids ...int64) *GroupUpdate {
 	_u.mutation.AddRedeemCodeIDs(ids...)
@@ -709,6 +726,21 @@ func (_u *GroupUpdate) AddUsageLogs(v ...*UsageLog) *GroupUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddUsageLogIDs(ids...)
+}
+
+// AddVideoGenerationTaskIDs adds the "video_generation_tasks" edge to the VideoGenerationTask entity by IDs.
+func (_u *GroupUpdate) AddVideoGenerationTaskIDs(ids ...int64) *GroupUpdate {
+	_u.mutation.AddVideoGenerationTaskIDs(ids...)
+	return _u
+}
+
+// AddVideoGenerationTasks adds the "video_generation_tasks" edges to the VideoGenerationTask entity.
+func (_u *GroupUpdate) AddVideoGenerationTasks(v ...*VideoGenerationTask) *GroupUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVideoGenerationTaskIDs(ids...)
 }
 
 // AddAccountIDs adds the "accounts" edge to the Account entity by IDs.
@@ -765,6 +797,27 @@ func (_u *GroupUpdate) RemoveAPIKeys(v ...*APIKey) *GroupUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAPIKeyIDs(ids...)
+}
+
+// ClearAPIKeyGroupBindings clears all "api_key_group_bindings" edges to the APIKeyGroupBinding entity.
+func (_u *GroupUpdate) ClearAPIKeyGroupBindings() *GroupUpdate {
+	_u.mutation.ClearAPIKeyGroupBindings()
+	return _u
+}
+
+// RemoveAPIKeyGroupBindingIDs removes the "api_key_group_bindings" edge to APIKeyGroupBinding entities by IDs.
+func (_u *GroupUpdate) RemoveAPIKeyGroupBindingIDs(ids ...int64) *GroupUpdate {
+	_u.mutation.RemoveAPIKeyGroupBindingIDs(ids...)
+	return _u
+}
+
+// RemoveAPIKeyGroupBindings removes "api_key_group_bindings" edges to APIKeyGroupBinding entities.
+func (_u *GroupUpdate) RemoveAPIKeyGroupBindings(v ...*APIKeyGroupBinding) *GroupUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAPIKeyGroupBindingIDs(ids...)
 }
 
 // ClearRedeemCodes clears all "redeem_codes" edges to the RedeemCode entity.
@@ -828,6 +881,27 @@ func (_u *GroupUpdate) RemoveUsageLogs(v ...*UsageLog) *GroupUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUsageLogIDs(ids...)
+}
+
+// ClearVideoGenerationTasks clears all "video_generation_tasks" edges to the VideoGenerationTask entity.
+func (_u *GroupUpdate) ClearVideoGenerationTasks() *GroupUpdate {
+	_u.mutation.ClearVideoGenerationTasks()
+	return _u
+}
+
+// RemoveVideoGenerationTaskIDs removes the "video_generation_tasks" edge to VideoGenerationTask entities by IDs.
+func (_u *GroupUpdate) RemoveVideoGenerationTaskIDs(ids ...int64) *GroupUpdate {
+	_u.mutation.RemoveVideoGenerationTaskIDs(ids...)
+	return _u
+}
+
+// RemoveVideoGenerationTasks removes "video_generation_tasks" edges to VideoGenerationTask entities.
+func (_u *GroupUpdate) RemoveVideoGenerationTasks(v ...*VideoGenerationTask) *GroupUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVideoGenerationTaskIDs(ids...)
 }
 
 // ClearAccounts clears all "accounts" edges to the Account entity.
@@ -1180,6 +1254,51 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.APIKeyGroupBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.APIKeyGroupBindingsTable,
+			Columns: []string{group.APIKeyGroupBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(apikeygroupbinding.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAPIKeyGroupBindingsIDs(); len(nodes) > 0 && !_u.mutation.APIKeyGroupBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.APIKeyGroupBindingsTable,
+			Columns: []string{group.APIKeyGroupBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(apikeygroupbinding.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.APIKeyGroupBindingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.APIKeyGroupBindingsTable,
+			Columns: []string{group.APIKeyGroupBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(apikeygroupbinding.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.RedeemCodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -1308,6 +1427,51 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usagelog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.VideoGenerationTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.VideoGenerationTasksTable,
+			Columns: []string{group.VideoGenerationTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(videogenerationtask.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVideoGenerationTasksIDs(); len(nodes) > 0 && !_u.mutation.VideoGenerationTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.VideoGenerationTasksTable,
+			Columns: []string{group.VideoGenerationTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(videogenerationtask.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VideoGenerationTasksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.VideoGenerationTasksTable,
+			Columns: []string{group.VideoGenerationTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(videogenerationtask.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
@@ -2079,6 +2243,21 @@ func (_u *GroupUpdateOne) AddAPIKeys(v ...*APIKey) *GroupUpdateOne {
 	return _u.AddAPIKeyIDs(ids...)
 }
 
+// AddAPIKeyGroupBindingIDs adds the "api_key_group_bindings" edge to the APIKeyGroupBinding entity by IDs.
+func (_u *GroupUpdateOne) AddAPIKeyGroupBindingIDs(ids ...int64) *GroupUpdateOne {
+	_u.mutation.AddAPIKeyGroupBindingIDs(ids...)
+	return _u
+}
+
+// AddAPIKeyGroupBindings adds the "api_key_group_bindings" edges to the APIKeyGroupBinding entity.
+func (_u *GroupUpdateOne) AddAPIKeyGroupBindings(v ...*APIKeyGroupBinding) *GroupUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAPIKeyGroupBindingIDs(ids...)
+}
+
 // AddRedeemCodeIDs adds the "redeem_codes" edge to the RedeemCode entity by IDs.
 func (_u *GroupUpdateOne) AddRedeemCodeIDs(ids ...int64) *GroupUpdateOne {
 	_u.mutation.AddRedeemCodeIDs(ids...)
@@ -2122,6 +2301,21 @@ func (_u *GroupUpdateOne) AddUsageLogs(v ...*UsageLog) *GroupUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddUsageLogIDs(ids...)
+}
+
+// AddVideoGenerationTaskIDs adds the "video_generation_tasks" edge to the VideoGenerationTask entity by IDs.
+func (_u *GroupUpdateOne) AddVideoGenerationTaskIDs(ids ...int64) *GroupUpdateOne {
+	_u.mutation.AddVideoGenerationTaskIDs(ids...)
+	return _u
+}
+
+// AddVideoGenerationTasks adds the "video_generation_tasks" edges to the VideoGenerationTask entity.
+func (_u *GroupUpdateOne) AddVideoGenerationTasks(v ...*VideoGenerationTask) *GroupUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVideoGenerationTaskIDs(ids...)
 }
 
 // AddAccountIDs adds the "accounts" edge to the Account entity by IDs.
@@ -2178,6 +2372,27 @@ func (_u *GroupUpdateOne) RemoveAPIKeys(v ...*APIKey) *GroupUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAPIKeyIDs(ids...)
+}
+
+// ClearAPIKeyGroupBindings clears all "api_key_group_bindings" edges to the APIKeyGroupBinding entity.
+func (_u *GroupUpdateOne) ClearAPIKeyGroupBindings() *GroupUpdateOne {
+	_u.mutation.ClearAPIKeyGroupBindings()
+	return _u
+}
+
+// RemoveAPIKeyGroupBindingIDs removes the "api_key_group_bindings" edge to APIKeyGroupBinding entities by IDs.
+func (_u *GroupUpdateOne) RemoveAPIKeyGroupBindingIDs(ids ...int64) *GroupUpdateOne {
+	_u.mutation.RemoveAPIKeyGroupBindingIDs(ids...)
+	return _u
+}
+
+// RemoveAPIKeyGroupBindings removes "api_key_group_bindings" edges to APIKeyGroupBinding entities.
+func (_u *GroupUpdateOne) RemoveAPIKeyGroupBindings(v ...*APIKeyGroupBinding) *GroupUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAPIKeyGroupBindingIDs(ids...)
 }
 
 // ClearRedeemCodes clears all "redeem_codes" edges to the RedeemCode entity.
@@ -2241,6 +2456,27 @@ func (_u *GroupUpdateOne) RemoveUsageLogs(v ...*UsageLog) *GroupUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUsageLogIDs(ids...)
+}
+
+// ClearVideoGenerationTasks clears all "video_generation_tasks" edges to the VideoGenerationTask entity.
+func (_u *GroupUpdateOne) ClearVideoGenerationTasks() *GroupUpdateOne {
+	_u.mutation.ClearVideoGenerationTasks()
+	return _u
+}
+
+// RemoveVideoGenerationTaskIDs removes the "video_generation_tasks" edge to VideoGenerationTask entities by IDs.
+func (_u *GroupUpdateOne) RemoveVideoGenerationTaskIDs(ids ...int64) *GroupUpdateOne {
+	_u.mutation.RemoveVideoGenerationTaskIDs(ids...)
+	return _u
+}
+
+// RemoveVideoGenerationTasks removes "video_generation_tasks" edges to VideoGenerationTask entities.
+func (_u *GroupUpdateOne) RemoveVideoGenerationTasks(v ...*VideoGenerationTask) *GroupUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVideoGenerationTaskIDs(ids...)
 }
 
 // ClearAccounts clears all "accounts" edges to the Account entity.
@@ -2623,6 +2859,51 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.APIKeyGroupBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.APIKeyGroupBindingsTable,
+			Columns: []string{group.APIKeyGroupBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(apikeygroupbinding.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAPIKeyGroupBindingsIDs(); len(nodes) > 0 && !_u.mutation.APIKeyGroupBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.APIKeyGroupBindingsTable,
+			Columns: []string{group.APIKeyGroupBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(apikeygroupbinding.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.APIKeyGroupBindingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.APIKeyGroupBindingsTable,
+			Columns: []string{group.APIKeyGroupBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(apikeygroupbinding.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.RedeemCodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -2751,6 +3032,51 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usagelog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.VideoGenerationTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.VideoGenerationTasksTable,
+			Columns: []string{group.VideoGenerationTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(videogenerationtask.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVideoGenerationTasksIDs(); len(nodes) > 0 && !_u.mutation.VideoGenerationTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.VideoGenerationTasksTable,
+			Columns: []string{group.VideoGenerationTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(videogenerationtask.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VideoGenerationTasksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.VideoGenerationTasksTable,
+			Columns: []string{group.VideoGenerationTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(videogenerationtask.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

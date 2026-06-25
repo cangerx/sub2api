@@ -16,6 +16,8 @@ type Tx struct {
 	config
 	// APIKey is the client for interacting with the APIKey builders.
 	APIKey *APIKeyClient
+	// APIKeyGroupBinding is the client for interacting with the APIKeyGroupBinding builders.
+	APIKeyGroupBinding *APIKeyGroupBindingClient
 	// Account is the client for interacting with the Account builders.
 	Account *AccountClient
 	// AccountGroup is the client for interacting with the AccountGroup builders.
@@ -84,6 +86,12 @@ type Tx struct {
 	UserPlatformQuota *UserPlatformQuotaClient
 	// UserSubscription is the client for interacting with the UserSubscription builders.
 	UserSubscription *UserSubscriptionClient
+	// VideoCallTemplate is the client for interacting with the VideoCallTemplate builders.
+	VideoCallTemplate *VideoCallTemplateClient
+	// VideoGenerationTask is the client for interacting with the VideoGenerationTask builders.
+	VideoGenerationTask *VideoGenerationTaskClient
+	// VideoModel is the client for interacting with the VideoModel builders.
+	VideoModel *VideoModelClient
 
 	// lazily loaded.
 	client     *Client
@@ -216,6 +224,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.APIKey = NewAPIKeyClient(tx.config)
+	tx.APIKeyGroupBinding = NewAPIKeyGroupBindingClient(tx.config)
 	tx.Account = NewAccountClient(tx.config)
 	tx.AccountGroup = NewAccountGroupClient(tx.config)
 	tx.Announcement = NewAnnouncementClient(tx.config)
@@ -250,6 +259,9 @@ func (tx *Tx) init() {
 	tx.UserAttributeValue = NewUserAttributeValueClient(tx.config)
 	tx.UserPlatformQuota = NewUserPlatformQuotaClient(tx.config)
 	tx.UserSubscription = NewUserSubscriptionClient(tx.config)
+	tx.VideoCallTemplate = NewVideoCallTemplateClient(tx.config)
+	tx.VideoGenerationTask = NewVideoGenerationTaskClient(tx.config)
+	tx.VideoModel = NewVideoModelClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

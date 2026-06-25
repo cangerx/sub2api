@@ -633,6 +633,20 @@ func checkBillingModeRequirements(p ChannelModelPricing) error {
 			)
 		}
 	}
+	if p.BillingMode == BillingModeSecond || p.BillingMode == BillingModeSegment {
+		if p.PerRequestPrice == nil {
+			return infraerrors.BadRequest(
+				"BILLING_MODE_MISSING_PRICE",
+				"per-request price is required as unit price for second/segment billing mode",
+			)
+		}
+		if p.BillingMode == BillingModeSegment && (p.UnitSeconds == nil || *p.UnitSeconds <= 0) {
+			return infraerrors.BadRequest(
+				"BILLING_MODE_MISSING_UNIT_SECONDS",
+				"unit_seconds must be > 0 for segment billing mode",
+			)
+		}
+	}
 	return nil
 }
 
@@ -647,6 +661,7 @@ func checkPricesNotNegative(p ChannelModelPricing) error {
 		{"cache_read_price", p.CacheReadPrice},
 		{"image_output_price", p.ImageOutputPrice},
 		{"per_request_price", p.PerRequestPrice},
+		{"unit_seconds", p.UnitSeconds},
 	}
 	for _, c := range checks {
 		if c.val != nil && *c.val < 0 {

@@ -90,6 +90,11 @@ func GroupID(v int64) predicate.APIKey {
 	return predicate.APIKey(sql.FieldEQ(FieldGroupID, v))
 }
 
+// MultiGroupRouting applies equality check predicate on the "multi_group_routing" field. It's identical to MultiGroupRoutingEQ.
+func MultiGroupRouting(v bool) predicate.APIKey {
+	return predicate.APIKey(sql.FieldEQ(FieldMultiGroupRouting, v))
+}
+
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.APIKey {
 	return predicate.APIKey(sql.FieldEQ(FieldStatus, v))
@@ -468,6 +473,16 @@ func GroupIDIsNil() predicate.APIKey {
 // GroupIDNotNil applies the NotNil predicate on the "group_id" field.
 func GroupIDNotNil() predicate.APIKey {
 	return predicate.APIKey(sql.FieldNotNull(FieldGroupID))
+}
+
+// MultiGroupRoutingEQ applies the EQ predicate on the "multi_group_routing" field.
+func MultiGroupRoutingEQ(v bool) predicate.APIKey {
+	return predicate.APIKey(sql.FieldEQ(FieldMultiGroupRouting, v))
+}
+
+// MultiGroupRoutingNEQ applies the NEQ predicate on the "multi_group_routing" field.
+func MultiGroupRoutingNEQ(v bool) predicate.APIKey {
+	return predicate.APIKey(sql.FieldNEQ(FieldMultiGroupRouting, v))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.
@@ -1186,6 +1201,52 @@ func HasUsageLogs() predicate.APIKey {
 func HasUsageLogsWith(preds ...predicate.UsageLog) predicate.APIKey {
 	return predicate.APIKey(func(s *sql.Selector) {
 		step := newUsageLogsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasVideoGenerationTasks applies the HasEdge predicate on the "video_generation_tasks" edge.
+func HasVideoGenerationTasks() predicate.APIKey {
+	return predicate.APIKey(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, VideoGenerationTasksTable, VideoGenerationTasksColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasVideoGenerationTasksWith applies the HasEdge predicate on the "video_generation_tasks" edge with a given conditions (other predicates).
+func HasVideoGenerationTasksWith(preds ...predicate.VideoGenerationTask) predicate.APIKey {
+	return predicate.APIKey(func(s *sql.Selector) {
+		step := newVideoGenerationTasksStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGroupBindings applies the HasEdge predicate on the "group_bindings" edge.
+func HasGroupBindings() predicate.APIKey {
+	return predicate.APIKey(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GroupBindingsTable, GroupBindingsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGroupBindingsWith applies the HasEdge predicate on the "group_bindings" edge with a given conditions (other predicates).
+func HasGroupBindingsWith(preds ...predicate.APIKeyGroupBinding) predicate.APIKey {
+	return predicate.APIKey(func(s *sql.Selector) {
+		step := newGroupBindingsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -56,6 +56,12 @@ declare module 'vue-router' {
     requiresRiskControl?: boolean
 
     /**
+     * Whether this route requires the current user to have video gateway access.
+     * @default false
+     */
+    requiresVideoFeature?: boolean
+
+    /**
      * i18n key for the page title
      */
     titleKey?: string

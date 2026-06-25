@@ -27,6 +27,10 @@ const (
 	accountSlotKeyPrefix = "concurrency:account:"
 	// 格式: concurrency:user:{userID}
 	userSlotKeyPrefix = "concurrency:user:"
+	// 视频任务并发槽位键前缀。视频异步任务生命周期长，避免占用同步请求槽位。
+	videoAccountSlotKeyPrefix = "video:concurrency:account:"
+	videoUserSlotKeyPrefix    = "video:concurrency:user:"
+	videoAPIKeySlotKeyPrefix  = "video:concurrency:key:"
 	// 等待队列计数器格式: concurrency:wait:{userID}
 	waitQueueKeyPrefix = "concurrency:wait:"
 	// 账号级等待队列计数器格式: wait:account:{accountID}
@@ -231,6 +235,18 @@ func userSlotKey(userID int64) string {
 	return fmt.Sprintf("%s%d", userSlotKeyPrefix, userID)
 }
 
+func videoAccountSlotKey(accountID int64) string {
+	return fmt.Sprintf("%s%d", videoAccountSlotKeyPrefix, accountID)
+}
+
+func videoUserSlotKey(userID int64) string {
+	return fmt.Sprintf("%s%d", videoUserSlotKeyPrefix, userID)
+}
+
+func videoAPIKeySlotKey(apiKeyID int64) string {
+	return fmt.Sprintf("%s%d", videoAPIKeySlotKeyPrefix, apiKeyID)
+}
+
 func waitQueueKey(userID int64) string {
 	return fmt.Sprintf("%s%d", waitQueueKeyPrefix, userID)
 }
@@ -328,6 +344,42 @@ func (c *concurrencyCache) GetUserConcurrency(ctx context.Context, userID int64)
 		return 0, err
 	}
 	return result, nil
+}
+
+func (c *concurrencyCache) AcquireVideoUserSlot(ctx context.Context, userID int64, maxConcurrency int, taskID string) (bool, error) {
+	result, err := acquireScript.Run(ctx, c.rdb, []string{videoUserSlotKey(userID)}, maxConcurrency, c.slotTTLSeconds, taskID).Int()
+	if err != nil {
+		return false, err
+	}
+	return result == 1, nil
+}
+
+func (c *concurrencyCache) ReleaseVideoUserSlot(ctx context.Context, userID int64, taskID string) error {
+	return c.rdb.ZRem(ctx, videoUserSlotKey(userID), taskID).Err()
+}
+
+func (c *concurrencyCache) AcquireVideoAPIKeySlot(ctx context.Context, apiKeyID int64, maxConcurrency int, taskID string) (bool, error) {
+	result, err := acquireScript.Run(ctx, c.rdb, []string{videoAPIKeySlotKey(apiKeyID)}, maxConcurrency, c.slotTTLSeconds, taskID).Int()
+	if err != nil {
+		return false, err
+	}
+	return result == 1, nil
+}
+
+func (c *concurrencyCache) ReleaseVideoAPIKeySlot(ctx context.Context, apiKeyID int64, taskID string) error {
+	return c.rdb.ZRem(ctx, videoAPIKeySlotKey(apiKeyID), taskID).Err()
+}
+
+func (c *concurrencyCache) AcquireVideoAccountSlot(ctx context.Context, accountID int64, maxConcurrency int, taskID string) (bool, error) {
+	result, err := acquireScript.Run(ctx, c.rdb, []string{videoAccountSlotKey(accountID)}, maxConcurrency, c.slotTTLSeconds, taskID).Int()
+	if err != nil {
+		return false, err
+	}
+	return result == 1, nil
+}
+
+func (c *concurrencyCache) ReleaseVideoAccountSlot(ctx context.Context, accountID int64, taskID string) error {
+	return c.rdb.ZRem(ctx, videoAccountSlotKey(accountID), taskID).Err()
 }
 
 // Wait queue operations
@@ -509,7 +561,7 @@ func (c *concurrencyCache) CleanupStaleProcessSlots(ctx context.Context, activeR
 	}
 
 	// 1. 清理有序集合中非当前进程前缀的成员
-	slotPatterns := []string{accountSlotKeyPrefix + "*", userSlotKeyPrefix + "*"}
+	slotPatterns := []string{accountSlotKeyPrefix + "*", userSlotKeyPrefix + "*", videoAccountSlotKeyPrefix + "*", videoUserSlotKeyPrefix + "*", videoAPIKeySlotKeyPrefix + "*"}
 	for _, pattern := range slotPatterns {
 		if err := c.cleanupSlotsByPattern(ctx, pattern, activeRequestPrefix); err != nil {
 			return err

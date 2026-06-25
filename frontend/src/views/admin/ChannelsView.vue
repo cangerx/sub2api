@@ -636,6 +636,7 @@ import { mTokToPerToken, perTokenToMTok, apiIntervalsToForm, formIntervalsToAPI,
 import type { AdminGroup, GroupPlatform } from '@/types'
 import type { Column } from '@/components/common/types'
 import { platformTextClass, platformBadgeLightClass } from '@/utils/platformColors'
+import { GROUP_PLATFORM_OPTIONS } from '@/constants/account'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
@@ -760,7 +761,7 @@ const form = reactive({
 let abortController: AbortController | null = null
 
 // ── Platform config ──
-const platformOrder: GroupPlatform[] = ['anthropic', 'openai', 'gemini', 'antigravity']
+const platformOrder: GroupPlatform[] = GROUP_PLATFORM_OPTIONS.map((option) => option.value as GroupPlatform)
 
 // ── Helpers ──
 function formatDate(value: string): string {
@@ -857,6 +858,7 @@ function addPricingEntry(sectionIdx: number) {
     cache_read_price: null,
     image_output_price: null,
     per_request_price: null,
+    unit_seconds: null,
     intervals: []
   })
 }
@@ -889,6 +891,7 @@ async function syncLatestModels(sectionIdx: number) {
       cache_read_price: null,
       image_output_price: null,
       per_request_price: null,
+      unit_seconds: null,
       intervals: []
     })
     appStore.showSuccess(t('admin.channels.form.syncModelsSuccess', { count: newModels.length }))
@@ -953,6 +956,7 @@ function addRulePricingEntry(sectionIdx: number, ruleIndex: number) {
     cache_read_price: null,
     image_output_price: null,
     per_request_price: null,
+    unit_seconds: null,
     intervals: []
   })
 }
@@ -1068,6 +1072,7 @@ function accountStatsRulesToAPI(): AccountStatsPricingRule[] {
             cache_read_price: mTokToPerToken(p.cache_read_price),
             image_output_price: mTokToPerToken(p.image_output_price),
             per_request_price: p.per_request_price != null && p.per_request_price !== '' ? Number(p.per_request_price) : null,
+            unit_seconds: p.unit_seconds != null && p.unit_seconds !== '' ? Number(p.unit_seconds) : null,
             intervals: formIntervalsToAPI(p.intervals || [])
           }))
       })
@@ -1108,6 +1113,7 @@ function formToAPI(): { group_ids: number[], model_pricing: ChannelModelPricing[
         cache_read_price: mTokToPerToken(entry.cache_read_price),
         image_output_price: mTokToPerToken(entry.image_output_price),
         per_request_price: entry.per_request_price != null && entry.per_request_price !== '' ? Number(entry.per_request_price) : null,
+        unit_seconds: entry.unit_seconds != null && entry.unit_seconds !== '' ? Number(entry.unit_seconds) : null,
         intervals: formIntervalsToAPI(entry.intervals || [])
       })
     }
@@ -1196,6 +1202,7 @@ function apiToForm(channel: Channel): PlatformSection[] {
         cache_read_price: perTokenToMTok(p.cache_read_price),
         image_output_price: perTokenToMTok(p.image_output_price),
         per_request_price: p.per_request_price,
+        unit_seconds: p.unit_seconds,
         intervals: apiIntervalsToForm(p.intervals || [])
       } as PricingFormEntry))
 
@@ -1384,6 +1391,7 @@ function distributeRulesToPlatforms(apiRules: AccountStatsPricingRule[]) {
         cache_read_price: perTokenToMTok(p.cache_read_price),
         image_output_price: perTokenToMTok(p.image_output_price),
         per_request_price: p.per_request_price,
+        unit_seconds: p.unit_seconds,
         intervals: apiIntervalsToForm(p.intervals || [])
       } as PricingFormEntry))
     }

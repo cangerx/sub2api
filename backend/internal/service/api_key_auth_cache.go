@@ -15,6 +15,11 @@ type APIKeyAuthSnapshot struct {
 	User        APIKeyAuthUserSnapshot   `json:"user"`
 	Group       *APIKeyAuthGroupSnapshot `json:"group,omitempty"`
 
+	// Multi-group routing: when enabled, the gateway routes across GroupBindings
+	// by priority/weight instead of the single Group above.
+	MultiGroupRouting bool                             `json:"multi_group_routing,omitempty"`
+	GroupBindings     []APIKeyAuthGroupBindingSnapshot `json:"group_bindings,omitempty"`
+
 	// Quota fields for API Key independent quota feature
 	Quota     float64 `json:"quota"`      // Quota limit in USD (0 = unlimited)
 	QuotaUsed float64 `json:"quota_used"` // Used quota amount
@@ -26,6 +31,17 @@ type APIKeyAuthSnapshot struct {
 	RateLimit5h float64 `json:"rate_limit_5h"`
 	RateLimit1d float64 `json:"rate_limit_1d"`
 	RateLimit7d float64 `json:"rate_limit_7d"`
+}
+
+// APIKeyAuthGroupBindingSnapshot is a multi-group-routing binding inside the
+// auth cache snapshot. The bound group is stored as a full group snapshot so
+// the gateway can route without extra DB loads on the hot path.
+type APIKeyAuthGroupBindingSnapshot struct {
+	GroupID  int64                    `json:"group_id"`
+	Priority int                      `json:"priority"`
+	Weight   int                      `json:"weight"`
+	Enabled  bool                     `json:"enabled"`
+	Group    *APIKeyAuthGroupSnapshot `json:"group,omitempty"`
 }
 
 // APIKeyAuthUserSnapshot 用户快照

@@ -34,6 +34,8 @@ type APIKey struct {
 	Name string `json:"name,omitempty"`
 	// GroupID holds the value of the "group_id" field.
 	GroupID *int64 `json:"group_id,omitempty"`
+	// Enable multi-group routing: route across multiple groups by priority/weight
+	MultiGroupRouting bool `json:"multi_group_routing,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
 	// Last usage time of this API key
@@ -80,9 +82,13 @@ type APIKeyEdges struct {
 	Group *Group `json:"group,omitempty"`
 	// UsageLogs holds the value of the usage_logs edge.
 	UsageLogs []*UsageLog `json:"usage_logs,omitempty"`
+	// VideoGenerationTasks holds the value of the video_generation_tasks edge.
+	VideoGenerationTasks []*VideoGenerationTask `json:"video_generation_tasks,omitempty"`
+	// GroupBindings holds the value of the group_bindings edge.
+	GroupBindings []*APIKeyGroupBinding `json:"group_bindings,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [5]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -116,6 +122,24 @@ func (e APIKeyEdges) UsageLogsOrErr() ([]*UsageLog, error) {
 	return nil, &NotLoadedError{edge: "usage_logs"}
 }
 
+// VideoGenerationTasksOrErr returns the VideoGenerationTasks value or an error if the edge
+// was not loaded in eager-loading.
+func (e APIKeyEdges) VideoGenerationTasksOrErr() ([]*VideoGenerationTask, error) {
+	if e.loadedTypes[3] {
+		return e.VideoGenerationTasks, nil
+	}
+	return nil, &NotLoadedError{edge: "video_generation_tasks"}
+}
+
+// GroupBindingsOrErr returns the GroupBindings value or an error if the edge
+// was not loaded in eager-loading.
+func (e APIKeyEdges) GroupBindingsOrErr() ([]*APIKeyGroupBinding, error) {
+	if e.loadedTypes[4] {
+		return e.GroupBindings, nil
+	}
+	return nil, &NotLoadedError{edge: "group_bindings"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*APIKey) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -123,6 +147,8 @@ func (*APIKey) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case apikey.FieldIPWhitelist, apikey.FieldIPBlacklist:
 			values[i] = new([]byte)
+		case apikey.FieldMultiGroupRouting:
+			values[i] = new(sql.NullBool)
 		case apikey.FieldQuota, apikey.FieldQuotaUsed, apikey.FieldRateLimit5h, apikey.FieldRateLimit1d, apikey.FieldRateLimit7d, apikey.FieldUsage5h, apikey.FieldUsage1d, apikey.FieldUsage7d:
 			values[i] = new(sql.NullFloat64)
 		case apikey.FieldID, apikey.FieldUserID, apikey.FieldGroupID:
@@ -195,6 +221,12 @@ func (_m *APIKey) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.GroupID = new(int64)
 				*_m.GroupID = value.Int64
+			}
+		case apikey.FieldMultiGroupRouting:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field multi_group_routing", values[i])
+			} else if value.Valid {
+				_m.MultiGroupRouting = value.Bool
 			}
 		case apikey.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -329,6 +361,16 @@ func (_m *APIKey) QueryUsageLogs() *UsageLogQuery {
 	return NewAPIKeyClient(_m.config).QueryUsageLogs(_m)
 }
 
+// QueryVideoGenerationTasks queries the "video_generation_tasks" edge of the APIKey entity.
+func (_m *APIKey) QueryVideoGenerationTasks() *VideoGenerationTaskQuery {
+	return NewAPIKeyClient(_m.config).QueryVideoGenerationTasks(_m)
+}
+
+// QueryGroupBindings queries the "group_bindings" edge of the APIKey entity.
+func (_m *APIKey) QueryGroupBindings() *APIKeyGroupBindingQuery {
+	return NewAPIKeyClient(_m.config).QueryGroupBindings(_m)
+}
+
 // Update returns a builder for updating this APIKey.
 // Note that you need to call APIKey.Unwrap() before calling this method if this APIKey
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -376,6 +418,9 @@ func (_m *APIKey) String() string {
 		builder.WriteString("group_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("multi_group_routing=")
+	builder.WriteString(fmt.Sprintf("%v", _m.MultiGroupRouting))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)

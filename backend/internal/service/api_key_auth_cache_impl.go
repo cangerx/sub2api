@@ -14,7 +14,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 12 // v12: include exclusive group authorization fields
+const apiKeyAuthSnapshotVersion = 13 // v13: include multi-group routing bindings
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -247,38 +247,100 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 		// 查询失败或无 override 时留 nil，checkRPM 会回退到 DB 查询
 	}
 	if apiKey.Group != nil {
-		snapshot.Group = &APIKeyAuthGroupSnapshot{
-			ID:                              apiKey.Group.ID,
-			Name:                            apiKey.Group.Name,
-			Platform:                        apiKey.Group.Platform,
-			IsExclusive:                     apiKey.Group.IsExclusive,
-			Status:                          apiKey.Group.Status,
-			SubscriptionType:                apiKey.Group.SubscriptionType,
-			RateMultiplier:                  apiKey.Group.RateMultiplier,
-			DailyLimitUSD:                   apiKey.Group.DailyLimitUSD,
-			WeeklyLimitUSD:                  apiKey.Group.WeeklyLimitUSD,
-			MonthlyLimitUSD:                 apiKey.Group.MonthlyLimitUSD,
-			AllowImageGeneration:            apiKey.Group.AllowImageGeneration,
-			ImageRateIndependent:            apiKey.Group.ImageRateIndependent,
-			ImageRateMultiplier:             apiKey.Group.ImageRateMultiplier,
-			ImagePrice1K:                    apiKey.Group.ImagePrice1K,
-			ImagePrice2K:                    apiKey.Group.ImagePrice2K,
-			ImagePrice4K:                    apiKey.Group.ImagePrice4K,
-			ClaudeCodeOnly:                  apiKey.Group.ClaudeCodeOnly,
-			FallbackGroupID:                 apiKey.Group.FallbackGroupID,
-			FallbackGroupIDOnInvalidRequest: apiKey.Group.FallbackGroupIDOnInvalidRequest,
-			ModelRouting:                    apiKey.Group.ModelRouting,
-			ModelRoutingEnabled:             apiKey.Group.ModelRoutingEnabled,
-			MCPXMLInject:                    apiKey.Group.MCPXMLInject,
-			SupportedModelScopes:            apiKey.Group.SupportedModelScopes,
-			AllowMessagesDispatch:           apiKey.Group.AllowMessagesDispatch,
-			DefaultMappedModel:              apiKey.Group.DefaultMappedModel,
-			MessagesDispatchModelConfig:     apiKey.Group.MessagesDispatchModelConfig,
-			ModelsListConfig:                apiKey.Group.ModelsListConfig,
-			RPMLimit:                        apiKey.Group.RPMLimit,
+		snapshot.Group = groupToAuthGroupSnapshot(apiKey.Group)
+	}
+	snapshot.MultiGroupRouting = apiKey.MultiGroupRouting
+	if len(apiKey.GroupBindings) > 0 {
+		snapshot.GroupBindings = make([]APIKeyAuthGroupBindingSnapshot, 0, len(apiKey.GroupBindings))
+		for _, b := range apiKey.GroupBindings {
+			bs := APIKeyAuthGroupBindingSnapshot{
+				GroupID:  b.GroupID,
+				Priority: b.Priority,
+				Weight:   b.Weight,
+				Enabled:  b.Enabled,
+			}
+			if b.Group != nil {
+				bs.Group = groupToAuthGroupSnapshot(b.Group)
+			}
+			snapshot.GroupBindings = append(snapshot.GroupBindings, bs)
 		}
 	}
 	return snapshot
+}
+
+// groupToAuthGroupSnapshot maps a service Group to its auth-cache snapshot.
+func groupToAuthGroupSnapshot(g *Group) *APIKeyAuthGroupSnapshot {
+	if g == nil {
+		return nil
+	}
+	return &APIKeyAuthGroupSnapshot{
+		ID:                              g.ID,
+		Name:                            g.Name,
+		Platform:                        g.Platform,
+		IsExclusive:                     g.IsExclusive,
+		Status:                          g.Status,
+		SubscriptionType:                g.SubscriptionType,
+		RateMultiplier:                  g.RateMultiplier,
+		DailyLimitUSD:                   g.DailyLimitUSD,
+		WeeklyLimitUSD:                  g.WeeklyLimitUSD,
+		MonthlyLimitUSD:                 g.MonthlyLimitUSD,
+		AllowImageGeneration:            g.AllowImageGeneration,
+		ImageRateIndependent:            g.ImageRateIndependent,
+		ImageRateMultiplier:             g.ImageRateMultiplier,
+		ImagePrice1K:                    g.ImagePrice1K,
+		ImagePrice2K:                    g.ImagePrice2K,
+		ImagePrice4K:                    g.ImagePrice4K,
+		ClaudeCodeOnly:                  g.ClaudeCodeOnly,
+		FallbackGroupID:                 g.FallbackGroupID,
+		FallbackGroupIDOnInvalidRequest: g.FallbackGroupIDOnInvalidRequest,
+		ModelRouting:                    g.ModelRouting,
+		ModelRoutingEnabled:             g.ModelRoutingEnabled,
+		MCPXMLInject:                    g.MCPXMLInject,
+		SupportedModelScopes:            g.SupportedModelScopes,
+		AllowMessagesDispatch:           g.AllowMessagesDispatch,
+		DefaultMappedModel:              g.DefaultMappedModel,
+		MessagesDispatchModelConfig:     g.MessagesDispatchModelConfig,
+		ModelsListConfig:                g.ModelsListConfig,
+		RPMLimit:                        g.RPMLimit,
+	}
+}
+
+// authGroupSnapshotToGroup rebuilds a service Group from its auth-cache snapshot.
+func authGroupSnapshotToGroup(s *APIKeyAuthGroupSnapshot) *Group {
+	if s == nil {
+		return nil
+	}
+	return &Group{
+		ID:                              s.ID,
+		Name:                            s.Name,
+		Platform:                        s.Platform,
+		IsExclusive:                     s.IsExclusive,
+		Status:                          s.Status,
+		Hydrated:                        true,
+		SubscriptionType:                s.SubscriptionType,
+		RateMultiplier:                  s.RateMultiplier,
+		DailyLimitUSD:                   s.DailyLimitUSD,
+		WeeklyLimitUSD:                  s.WeeklyLimitUSD,
+		MonthlyLimitUSD:                 s.MonthlyLimitUSD,
+		AllowImageGeneration:            s.AllowImageGeneration,
+		ImageRateIndependent:            s.ImageRateIndependent,
+		ImageRateMultiplier:             s.ImageRateMultiplier,
+		ImagePrice1K:                    s.ImagePrice1K,
+		ImagePrice2K:                    s.ImagePrice2K,
+		ImagePrice4K:                    s.ImagePrice4K,
+		ClaudeCodeOnly:                  s.ClaudeCodeOnly,
+		FallbackGroupID:                 s.FallbackGroupID,
+		FallbackGroupIDOnInvalidRequest: s.FallbackGroupIDOnInvalidRequest,
+		ModelRouting:                    s.ModelRouting,
+		ModelRoutingEnabled:             s.ModelRoutingEnabled,
+		MCPXMLInject:                    s.MCPXMLInject,
+		SupportedModelScopes:            s.SupportedModelScopes,
+		AllowMessagesDispatch:           s.AllowMessagesDispatch,
+		DefaultMappedModel:              s.DefaultMappedModel,
+		MessagesDispatchModelConfig:     s.MessagesDispatchModelConfig,
+		ModelsListConfig:                s.ModelsListConfig,
+		RPMLimit:                        s.RPMLimit,
+	}
 }
 
 func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapshot) *APIKey {
@@ -318,37 +380,20 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			UserGroupRPMOverride:       snapshot.User.UserGroupRPMOverride,
 		},
 	}
+	apiKey.MultiGroupRouting = snapshot.MultiGroupRouting
 	if snapshot.Group != nil {
-		apiKey.Group = &Group{
-			ID:                              snapshot.Group.ID,
-			Name:                            snapshot.Group.Name,
-			Platform:                        snapshot.Group.Platform,
-			IsExclusive:                     snapshot.Group.IsExclusive,
-			Status:                          snapshot.Group.Status,
-			Hydrated:                        true,
-			SubscriptionType:                snapshot.Group.SubscriptionType,
-			RateMultiplier:                  snapshot.Group.RateMultiplier,
-			DailyLimitUSD:                   snapshot.Group.DailyLimitUSD,
-			WeeklyLimitUSD:                  snapshot.Group.WeeklyLimitUSD,
-			MonthlyLimitUSD:                 snapshot.Group.MonthlyLimitUSD,
-			AllowImageGeneration:            snapshot.Group.AllowImageGeneration,
-			ImageRateIndependent:            snapshot.Group.ImageRateIndependent,
-			ImageRateMultiplier:             snapshot.Group.ImageRateMultiplier,
-			ImagePrice1K:                    snapshot.Group.ImagePrice1K,
-			ImagePrice2K:                    snapshot.Group.ImagePrice2K,
-			ImagePrice4K:                    snapshot.Group.ImagePrice4K,
-			ClaudeCodeOnly:                  snapshot.Group.ClaudeCodeOnly,
-			FallbackGroupID:                 snapshot.Group.FallbackGroupID,
-			FallbackGroupIDOnInvalidRequest: snapshot.Group.FallbackGroupIDOnInvalidRequest,
-			ModelRouting:                    snapshot.Group.ModelRouting,
-			ModelRoutingEnabled:             snapshot.Group.ModelRoutingEnabled,
-			MCPXMLInject:                    snapshot.Group.MCPXMLInject,
-			SupportedModelScopes:            snapshot.Group.SupportedModelScopes,
-			AllowMessagesDispatch:           snapshot.Group.AllowMessagesDispatch,
-			DefaultMappedModel:              snapshot.Group.DefaultMappedModel,
-			MessagesDispatchModelConfig:     snapshot.Group.MessagesDispatchModelConfig,
-			ModelsListConfig:                snapshot.Group.ModelsListConfig,
-			RPMLimit:                        snapshot.Group.RPMLimit,
+		apiKey.Group = authGroupSnapshotToGroup(snapshot.Group)
+	}
+	if len(snapshot.GroupBindings) > 0 {
+		apiKey.GroupBindings = make([]APIKeyGroupBinding, 0, len(snapshot.GroupBindings))
+		for _, b := range snapshot.GroupBindings {
+			apiKey.GroupBindings = append(apiKey.GroupBindings, APIKeyGroupBinding{
+				GroupID:  b.GroupID,
+				Priority: b.Priority,
+				Weight:   b.Weight,
+				Enabled:  b.Enabled,
+				Group:    authGroupSnapshotToGroup(b.Group),
+			})
 		}
 	}
 	s.compileAPIKeyIPRules(apiKey)

@@ -9,6 +9,7 @@ import type {
   RegisterRequest,
   AuthResponse,
   CurrentUserResponse,
+  UserFeatures,
   SendVerifyCodeRequest,
   SendVerifyCodeResponse,
   PublicSettings,
@@ -154,6 +155,11 @@ export async function register(userData: RegisterRequest): Promise<AuthResponse>
  */
 export async function getCurrentUser() {
   return apiClient.get<CurrentUserResponse>('/auth/me')
+}
+
+export async function getUserFeatures(): Promise<UserFeatures> {
+  const { data } = await apiClient.get<UserFeatures>('/user/features')
+  return data
 }
 
 /**
@@ -663,6 +669,7 @@ export const authAPI = {
   isTotp2FARequired,
   register,
   getCurrentUser,
+  getUserFeatures,
   logout,
   isAuthenticated,
   setAuthToken,

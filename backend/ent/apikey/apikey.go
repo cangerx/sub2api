@@ -29,6 +29,8 @@ const (
 	FieldName = "name"
 	// FieldGroupID holds the string denoting the group_id field in the database.
 	FieldGroupID = "group_id"
+	// FieldMultiGroupRouting holds the string denoting the multi_group_routing field in the database.
+	FieldMultiGroupRouting = "multi_group_routing"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldLastUsedAt holds the string denoting the last_used_at field in the database.
@@ -67,6 +69,10 @@ const (
 	EdgeGroup = "group"
 	// EdgeUsageLogs holds the string denoting the usage_logs edge name in mutations.
 	EdgeUsageLogs = "usage_logs"
+	// EdgeVideoGenerationTasks holds the string denoting the video_generation_tasks edge name in mutations.
+	EdgeVideoGenerationTasks = "video_generation_tasks"
+	// EdgeGroupBindings holds the string denoting the group_bindings edge name in mutations.
+	EdgeGroupBindings = "group_bindings"
 	// Table holds the table name of the apikey in the database.
 	Table = "api_keys"
 	// UserTable is the table that holds the user relation/edge.
@@ -90,6 +96,20 @@ const (
 	UsageLogsInverseTable = "usage_logs"
 	// UsageLogsColumn is the table column denoting the usage_logs relation/edge.
 	UsageLogsColumn = "api_key_id"
+	// VideoGenerationTasksTable is the table that holds the video_generation_tasks relation/edge.
+	VideoGenerationTasksTable = "video_generation_tasks"
+	// VideoGenerationTasksInverseTable is the table name for the VideoGenerationTask entity.
+	// It exists in this package in order to avoid circular dependency with the "videogenerationtask" package.
+	VideoGenerationTasksInverseTable = "video_generation_tasks"
+	// VideoGenerationTasksColumn is the table column denoting the video_generation_tasks relation/edge.
+	VideoGenerationTasksColumn = "api_key_id"
+	// GroupBindingsTable is the table that holds the group_bindings relation/edge.
+	GroupBindingsTable = "api_key_group_bindings"
+	// GroupBindingsInverseTable is the table name for the APIKeyGroupBinding entity.
+	// It exists in this package in order to avoid circular dependency with the "apikeygroupbinding" package.
+	GroupBindingsInverseTable = "api_key_group_bindings"
+	// GroupBindingsColumn is the table column denoting the group_bindings relation/edge.
+	GroupBindingsColumn = "api_key_id"
 )
 
 // Columns holds all SQL columns for apikey fields.
@@ -102,6 +122,7 @@ var Columns = []string{
 	FieldKey,
 	FieldName,
 	FieldGroupID,
+	FieldMultiGroupRouting,
 	FieldStatus,
 	FieldLastUsedAt,
 	FieldIPWhitelist,
@@ -148,6 +169,8 @@ var (
 	KeyValidator func(string) error
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// DefaultMultiGroupRouting holds the default value on creation for the "multi_group_routing" field.
+	DefaultMultiGroupRouting bool
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -211,6 +234,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByGroupID orders the results by the group_id field.
 func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldGroupID, opts...).ToFunc()
+}
+
+// ByMultiGroupRouting orders the results by the multi_group_routing field.
+func ByMultiGroupRouting(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMultiGroupRouting, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.
@@ -310,6 +338,34 @@ func ByUsageLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUsageLogsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByVideoGenerationTasksCount orders the results by video_generation_tasks count.
+func ByVideoGenerationTasksCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVideoGenerationTasksStep(), opts...)
+	}
+}
+
+// ByVideoGenerationTasks orders the results by video_generation_tasks terms.
+func ByVideoGenerationTasks(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVideoGenerationTasksStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGroupBindingsCount orders the results by group_bindings count.
+func ByGroupBindingsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroupBindingsStep(), opts...)
+	}
+}
+
+// ByGroupBindings orders the results by group_bindings terms.
+func ByGroupBindings(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupBindingsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -329,5 +385,19 @@ func newUsageLogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsageLogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, UsageLogsTable, UsageLogsColumn),
+	)
+}
+func newVideoGenerationTasksStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VideoGenerationTasksInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, VideoGenerationTasksTable, VideoGenerationTasksColumn),
+	)
+}
+func newGroupBindingsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupBindingsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GroupBindingsTable, GroupBindingsColumn),
 	)
 }

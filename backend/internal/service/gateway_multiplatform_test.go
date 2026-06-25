@@ -2050,6 +2050,30 @@ func (m *mockConcurrencyCache) GetUserConcurrency(ctx context.Context, userID in
 	return 0, nil
 }
 
+func (m *mockConcurrencyCache) AcquireVideoUserSlot(ctx context.Context, userID int64, maxConcurrency int, taskID string) (bool, error) {
+	return true, nil
+}
+
+func (m *mockConcurrencyCache) ReleaseVideoUserSlot(ctx context.Context, userID int64, taskID string) error {
+	return nil
+}
+
+func (m *mockConcurrencyCache) AcquireVideoAPIKeySlot(ctx context.Context, apiKeyID int64, maxConcurrency int, taskID string) (bool, error) {
+	return true, nil
+}
+
+func (m *mockConcurrencyCache) ReleaseVideoAPIKeySlot(ctx context.Context, apiKeyID int64, taskID string) error {
+	return nil
+}
+
+func (m *mockConcurrencyCache) AcquireVideoAccountSlot(ctx context.Context, accountID int64, maxConcurrency int, taskID string) (bool, error) {
+	return true, nil
+}
+
+func (m *mockConcurrencyCache) ReleaseVideoAccountSlot(ctx context.Context, accountID int64, taskID string) error {
+	return nil
+}
+
 func (m *mockConcurrencyCache) IncrementWaitCount(ctx context.Context, userID int64, maxWait int) (bool, error) {
 	return true, nil
 }

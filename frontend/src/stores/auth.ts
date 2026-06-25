@@ -6,13 +6,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 import { authAPI, isTotp2FARequired, type LoginResponse } from '@/api'
-import type { User, LoginRequest, RegisterRequest, AuthResponse } from '@/types'
+import type { User, UserFeatures, LoginRequest, RegisterRequest, AuthResponse } from '@/types'
 
 const AUTH_TOKEN_KEY = 'auth_token'
 const AUTH_USER_KEY = 'auth_user'
 const REFRESH_TOKEN_KEY = 'refresh_token'
 const TOKEN_EXPIRES_AT_KEY = 'token_expires_at' // 存储过期时间戳而非有效期
 const PENDING_AUTH_SESSION_KEY = 'pending_auth_session'
+const DEFAULT_USER_FEATURES: UserFeatures = { video_enabled: false }
 const AUTO_REFRESH_INTERVAL = 60 * 1000 // 60 seconds for user data refresh
 const TOKEN_REFRESH_BUFFER = 120 * 1000 // 120 seconds before expiry to refresh token
 
@@ -76,6 +77,8 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshTokenValue = ref<string | null>(null)
   const tokenExpiresAt = ref<number | null>(null) // 过期时间戳（毫秒）
   const runMode = ref<'standard' | 'simple'>('standard')
+  const features = ref<UserFeatures>({ ...DEFAULT_USER_FEATURES })
+  const featuresLoaded = ref(false)
   const pendingAuthSession = ref<PendingAuthSessionSummary | null>(null)
   let refreshIntervalId: ReturnType<typeof setInterval> | null = null
   let tokenRefreshTimeoutId: ReturnType<typeof setTimeout> | null = null
@@ -91,6 +94,7 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   const isSimpleMode = computed(() => runMode.value === 'simple')
+  const videoEnabled = computed(() => features.value.video_enabled === true)
   const hasPendingAuthSession = computed(() => pendingAuthSession.value !== null)
 
   // ==================== Actions ====================
@@ -117,6 +121,9 @@ export const useAuthStore = defineStore('auth', () => {
         // Immediately refresh user data from backend (async, don't block)
         refreshUser().catch((error) => {
           console.error('Failed to refresh user on init:', error)
+        })
+        refreshFeatures().catch((error) => {
+          console.error('Failed to refresh user features on init:', error)
         })
 
         // Start auto-refresh interval for user data
@@ -300,6 +307,9 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem(AUTH_TOKEN_KEY, response.access_token)
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData))
     clearPendingAuthSession()
+    refreshFeatures().catch((error) => {
+      console.error('Failed to refresh user features after login:', error)
+    })
 
     // Start auto-refresh interval for user data
     startAutoRefresh()
@@ -361,6 +371,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const userData = await refreshUser()
+      await refreshFeatures()
       startAutoRefresh()
 
       // Start proactive token refresh if we have refresh token and expiry info
@@ -425,6 +436,9 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Update localStorage
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData))
+      refreshFeatures().catch((error) => {
+        console.error('Failed to refresh user features:', error)
+      })
 
       return userData
     } catch (error) {
@@ -434,6 +448,19 @@ export const useAuthStore = defineStore('auth', () => {
       }
       throw error
     }
+  }
+
+  async function refreshFeatures(): Promise<UserFeatures> {
+    if (!token.value) {
+      features.value = { ...DEFAULT_USER_FEATURES }
+      featuresLoaded.value = false
+      return features.value
+    }
+
+    const data = await authAPI.getUserFeatures()
+    features.value = { ...DEFAULT_USER_FEATURES, ...data }
+    featuresLoaded.value = true
+    return features.value
   }
 
   /**
@@ -450,6 +477,8 @@ export const useAuthStore = defineStore('auth', () => {
     refreshTokenValue.value = null
     tokenExpiresAt.value = null
     user.value = null
+    features.value = { ...DEFAULT_USER_FEATURES }
+    featuresLoaded.value = false
     localStorage.removeItem(AUTH_TOKEN_KEY)
     localStorage.removeItem(AUTH_USER_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)
@@ -471,12 +500,15 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     token,
     runMode: readonly(runMode),
+    features: readonly(features),
+    featuresLoaded: readonly(featuresLoaded),
     pendingAuthSession: readonly(pendingAuthSession),
 
     // Computed
     isAuthenticated,
     isAdmin,
     isSimpleMode,
+    videoEnabled,
     hasPendingAuthSession,
 
     // Actions
@@ -487,6 +519,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     checkAuth,
     refreshUser,
+    refreshFeatures,
     setPendingAuthSession,
     clearPendingAuthSession
   }

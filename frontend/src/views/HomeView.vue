@@ -532,7 +532,7 @@ onMounted(() => {
   background: #eab308;
 }
 .btn-maximize {
-  background: #22c55e;
+  background: #3b82f6;
 }
 
 .terminal-title {
@@ -586,7 +586,7 @@ onMounted(() => {
 }
 
 .code-prompt {
-  color: #22c55e;
+  color: #3b82f6;
   font-weight: bold;
 }
 .code-cmd {
@@ -603,7 +603,7 @@ onMounted(() => {
   font-style: italic;
 }
 .code-success {
-  color: #22c55e;
+  color: #3b82f6;
   background: rgba(34, 197, 94, 0.15);
   padding: 2px 8px;
   border-radius: 4px;
@@ -618,7 +618,7 @@ onMounted(() => {
   display: inline-block;
   width: 8px;
   height: 16px;
-  background: #22c55e;
+  background: #3b82f6;
   animation: blink 1s step-end infinite;
 }
 

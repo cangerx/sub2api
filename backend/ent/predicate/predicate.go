@@ -9,6 +9,9 @@ import (
 // APIKey is the predicate function for apikey builders.
 type APIKey func(*sql.Selector)
 
+// APIKeyGroupBinding is the predicate function for apikeygroupbinding builders.
+type APIKeyGroupBinding func(*sql.Selector)
+
 // Account is the predicate function for account builders.
 type Account func(*sql.Selector)
 
@@ -110,3 +113,12 @@ type UserPlatformQuota func(*sql.Selector)
 
 // UserSubscription is the predicate function for usersubscription builders.
 type UserSubscription func(*sql.Selector)
+
+// VideoCallTemplate is the predicate function for videocalltemplate builders.
+type VideoCallTemplate func(*sql.Selector)
+
+// VideoGenerationTask is the predicate function for videogenerationtask builders.
+type VideoGenerationTask func(*sql.Selector)
+
+// VideoModel is the predicate function for videomodel builders.
+type VideoModel func(*sql.Selector)

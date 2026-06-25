@@ -320,6 +320,44 @@ func (r *usageCleanupRepository) DeleteUsageLogsBatch(ctx context.Context, filte
 	return deleted, nil
 }
 
+func (r *usageCleanupRepository) DeleteVideoTasksBatch(ctx context.Context, filters service.UsageCleanupFilters, limit int) (int64, error) {
+	if filters.StartTime.IsZero() || filters.EndTime.IsZero() {
+		return 0, fmt.Errorf("cleanup filters missing time range")
+	}
+	whereClause, args := buildVideoTaskCleanupWhere(filters)
+	if whereClause == "" {
+		return 0, fmt.Errorf("cleanup filters missing time range")
+	}
+	args = append(args, limit)
+	query := fmt.Sprintf(`
+		WITH target AS (
+			SELECT id
+			FROM video_generation_tasks
+			WHERE %s
+			ORDER BY created_at ASC, id ASC
+			LIMIT $%d
+		)
+		DELETE FROM video_generation_tasks
+		WHERE id IN (SELECT id FROM target)
+		RETURNING id
+	`, whereClause, len(args))
+
+	rows, err := r.sql.QueryContext(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var deleted int64
+	for rows.Next() {
+		deleted++
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	return deleted, nil
+}
+
 func buildUsageCleanupWhere(filters service.UsageCleanupFilters) (string, []any) {
 	conditions := make([]string, 0, 8)
 	args := make([]any, 0, 8)
@@ -375,6 +413,55 @@ func buildUsageCleanupWhere(filters service.UsageCleanupFilters) (string, []any)
 	if filters.BillingType != nil {
 		conditions = append(conditions, fmt.Sprintf("billing_type = $%d", idx))
 		args = append(args, *filters.BillingType)
+	}
+	return strings.Join(conditions, " AND "), args
+}
+
+func buildVideoTaskCleanupWhere(filters service.UsageCleanupFilters) (string, []any) {
+	conditions := []string{"status IN ('completed', 'failed', 'cancelled', 'expired')"}
+	args := make([]any, 0, 8)
+	idx := 1
+	if !filters.StartTime.IsZero() {
+		conditions = append(conditions, fmt.Sprintf("created_at >= $%d", idx))
+		args = append(args, filters.StartTime)
+		idx++
+	}
+	if !filters.EndTime.IsZero() {
+		conditions = append(conditions, fmt.Sprintf("created_at <= $%d", idx))
+		args = append(args, filters.EndTime)
+		idx++
+	}
+	if filters.UserID != nil {
+		conditions = append(conditions, fmt.Sprintf("user_id = $%d", idx))
+		args = append(args, *filters.UserID)
+		idx++
+	}
+	if filters.APIKeyID != nil {
+		conditions = append(conditions, fmt.Sprintf("api_key_id = $%d", idx))
+		args = append(args, *filters.APIKeyID)
+		idx++
+	}
+	if filters.AccountID != nil {
+		conditions = append(conditions, fmt.Sprintf("account_id = $%d", idx))
+		args = append(args, *filters.AccountID)
+		idx++
+	}
+	if filters.GroupID != nil {
+		conditions = append(conditions, fmt.Sprintf("group_id = $%d", idx))
+		args = append(args, *filters.GroupID)
+		idx++
+	}
+	if filters.Model != nil {
+		model := strings.TrimSpace(*filters.Model)
+		if model != "" {
+			conditions = append(conditions, fmt.Sprintf("requested_model = $%d", idx))
+			args = append(args, model)
+			idx++
+		}
+	}
+	if filters.BillingType != nil {
+		conditions = append(conditions, fmt.Sprintf("1 = $%d", idx))
+		args = append(args, 0)
 	}
 	return strings.Join(conditions, " AND "), args
 }

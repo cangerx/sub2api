@@ -20,6 +20,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/announcement"
 	"github.com/Wei-Shaw/sub2api/ent/announcementread"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
+	"github.com/Wei-Shaw/sub2api/ent/apikeygroupbinding"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
@@ -50,6 +51,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
 	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
+	"github.com/Wei-Shaw/sub2api/ent/videocalltemplate"
+	"github.com/Wei-Shaw/sub2api/ent/videogenerationtask"
+	"github.com/Wei-Shaw/sub2api/ent/videomodel"
 
 	stdsql "database/sql"
 )
@@ -61,6 +65,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// APIKey is the client for interacting with the APIKey builders.
 	APIKey *APIKeyClient
+	// APIKeyGroupBinding is the client for interacting with the APIKeyGroupBinding builders.
+	APIKeyGroupBinding *APIKeyGroupBindingClient
 	// Account is the client for interacting with the Account builders.
 	Account *AccountClient
 	// AccountGroup is the client for interacting with the AccountGroup builders.
@@ -129,6 +135,12 @@ type Client struct {
 	UserPlatformQuota *UserPlatformQuotaClient
 	// UserSubscription is the client for interacting with the UserSubscription builders.
 	UserSubscription *UserSubscriptionClient
+	// VideoCallTemplate is the client for interacting with the VideoCallTemplate builders.
+	VideoCallTemplate *VideoCallTemplateClient
+	// VideoGenerationTask is the client for interacting with the VideoGenerationTask builders.
+	VideoGenerationTask *VideoGenerationTaskClient
+	// VideoModel is the client for interacting with the VideoModel builders.
+	VideoModel *VideoModelClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -141,6 +153,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.APIKey = NewAPIKeyClient(c.config)
+	c.APIKeyGroupBinding = NewAPIKeyGroupBindingClient(c.config)
 	c.Account = NewAccountClient(c.config)
 	c.AccountGroup = NewAccountGroupClient(c.config)
 	c.Announcement = NewAnnouncementClient(c.config)
@@ -175,6 +188,9 @@ func (c *Client) init() {
 	c.UserAttributeValue = NewUserAttributeValueClient(c.config)
 	c.UserPlatformQuota = NewUserPlatformQuotaClient(c.config)
 	c.UserSubscription = NewUserSubscriptionClient(c.config)
+	c.VideoCallTemplate = NewVideoCallTemplateClient(c.config)
+	c.VideoGenerationTask = NewVideoGenerationTaskClient(c.config)
+	c.VideoModel = NewVideoModelClient(c.config)
 }
 
 type (
@@ -268,6 +284,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:                           ctx,
 		config:                        cfg,
 		APIKey:                        NewAPIKeyClient(cfg),
+		APIKeyGroupBinding:            NewAPIKeyGroupBindingClient(cfg),
 		Account:                       NewAccountClient(cfg),
 		AccountGroup:                  NewAccountGroupClient(cfg),
 		Announcement:                  NewAnnouncementClient(cfg),
@@ -302,6 +319,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		UserAttributeValue:            NewUserAttributeValueClient(cfg),
 		UserPlatformQuota:             NewUserPlatformQuotaClient(cfg),
 		UserSubscription:              NewUserSubscriptionClient(cfg),
+		VideoCallTemplate:             NewVideoCallTemplateClient(cfg),
+		VideoGenerationTask:           NewVideoGenerationTaskClient(cfg),
+		VideoModel:                    NewVideoModelClient(cfg),
 	}, nil
 }
 
@@ -322,6 +342,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:                           ctx,
 		config:                        cfg,
 		APIKey:                        NewAPIKeyClient(cfg),
+		APIKeyGroupBinding:            NewAPIKeyGroupBindingClient(cfg),
 		Account:                       NewAccountClient(cfg),
 		AccountGroup:                  NewAccountGroupClient(cfg),
 		Announcement:                  NewAnnouncementClient(cfg),
@@ -356,6 +377,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		UserAttributeValue:            NewUserAttributeValueClient(cfg),
 		UserPlatformQuota:             NewUserPlatformQuotaClient(cfg),
 		UserSubscription:              NewUserSubscriptionClient(cfg),
+		VideoCallTemplate:             NewVideoCallTemplateClient(cfg),
+		VideoGenerationTask:           NewVideoGenerationTaskClient(cfg),
+		VideoModel:                    NewVideoModelClient(cfg),
 	}, nil
 }
 
@@ -385,8 +409,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
-		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
+		c.APIKey, c.APIKeyGroupBinding, c.Account, c.AccountGroup, c.Announcement,
+		c.AnnouncementRead, c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
@@ -394,7 +418,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
 		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
 		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserPlatformQuota, c.UserSubscription,
+		c.UserPlatformQuota, c.UserSubscription, c.VideoCallTemplate,
+		c.VideoGenerationTask, c.VideoModel,
 	} {
 		n.Use(hooks...)
 	}
@@ -404,8 +429,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
-		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
+		c.APIKey, c.APIKeyGroupBinding, c.Account, c.AccountGroup, c.Announcement,
+		c.AnnouncementRead, c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
@@ -413,7 +438,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
 		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
 		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserPlatformQuota, c.UserSubscription,
+		c.UserPlatformQuota, c.UserSubscription, c.VideoCallTemplate,
+		c.VideoGenerationTask, c.VideoModel,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -424,6 +450,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *APIKeyMutation:
 		return c.APIKey.mutate(ctx, m)
+	case *APIKeyGroupBindingMutation:
+		return c.APIKeyGroupBinding.mutate(ctx, m)
 	case *AccountMutation:
 		return c.Account.mutate(ctx, m)
 	case *AccountGroupMutation:
@@ -492,6 +520,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UserPlatformQuota.mutate(ctx, m)
 	case *UserSubscriptionMutation:
 		return c.UserSubscription.mutate(ctx, m)
+	case *VideoCallTemplateMutation:
+		return c.VideoCallTemplate.mutate(ctx, m)
+	case *VideoGenerationTaskMutation:
+		return c.VideoGenerationTask.mutate(ctx, m)
+	case *VideoModelMutation:
+		return c.VideoModel.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -653,6 +687,38 @@ func (c *APIKeyClient) QueryUsageLogs(_m *APIKey) *UsageLogQuery {
 	return query
 }
 
+// QueryVideoGenerationTasks queries the video_generation_tasks edge of a APIKey.
+func (c *APIKeyClient) QueryVideoGenerationTasks(_m *APIKey) *VideoGenerationTaskQuery {
+	query := (&VideoGenerationTaskClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apikey.Table, apikey.FieldID, id),
+			sqlgraph.To(videogenerationtask.Table, videogenerationtask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, apikey.VideoGenerationTasksTable, apikey.VideoGenerationTasksColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroupBindings queries the group_bindings edge of a APIKey.
+func (c *APIKeyClient) QueryGroupBindings(_m *APIKey) *APIKeyGroupBindingQuery {
+	query := (&APIKeyGroupBindingClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apikey.Table, apikey.FieldID, id),
+			sqlgraph.To(apikeygroupbinding.Table, apikeygroupbinding.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, apikey.GroupBindingsTable, apikey.GroupBindingsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *APIKeyClient) Hooks() []Hook {
 	hooks := c.hooks.APIKey
@@ -677,6 +743,171 @@ func (c *APIKeyClient) mutate(ctx context.Context, m *APIKeyMutation) (Value, er
 		return (&APIKeyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown APIKey mutation op: %q", m.Op())
+	}
+}
+
+// APIKeyGroupBindingClient is a client for the APIKeyGroupBinding schema.
+type APIKeyGroupBindingClient struct {
+	config
+}
+
+// NewAPIKeyGroupBindingClient returns a client for the APIKeyGroupBinding from the given config.
+func NewAPIKeyGroupBindingClient(c config) *APIKeyGroupBindingClient {
+	return &APIKeyGroupBindingClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `apikeygroupbinding.Hooks(f(g(h())))`.
+func (c *APIKeyGroupBindingClient) Use(hooks ...Hook) {
+	c.hooks.APIKeyGroupBinding = append(c.hooks.APIKeyGroupBinding, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `apikeygroupbinding.Intercept(f(g(h())))`.
+func (c *APIKeyGroupBindingClient) Intercept(interceptors ...Interceptor) {
+	c.inters.APIKeyGroupBinding = append(c.inters.APIKeyGroupBinding, interceptors...)
+}
+
+// Create returns a builder for creating a APIKeyGroupBinding entity.
+func (c *APIKeyGroupBindingClient) Create() *APIKeyGroupBindingCreate {
+	mutation := newAPIKeyGroupBindingMutation(c.config, OpCreate)
+	return &APIKeyGroupBindingCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of APIKeyGroupBinding entities.
+func (c *APIKeyGroupBindingClient) CreateBulk(builders ...*APIKeyGroupBindingCreate) *APIKeyGroupBindingCreateBulk {
+	return &APIKeyGroupBindingCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *APIKeyGroupBindingClient) MapCreateBulk(slice any, setFunc func(*APIKeyGroupBindingCreate, int)) *APIKeyGroupBindingCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &APIKeyGroupBindingCreateBulk{err: fmt.Errorf("calling to APIKeyGroupBindingClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*APIKeyGroupBindingCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &APIKeyGroupBindingCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for APIKeyGroupBinding.
+func (c *APIKeyGroupBindingClient) Update() *APIKeyGroupBindingUpdate {
+	mutation := newAPIKeyGroupBindingMutation(c.config, OpUpdate)
+	return &APIKeyGroupBindingUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *APIKeyGroupBindingClient) UpdateOne(_m *APIKeyGroupBinding) *APIKeyGroupBindingUpdateOne {
+	mutation := newAPIKeyGroupBindingMutation(c.config, OpUpdateOne, withAPIKeyGroupBinding(_m))
+	return &APIKeyGroupBindingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *APIKeyGroupBindingClient) UpdateOneID(id int64) *APIKeyGroupBindingUpdateOne {
+	mutation := newAPIKeyGroupBindingMutation(c.config, OpUpdateOne, withAPIKeyGroupBindingID(id))
+	return &APIKeyGroupBindingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for APIKeyGroupBinding.
+func (c *APIKeyGroupBindingClient) Delete() *APIKeyGroupBindingDelete {
+	mutation := newAPIKeyGroupBindingMutation(c.config, OpDelete)
+	return &APIKeyGroupBindingDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *APIKeyGroupBindingClient) DeleteOne(_m *APIKeyGroupBinding) *APIKeyGroupBindingDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *APIKeyGroupBindingClient) DeleteOneID(id int64) *APIKeyGroupBindingDeleteOne {
+	builder := c.Delete().Where(apikeygroupbinding.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &APIKeyGroupBindingDeleteOne{builder}
+}
+
+// Query returns a query builder for APIKeyGroupBinding.
+func (c *APIKeyGroupBindingClient) Query() *APIKeyGroupBindingQuery {
+	return &APIKeyGroupBindingQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAPIKeyGroupBinding},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a APIKeyGroupBinding entity by its id.
+func (c *APIKeyGroupBindingClient) Get(ctx context.Context, id int64) (*APIKeyGroupBinding, error) {
+	return c.Query().Where(apikeygroupbinding.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *APIKeyGroupBindingClient) GetX(ctx context.Context, id int64) *APIKeyGroupBinding {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryAPIKey queries the api_key edge of a APIKeyGroupBinding.
+func (c *APIKeyGroupBindingClient) QueryAPIKey(_m *APIKeyGroupBinding) *APIKeyQuery {
+	query := (&APIKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apikeygroupbinding.Table, apikeygroupbinding.FieldID, id),
+			sqlgraph.To(apikey.Table, apikey.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, apikeygroupbinding.APIKeyTable, apikeygroupbinding.APIKeyColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroup queries the group edge of a APIKeyGroupBinding.
+func (c *APIKeyGroupBindingClient) QueryGroup(_m *APIKeyGroupBinding) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apikeygroupbinding.Table, apikeygroupbinding.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, apikeygroupbinding.GroupTable, apikeygroupbinding.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *APIKeyGroupBindingClient) Hooks() []Hook {
+	return c.hooks.APIKeyGroupBinding
+}
+
+// Interceptors returns the client interceptors.
+func (c *APIKeyGroupBindingClient) Interceptors() []Interceptor {
+	return c.inters.APIKeyGroupBinding
+}
+
+func (c *APIKeyGroupBindingClient) mutate(ctx context.Context, m *APIKeyGroupBindingMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&APIKeyGroupBindingCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&APIKeyGroupBindingUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&APIKeyGroupBindingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&APIKeyGroupBindingDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown APIKeyGroupBinding mutation op: %q", m.Op())
 	}
 }
 
@@ -829,6 +1060,22 @@ func (c *AccountClient) QueryUsageLogs(_m *Account) *UsageLogQuery {
 			sqlgraph.From(account.Table, account.FieldID, id),
 			sqlgraph.To(usagelog.Table, usagelog.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, account.UsageLogsTable, account.UsageLogsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryVideoGenerationTasks queries the video_generation_tasks edge of a Account.
+func (c *AccountClient) QueryVideoGenerationTasks(_m *Account) *VideoGenerationTaskQuery {
+	query := (&VideoGenerationTaskClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(account.Table, account.FieldID, id),
+			sqlgraph.To(videogenerationtask.Table, videogenerationtask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, account.VideoGenerationTasksTable, account.VideoGenerationTasksColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -2524,6 +2771,22 @@ func (c *GroupClient) QueryAPIKeys(_m *Group) *APIKeyQuery {
 	return query
 }
 
+// QueryAPIKeyGroupBindings queries the api_key_group_bindings edge of a Group.
+func (c *GroupClient) QueryAPIKeyGroupBindings(_m *Group) *APIKeyGroupBindingQuery {
+	query := (&APIKeyGroupBindingClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(apikeygroupbinding.Table, apikeygroupbinding.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.APIKeyGroupBindingsTable, group.APIKeyGroupBindingsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryRedeemCodes queries the redeem_codes edge of a Group.
 func (c *GroupClient) QueryRedeemCodes(_m *Group) *RedeemCodeQuery {
 	query := (&RedeemCodeClient{config: c.config}).Query()
@@ -2565,6 +2828,22 @@ func (c *GroupClient) QueryUsageLogs(_m *Group) *UsageLogQuery {
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(usagelog.Table, usagelog.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, group.UsageLogsTable, group.UsageLogsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryVideoGenerationTasks queries the video_generation_tasks edge of a Group.
+func (c *GroupClient) QueryVideoGenerationTasks(_m *Group) *VideoGenerationTaskQuery {
+	query := (&VideoGenerationTaskClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(videogenerationtask.Table, videogenerationtask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.VideoGenerationTasksTable, group.VideoGenerationTasksColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -5285,6 +5564,22 @@ func (c *UserClient) QueryUsageLogs(_m *User) *UsageLogQuery {
 	return query
 }
 
+// QueryVideoGenerationTasks queries the video_generation_tasks edge of a User.
+func (c *UserClient) QueryVideoGenerationTasks(_m *User) *VideoGenerationTaskQuery {
+	query := (&VideoGenerationTaskClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(videogenerationtask.Table, videogenerationtask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.VideoGenerationTasksTable, user.VideoGenerationTasksColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryAttributeValues queries the attribute_values edge of a User.
 func (c *UserClient) QueryAttributeValues(_m *User) *UserAttributeValueQuery {
 	query := (&UserAttributeValueClient{config: c.config}).Query()
@@ -6206,29 +6501,558 @@ func (c *UserSubscriptionClient) mutate(ctx context.Context, m *UserSubscription
 	}
 }
 
+// VideoCallTemplateClient is a client for the VideoCallTemplate schema.
+type VideoCallTemplateClient struct {
+	config
+}
+
+// NewVideoCallTemplateClient returns a client for the VideoCallTemplate from the given config.
+func NewVideoCallTemplateClient(c config) *VideoCallTemplateClient {
+	return &VideoCallTemplateClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `videocalltemplate.Hooks(f(g(h())))`.
+func (c *VideoCallTemplateClient) Use(hooks ...Hook) {
+	c.hooks.VideoCallTemplate = append(c.hooks.VideoCallTemplate, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `videocalltemplate.Intercept(f(g(h())))`.
+func (c *VideoCallTemplateClient) Intercept(interceptors ...Interceptor) {
+	c.inters.VideoCallTemplate = append(c.inters.VideoCallTemplate, interceptors...)
+}
+
+// Create returns a builder for creating a VideoCallTemplate entity.
+func (c *VideoCallTemplateClient) Create() *VideoCallTemplateCreate {
+	mutation := newVideoCallTemplateMutation(c.config, OpCreate)
+	return &VideoCallTemplateCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of VideoCallTemplate entities.
+func (c *VideoCallTemplateClient) CreateBulk(builders ...*VideoCallTemplateCreate) *VideoCallTemplateCreateBulk {
+	return &VideoCallTemplateCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *VideoCallTemplateClient) MapCreateBulk(slice any, setFunc func(*VideoCallTemplateCreate, int)) *VideoCallTemplateCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &VideoCallTemplateCreateBulk{err: fmt.Errorf("calling to VideoCallTemplateClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*VideoCallTemplateCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &VideoCallTemplateCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for VideoCallTemplate.
+func (c *VideoCallTemplateClient) Update() *VideoCallTemplateUpdate {
+	mutation := newVideoCallTemplateMutation(c.config, OpUpdate)
+	return &VideoCallTemplateUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *VideoCallTemplateClient) UpdateOne(_m *VideoCallTemplate) *VideoCallTemplateUpdateOne {
+	mutation := newVideoCallTemplateMutation(c.config, OpUpdateOne, withVideoCallTemplate(_m))
+	return &VideoCallTemplateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *VideoCallTemplateClient) UpdateOneID(id int64) *VideoCallTemplateUpdateOne {
+	mutation := newVideoCallTemplateMutation(c.config, OpUpdateOne, withVideoCallTemplateID(id))
+	return &VideoCallTemplateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for VideoCallTemplate.
+func (c *VideoCallTemplateClient) Delete() *VideoCallTemplateDelete {
+	mutation := newVideoCallTemplateMutation(c.config, OpDelete)
+	return &VideoCallTemplateDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *VideoCallTemplateClient) DeleteOne(_m *VideoCallTemplate) *VideoCallTemplateDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *VideoCallTemplateClient) DeleteOneID(id int64) *VideoCallTemplateDeleteOne {
+	builder := c.Delete().Where(videocalltemplate.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &VideoCallTemplateDeleteOne{builder}
+}
+
+// Query returns a query builder for VideoCallTemplate.
+func (c *VideoCallTemplateClient) Query() *VideoCallTemplateQuery {
+	return &VideoCallTemplateQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeVideoCallTemplate},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a VideoCallTemplate entity by its id.
+func (c *VideoCallTemplateClient) Get(ctx context.Context, id int64) (*VideoCallTemplate, error) {
+	return c.Query().Where(videocalltemplate.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *VideoCallTemplateClient) GetX(ctx context.Context, id int64) *VideoCallTemplate {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryVideoModels queries the video_models edge of a VideoCallTemplate.
+func (c *VideoCallTemplateClient) QueryVideoModels(_m *VideoCallTemplate) *VideoModelQuery {
+	query := (&VideoModelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(videocalltemplate.Table, videocalltemplate.FieldID, id),
+			sqlgraph.To(videomodel.Table, videomodel.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, videocalltemplate.VideoModelsTable, videocalltemplate.VideoModelsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *VideoCallTemplateClient) Hooks() []Hook {
+	return c.hooks.VideoCallTemplate
+}
+
+// Interceptors returns the client interceptors.
+func (c *VideoCallTemplateClient) Interceptors() []Interceptor {
+	return c.inters.VideoCallTemplate
+}
+
+func (c *VideoCallTemplateClient) mutate(ctx context.Context, m *VideoCallTemplateMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&VideoCallTemplateCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&VideoCallTemplateUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&VideoCallTemplateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&VideoCallTemplateDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown VideoCallTemplate mutation op: %q", m.Op())
+	}
+}
+
+// VideoGenerationTaskClient is a client for the VideoGenerationTask schema.
+type VideoGenerationTaskClient struct {
+	config
+}
+
+// NewVideoGenerationTaskClient returns a client for the VideoGenerationTask from the given config.
+func NewVideoGenerationTaskClient(c config) *VideoGenerationTaskClient {
+	return &VideoGenerationTaskClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `videogenerationtask.Hooks(f(g(h())))`.
+func (c *VideoGenerationTaskClient) Use(hooks ...Hook) {
+	c.hooks.VideoGenerationTask = append(c.hooks.VideoGenerationTask, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `videogenerationtask.Intercept(f(g(h())))`.
+func (c *VideoGenerationTaskClient) Intercept(interceptors ...Interceptor) {
+	c.inters.VideoGenerationTask = append(c.inters.VideoGenerationTask, interceptors...)
+}
+
+// Create returns a builder for creating a VideoGenerationTask entity.
+func (c *VideoGenerationTaskClient) Create() *VideoGenerationTaskCreate {
+	mutation := newVideoGenerationTaskMutation(c.config, OpCreate)
+	return &VideoGenerationTaskCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of VideoGenerationTask entities.
+func (c *VideoGenerationTaskClient) CreateBulk(builders ...*VideoGenerationTaskCreate) *VideoGenerationTaskCreateBulk {
+	return &VideoGenerationTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *VideoGenerationTaskClient) MapCreateBulk(slice any, setFunc func(*VideoGenerationTaskCreate, int)) *VideoGenerationTaskCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &VideoGenerationTaskCreateBulk{err: fmt.Errorf("calling to VideoGenerationTaskClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*VideoGenerationTaskCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &VideoGenerationTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for VideoGenerationTask.
+func (c *VideoGenerationTaskClient) Update() *VideoGenerationTaskUpdate {
+	mutation := newVideoGenerationTaskMutation(c.config, OpUpdate)
+	return &VideoGenerationTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *VideoGenerationTaskClient) UpdateOne(_m *VideoGenerationTask) *VideoGenerationTaskUpdateOne {
+	mutation := newVideoGenerationTaskMutation(c.config, OpUpdateOne, withVideoGenerationTask(_m))
+	return &VideoGenerationTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *VideoGenerationTaskClient) UpdateOneID(id int64) *VideoGenerationTaskUpdateOne {
+	mutation := newVideoGenerationTaskMutation(c.config, OpUpdateOne, withVideoGenerationTaskID(id))
+	return &VideoGenerationTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for VideoGenerationTask.
+func (c *VideoGenerationTaskClient) Delete() *VideoGenerationTaskDelete {
+	mutation := newVideoGenerationTaskMutation(c.config, OpDelete)
+	return &VideoGenerationTaskDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *VideoGenerationTaskClient) DeleteOne(_m *VideoGenerationTask) *VideoGenerationTaskDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *VideoGenerationTaskClient) DeleteOneID(id int64) *VideoGenerationTaskDeleteOne {
+	builder := c.Delete().Where(videogenerationtask.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &VideoGenerationTaskDeleteOne{builder}
+}
+
+// Query returns a query builder for VideoGenerationTask.
+func (c *VideoGenerationTaskClient) Query() *VideoGenerationTaskQuery {
+	return &VideoGenerationTaskQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeVideoGenerationTask},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a VideoGenerationTask entity by its id.
+func (c *VideoGenerationTaskClient) Get(ctx context.Context, id int64) (*VideoGenerationTask, error) {
+	return c.Query().Where(videogenerationtask.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *VideoGenerationTaskClient) GetX(ctx context.Context, id int64) *VideoGenerationTask {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a VideoGenerationTask.
+func (c *VideoGenerationTaskClient) QueryUser(_m *VideoGenerationTask) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(videogenerationtask.Table, videogenerationtask.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, videogenerationtask.UserTable, videogenerationtask.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAPIKey queries the api_key edge of a VideoGenerationTask.
+func (c *VideoGenerationTaskClient) QueryAPIKey(_m *VideoGenerationTask) *APIKeyQuery {
+	query := (&APIKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(videogenerationtask.Table, videogenerationtask.FieldID, id),
+			sqlgraph.To(apikey.Table, apikey.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, videogenerationtask.APIKeyTable, videogenerationtask.APIKeyColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAccount queries the account edge of a VideoGenerationTask.
+func (c *VideoGenerationTaskClient) QueryAccount(_m *VideoGenerationTask) *AccountQuery {
+	query := (&AccountClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(videogenerationtask.Table, videogenerationtask.FieldID, id),
+			sqlgraph.To(account.Table, account.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, videogenerationtask.AccountTable, videogenerationtask.AccountColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroup queries the group edge of a VideoGenerationTask.
+func (c *VideoGenerationTaskClient) QueryGroup(_m *VideoGenerationTask) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(videogenerationtask.Table, videogenerationtask.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, videogenerationtask.GroupTable, videogenerationtask.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryVideoModel queries the video_model edge of a VideoGenerationTask.
+func (c *VideoGenerationTaskClient) QueryVideoModel(_m *VideoGenerationTask) *VideoModelQuery {
+	query := (&VideoModelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(videogenerationtask.Table, videogenerationtask.FieldID, id),
+			sqlgraph.To(videomodel.Table, videomodel.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, videogenerationtask.VideoModelTable, videogenerationtask.VideoModelColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *VideoGenerationTaskClient) Hooks() []Hook {
+	return c.hooks.VideoGenerationTask
+}
+
+// Interceptors returns the client interceptors.
+func (c *VideoGenerationTaskClient) Interceptors() []Interceptor {
+	return c.inters.VideoGenerationTask
+}
+
+func (c *VideoGenerationTaskClient) mutate(ctx context.Context, m *VideoGenerationTaskMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&VideoGenerationTaskCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&VideoGenerationTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&VideoGenerationTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&VideoGenerationTaskDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown VideoGenerationTask mutation op: %q", m.Op())
+	}
+}
+
+// VideoModelClient is a client for the VideoModel schema.
+type VideoModelClient struct {
+	config
+}
+
+// NewVideoModelClient returns a client for the VideoModel from the given config.
+func NewVideoModelClient(c config) *VideoModelClient {
+	return &VideoModelClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `videomodel.Hooks(f(g(h())))`.
+func (c *VideoModelClient) Use(hooks ...Hook) {
+	c.hooks.VideoModel = append(c.hooks.VideoModel, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `videomodel.Intercept(f(g(h())))`.
+func (c *VideoModelClient) Intercept(interceptors ...Interceptor) {
+	c.inters.VideoModel = append(c.inters.VideoModel, interceptors...)
+}
+
+// Create returns a builder for creating a VideoModel entity.
+func (c *VideoModelClient) Create() *VideoModelCreate {
+	mutation := newVideoModelMutation(c.config, OpCreate)
+	return &VideoModelCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of VideoModel entities.
+func (c *VideoModelClient) CreateBulk(builders ...*VideoModelCreate) *VideoModelCreateBulk {
+	return &VideoModelCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *VideoModelClient) MapCreateBulk(slice any, setFunc func(*VideoModelCreate, int)) *VideoModelCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &VideoModelCreateBulk{err: fmt.Errorf("calling to VideoModelClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*VideoModelCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &VideoModelCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for VideoModel.
+func (c *VideoModelClient) Update() *VideoModelUpdate {
+	mutation := newVideoModelMutation(c.config, OpUpdate)
+	return &VideoModelUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *VideoModelClient) UpdateOne(_m *VideoModel) *VideoModelUpdateOne {
+	mutation := newVideoModelMutation(c.config, OpUpdateOne, withVideoModel(_m))
+	return &VideoModelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *VideoModelClient) UpdateOneID(id int64) *VideoModelUpdateOne {
+	mutation := newVideoModelMutation(c.config, OpUpdateOne, withVideoModelID(id))
+	return &VideoModelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for VideoModel.
+func (c *VideoModelClient) Delete() *VideoModelDelete {
+	mutation := newVideoModelMutation(c.config, OpDelete)
+	return &VideoModelDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *VideoModelClient) DeleteOne(_m *VideoModel) *VideoModelDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *VideoModelClient) DeleteOneID(id int64) *VideoModelDeleteOne {
+	builder := c.Delete().Where(videomodel.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &VideoModelDeleteOne{builder}
+}
+
+// Query returns a query builder for VideoModel.
+func (c *VideoModelClient) Query() *VideoModelQuery {
+	return &VideoModelQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeVideoModel},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a VideoModel entity by its id.
+func (c *VideoModelClient) Get(ctx context.Context, id int64) (*VideoModel, error) {
+	return c.Query().Where(videomodel.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *VideoModelClient) GetX(ctx context.Context, id int64) *VideoModel {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTemplate queries the template edge of a VideoModel.
+func (c *VideoModelClient) QueryTemplate(_m *VideoModel) *VideoCallTemplateQuery {
+	query := (&VideoCallTemplateClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(videomodel.Table, videomodel.FieldID, id),
+			sqlgraph.To(videocalltemplate.Table, videocalltemplate.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, videomodel.TemplateTable, videomodel.TemplateColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTasks queries the tasks edge of a VideoModel.
+func (c *VideoModelClient) QueryTasks(_m *VideoModel) *VideoGenerationTaskQuery {
+	query := (&VideoGenerationTaskClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(videomodel.Table, videomodel.FieldID, id),
+			sqlgraph.To(videogenerationtask.Table, videogenerationtask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, videomodel.TasksTable, videomodel.TasksColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *VideoModelClient) Hooks() []Hook {
+	return c.hooks.VideoModel
+}
+
+// Interceptors returns the client interceptors.
+func (c *VideoModelClient) Interceptors() []Interceptor {
+	return c.inters.VideoModel
+}
+
+func (c *VideoModelClient) mutate(ctx context.Context, m *VideoModelMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&VideoModelCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&VideoModelUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&VideoModelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&VideoModelDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown VideoModel mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
-		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
-		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
-		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Hook
+		APIKey, APIKeyGroupBinding, Account, AccountGroup, Announcement,
+		AnnouncementRead, AuthIdentity, AuthIdentityChannel, ChannelMonitor,
+		ChannelMonitorDailyRollup, ChannelMonitorHistory,
+		ChannelMonitorRequestTemplate, ErrorPassthroughRule, Group, IdempotencyRecord,
+		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
+		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
+		UserAttributeValue, UserPlatformQuota, UserSubscription, VideoCallTemplate,
+		VideoGenerationTask, VideoModel []ent.Hook
 	}
 	inters struct {
-		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
-		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
-		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
-		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Interceptor
+		APIKey, APIKeyGroupBinding, Account, AccountGroup, Announcement,
+		AnnouncementRead, AuthIdentity, AuthIdentityChannel, ChannelMonitor,
+		ChannelMonitorDailyRollup, ChannelMonitorHistory,
+		ChannelMonitorRequestTemplate, ErrorPassthroughRule, Group, IdempotencyRecord,
+		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
+		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
+		UserAttributeValue, UserPlatformQuota, UserSubscription, VideoCallTemplate,
+		VideoGenerationTask, VideoModel []ent.Interceptor
 	}
 )
 

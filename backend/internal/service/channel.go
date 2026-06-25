@@ -14,12 +14,14 @@ const (
 	BillingModeToken      BillingMode = "token"       // 按 token 区间计费
 	BillingModePerRequest BillingMode = "per_request" // 按次计费（支持上下文窗口分层）
 	BillingModeImage      BillingMode = "image"       // 图片计费（当前按次，预留 token 计费）
+	BillingModeSecond     BillingMode = "second"      // 视频按秒计费
+	BillingModeSegment    BillingMode = "segment"     // 视频按区间计费
 )
 
 // IsValid 检查 BillingMode 是否为合法值
 func (m BillingMode) IsValid() bool {
 	switch m {
-	case BillingModeToken, BillingModePerRequest, BillingModeImage, "":
+	case BillingModeToken, BillingModePerRequest, BillingModeImage, BillingModeSecond, BillingModeSegment, "":
 		return true
 	}
 	return false
@@ -84,6 +86,7 @@ type ChannelModelPricing struct {
 	CacheReadPrice   *float64          // 缓存读取价格
 	ImageOutputPrice *float64          // 图片输出价格（向后兼容）
 	PerRequestPrice  *float64          // 默认按次计费价格（USD）
+	UnitSeconds      *float64          // 视频区间计费单位秒数（billing_mode=segment）
 	Intervals        []PricingInterval // 区间定价列表
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
@@ -277,7 +280,7 @@ func deepCopyFeaturesConfig(src map[string]any) map[string]any {
 // mode 决定区间语义：
 //   - BillingModeToken（含空值）：区间是上下文 token 数分段 (min, max]，
 //     按 MinTokens 排序后无重叠，无界区间（MaxTokens=nil）必须是最后一个。
-//   - BillingModePerRequest / BillingModeImage：区间是按 tier_label
+//   - BillingModePerRequest / BillingModeImage / BillingModeSecond / BillingModeSegment：区间是按 tier_label
 //     (1K/2K/4K 等) 分层，匹配走 label 不依赖 min/max，因此跳过区间重叠
 //     与 last-unlimited 校验，仅做单条字段自洽（min/max/价格非负）检查。
 //
@@ -299,8 +302,8 @@ func ValidateIntervals(intervals []PricingInterval, mode BillingMode) error {
 		}
 	}
 
-	// per_request / image 模式按 tier_label 匹配，不做 token 区间重叠校验
-	if mode == BillingModePerRequest || mode == BillingModeImage {
+	// 非 token 模式按 tier_label 或外部维度匹配，不做 token 区间重叠校验
+	if mode == BillingModePerRequest || mode == BillingModeImage || mode == BillingModeSecond || mode == BillingModeSegment {
 		return nil
 	}
 	return validateIntervalOverlap(sorted)

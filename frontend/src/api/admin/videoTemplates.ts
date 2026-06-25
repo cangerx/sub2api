@@ -1,0 +1,16 @@
+export {
+  createTemplate,
+  deleteTemplate,
+  listTemplates,
+  recognizeTemplate,
+  testTemplateCreate,
+  testTemplateQuery,
+  updateTemplate,
+  type VideoTemplate,
+  type VideoTemplateCreateTestPayload,
+  type VideoTemplateCreateTestResult,
+  type VideoTemplateQueryTestPayload,
+  type VideoTemplateQueryTestResult,
+  type VideoTemplateRecognizePayload,
+  type VideoTemplatePayload,
+} from './video'

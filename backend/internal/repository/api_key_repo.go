@@ -10,6 +10,7 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
+	"github.com/Wei-Shaw/sub2api/ent/apikeygroupbinding"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/schema/mixins"
 	"github.com/Wei-Shaw/sub2api/ent/user"
@@ -45,6 +46,7 @@ func (r *apiKeyRepository) Create(ctx context.Context, key *service.APIKey) erro
 		SetName(key.Name).
 		SetStatus(key.Status).
 		SetNillableGroupID(key.GroupID).
+		SetMultiGroupRouting(key.MultiGroupRouting).
 		SetNillableLastUsedAt(key.LastUsedAt).
 		SetQuota(key.Quota).
 		SetQuotaUsed(key.QuotaUsed).
@@ -66,8 +68,38 @@ func (r *apiKeyRepository) Create(ctx context.Context, key *service.APIKey) erro
 		key.LastUsedAt = created.LastUsedAt
 		key.CreatedAt = created.CreatedAt
 		key.UpdatedAt = created.UpdatedAt
+		if err := r.replaceGroupBindings(ctx, key.ID, key.GroupBindings); err != nil {
+			return err
+		}
 	}
 	return translatePersistenceError(err, nil, service.ErrAPIKeyExists)
+}
+
+// replaceGroupBindings rewrites all multi-group-routing bindings for an API key
+// (delete-then-insert). Caller ensures bindings are validated.
+func (r *apiKeyRepository) replaceGroupBindings(ctx context.Context, apiKeyID int64, bindings []service.APIKeyGroupBinding) error {
+	client := clientFromContext(ctx, r.client)
+	if _, err := client.APIKeyGroupBinding.Delete().
+		Where(apikeygroupbinding.APIKeyIDEQ(apiKeyID)).
+		Exec(ctx); err != nil {
+		return fmt.Errorf("clear group bindings: %w", err)
+	}
+	if len(bindings) == 0 {
+		return nil
+	}
+	creates := make([]*dbent.APIKeyGroupBindingCreate, 0, len(bindings))
+	for _, b := range bindings {
+		creates = append(creates, client.APIKeyGroupBinding.Create().
+			SetAPIKeyID(apiKeyID).
+			SetGroupID(b.GroupID).
+			SetPriority(b.Priority).
+			SetWeight(b.Weight).
+			SetEnabled(b.Enabled))
+	}
+	if err := client.APIKeyGroupBinding.CreateBulk(creates...).Exec(ctx); err != nil {
+		return fmt.Errorf("create group bindings: %w", err)
+	}
+	return nil
 }
 
 func (r *apiKeyRepository) GetByID(ctx context.Context, id int64) (*service.APIKey, error) {
@@ -75,6 +107,9 @@ func (r *apiKeyRepository) GetByID(ctx context.Context, id int64) (*service.APIK
 		Where(apikey.IDEQ(id)).
 		WithUser().
 		WithGroup().
+		WithGroupBindings(func(bq *dbent.APIKeyGroupBindingQuery) {
+			bq.WithGroup()
+		}).
 		Only(ctx)
 	if err != nil {
 		if dbent.IsNotFound(err) {
@@ -113,6 +148,9 @@ func (r *apiKeyRepository) GetByKey(ctx context.Context, key string) (*service.A
 			})
 		}).
 		WithGroup().
+		WithGroupBindings(func(bq *dbent.APIKeyGroupBindingQuery) {
+			bq.WithGroup()
+		}).
 		Only(ctx)
 	if err != nil {
 		if dbent.IsNotFound(err) {
@@ -226,6 +264,7 @@ func (r *apiKeyRepository) Update(ctx context.Context, key *service.APIKey) erro
 		SetUsage5h(key.Usage5h).
 		SetUsage1d(key.Usage1d).
 		SetUsage7d(key.Usage7d).
+		SetMultiGroupRouting(key.MultiGroupRouting).
 		SetUpdatedAt(now)
 	if key.GroupID != nil {
 		builder.SetGroupID(*key.GroupID)
@@ -280,6 +319,9 @@ func (r *apiKeyRepository) Update(ctx context.Context, key *service.APIKey) erro
 
 	// 使用同一时间戳回填，避免并发删除导致二次查询失败。
 	key.UpdatedAt = now
+	if err := r.replaceGroupBindings(ctx, key.ID, key.GroupBindings); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -698,29 +740,30 @@ func apiKeyEntityToService(m *dbent.APIKey) *service.APIKey {
 		return nil
 	}
 	out := &service.APIKey{
-		ID:            m.ID,
-		UserID:        m.UserID,
-		Key:           m.Key,
-		Name:          m.Name,
-		Status:        m.Status,
-		IPWhitelist:   m.IPWhitelist,
-		IPBlacklist:   m.IPBlacklist,
-		LastUsedAt:    m.LastUsedAt,
-		CreatedAt:     m.CreatedAt,
-		UpdatedAt:     m.UpdatedAt,
-		GroupID:       m.GroupID,
-		Quota:         m.Quota,
-		QuotaUsed:     m.QuotaUsed,
-		ExpiresAt:     m.ExpiresAt,
-		RateLimit5h:   m.RateLimit5h,
-		RateLimit1d:   m.RateLimit1d,
-		RateLimit7d:   m.RateLimit7d,
-		Usage5h:       m.Usage5h,
-		Usage1d:       m.Usage1d,
-		Usage7d:       m.Usage7d,
-		Window5hStart: m.Window5hStart,
-		Window1dStart: m.Window1dStart,
-		Window7dStart: m.Window7dStart,
+		ID:                m.ID,
+		UserID:            m.UserID,
+		Key:               m.Key,
+		Name:              m.Name,
+		Status:            m.Status,
+		MultiGroupRouting: m.MultiGroupRouting,
+		IPWhitelist:       m.IPWhitelist,
+		IPBlacklist:       m.IPBlacklist,
+		LastUsedAt:        m.LastUsedAt,
+		CreatedAt:         m.CreatedAt,
+		UpdatedAt:         m.UpdatedAt,
+		GroupID:           m.GroupID,
+		Quota:             m.Quota,
+		QuotaUsed:         m.QuotaUsed,
+		ExpiresAt:         m.ExpiresAt,
+		RateLimit5h:       m.RateLimit5h,
+		RateLimit1d:       m.RateLimit1d,
+		RateLimit7d:       m.RateLimit7d,
+		Usage5h:           m.Usage5h,
+		Usage1d:           m.Usage1d,
+		Usage7d:           m.Usage7d,
+		Window5hStart:     m.Window5hStart,
+		Window1dStart:     m.Window1dStart,
+		Window7dStart:     m.Window7dStart,
 	}
 	if m.Edges.User != nil {
 		out.User = userEntityToService(m.Edges.User)
@@ -735,6 +778,25 @@ func apiKeyEntityToService(m *dbent.APIKey) *service.APIKey {
 	}
 	if m.Edges.Group != nil {
 		out.Group = groupEntityToService(m.Edges.Group)
+	}
+	if bindings := m.Edges.GroupBindings; len(bindings) > 0 {
+		out.GroupBindings = make([]service.APIKeyGroupBinding, 0, len(bindings))
+		for _, b := range bindings {
+			if b == nil {
+				continue
+			}
+			binding := service.APIKeyGroupBinding{
+				ID:       b.ID,
+				GroupID:  b.GroupID,
+				Priority: b.Priority,
+				Weight:   b.Weight,
+				Enabled:  b.Enabled,
+			}
+			if b.Edges.Group != nil {
+				binding.Group = groupEntityToService(b.Edges.Group)
+			}
+			out.GroupBindings = append(out.GroupBindings, binding)
+		}
 	}
 	return out
 }

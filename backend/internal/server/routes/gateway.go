@@ -2,6 +2,7 @@ package routes
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler"
@@ -30,8 +31,29 @@ func RegisterGatewayRoutes(
 	// 未分组 Key 拦截中间件（按协议格式区分错误响应）
 	requireGroupAnthropic := middleware.RequireGroupAssignment(settingService, middleware.AnthropicErrorWriter)
 	requireGroupGoogle := middleware.RequireGroupAssignment(settingService, middleware.GoogleErrorWriter)
+	requireGroupOpenAI := middleware.RequireGroupAssignment(settingService, middleware.OpenAIErrorWriter)
+	requireGroupVideo := requireVideoScope()
 
-	// API网关（Claude API兼容）
+	// OpenAI 风格视频异步网关
+	videos := r.Group("/v1")
+	videos.Use(bodyLimit)
+	videos.Use(clientRequestID)
+	videos.Use(opsErrorLogger)
+	videos.Use(endpointNorm)
+	videos.Use(gin.HandlerFunc(apiKeyAuth))
+	videos.Use(requireGroupOpenAI)
+	videos.Use(requireGroupVideo)
+	{
+		videos.POST("/videos", h.Video.Create)
+		videos.GET("/videos", h.Video.List)
+		videos.GET("/videos/models", h.Video.Models)
+		videos.GET("/videos/:id", h.Video.Get)
+		videos.POST("/videos/:id/cancel", h.Video.Cancel)
+		videos.GET("/videos/:id/content", h.Video.Content)
+		videos.GET("/videos/:id/content.mp4", h.Video.Content)
+	}
+
+	// API网关（Claude/OpenAI API兼容）
 	gateway := r.Group("/v1")
 	gateway.Use(bodyLimit)
 	gateway.Use(clientRequestID)
@@ -253,4 +275,39 @@ func getGroupPlatform(c *gin.Context) string {
 		return ""
 	}
 	return apiKey.Group.Platform
+}
+
+func requireVideoScope() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		apiKey, ok := middleware.GetAPIKeyFromContext(c)
+		if !ok || apiKey.Group == nil {
+			c.Next()
+			return
+		}
+		group := apiKey.Group
+		if strings.EqualFold(group.Platform, service.PlatformVideo) || groupSupportsScope(group, service.PlatformVideo) {
+			c.Next()
+			return
+		}
+		service.MarkOpsClientBusinessLimited(c, service.OpsClientBusinessLimitedReasonLocalFeatureGate)
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": gin.H{
+				"type":    "not_found_error",
+				"message": "Videos API is not enabled for this API key group",
+			},
+		})
+		c.Abort()
+	}
+}
+
+func groupSupportsScope(group *service.Group, scope string) bool {
+	if group == nil {
+		return false
+	}
+	for _, item := range group.SupportedModelScopes {
+		if strings.EqualFold(strings.TrimSpace(item), scope) {
+			return true
+		}
+	}
+	return false
 }

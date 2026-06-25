@@ -28,4 +28,14 @@ describe("normalizeSupportedModelScopesForPlatform", () => {
   it("drops hidden model scopes for other non-Antigravity groups", () => {
     expect(normalizeSupportedModelScopesForPlatform("claude", ["claude"])).toEqual([]);
   });
+
+  it("keeps only the video scope for Video groups", () => {
+    expect(
+      normalizeSupportedModelScopesForPlatform("video", ["video", "claude"]),
+    ).toEqual(["video"]);
+  });
+
+  it("returns an empty array for Video groups without scopes", () => {
+    expect(normalizeSupportedModelScopesForPlatform("video", undefined)).toEqual([]);
+  });
 });

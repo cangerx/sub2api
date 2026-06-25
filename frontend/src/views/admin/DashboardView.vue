@@ -492,7 +492,7 @@ const userTrendChartData = computed(() => {
   const sortedDates = Array.from(allDates).sort()
   const colors = [
     '#3b82f6',
-    '#10b981',
+    '#3b82f6',
     '#f59e0b',
     '#ef4444',
     '#8b5cf6',
@@ -500,7 +500,7 @@ const userTrendChartData = computed(() => {
     '#14b8a6',
     '#f97316',
     '#6366f1',
-    '#84cc16',
+    '#818cf8',
     '#06b6d4',
     '#a855f7'
   ]

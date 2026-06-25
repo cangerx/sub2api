@@ -70,7 +70,7 @@
       <!-- Platform Selection - Segmented Control Style -->
       <div>
         <label class="input-label">{{ t('admin.accounts.platform') }}</label>
-        <div class="mt-2 flex rounded-lg bg-gray-100 p-1 dark:bg-dark-700" data-tour="account-form-platform">
+        <div class="mt-2 grid grid-cols-2 gap-1 rounded-lg bg-gray-100 p-1 dark:bg-dark-700 sm:grid-cols-5" data-tour="account-form-platform">
           <button
             type="button"
             @click="form.platform = 'anthropic'"
@@ -147,6 +147,31 @@
             <Icon name="cloud" size="sm" />
             Antigravity
           </button>
+          <button
+            type="button"
+            @click="form.platform = 'video'"
+            :class="[
+              'flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all',
+              form.platform === 'video'
+                ? 'bg-white text-rose-600 shadow-sm dark:bg-dark-600 dark:text-rose-400'
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+            ]"
+          >
+            <Icon name="video" size="sm" />
+            Video
+          </button>
+        </div>
+      </div>
+
+      <div v-if="form.platform === 'video'" class="rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/40 dark:bg-rose-900/15">
+        <div class="flex items-start gap-3">
+          <Icon name="video" size="sm" class="mt-0.5 shrink-0 text-rose-600 dark:text-rose-400" />
+          <div class="space-y-1 text-sm">
+            <p class="font-medium text-rose-800 dark:text-rose-200">视频上游账号</p>
+            <p class="text-rose-700 dark:text-rose-300">
+              在这里配置上游 base_url、API Key、代理、并发和分组；不同厂商的创建/查询/下载路径在视频调用模板里维护。
+            </p>
+          </div>
         </div>
       </div>
 
@@ -1016,13 +1041,7 @@
             v-model="apiKeyBaseUrl"
             type="text"
             class="input"
-            :placeholder="
-              form.platform === 'openai'
-                ? 'https://api.openai.com'
-                : form.platform === 'gemini'
-                  ? 'https://generativelanguage.googleapis.com'
-                  : 'https://api.anthropic.com'
-            "
+            :placeholder="defaultBaseURLForPlatform(form.platform) || 'https://upstream.example.com'"
           />
           <p class="input-hint">{{ baseUrlHint }}</p>
         </div>
@@ -1033,13 +1052,7 @@
             type="password"
             required
             class="input font-mono"
-            :placeholder="
-              form.platform === 'openai'
-                ? 'sk-proj-...'
-                : form.platform === 'gemini'
-                  ? 'AIza...'
-                  : 'sk-ant-...'
-            "
+            :placeholder="apiKeyPlaceholderForPlatform(form.platform)"
           />
           <p class="input-hint">{{ apiKeyHint }}</p>
         </div>
@@ -1058,6 +1071,12 @@
         <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
           <label class="input-label">{{ t('admin.accounts.modelRestriction') }}</label>
 
+          <div v-if="form.platform === 'video'" class="mb-3 rounded-lg bg-purple-50 p-3 dark:bg-purple-900/20">
+            <p class="text-xs text-purple-700 dark:text-purple-400">
+              {{ t('admin.accounts.videoModelMappingHint') }}
+            </p>
+          </div>
+
           <div
             v-if="isOpenAIModelRestrictionDisabled"
             class="mb-3 rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20"
@@ -1068,8 +1087,8 @@
           </div>
 
           <template v-else>
-            <!-- Mode Toggle -->
-            <div class="mb-4 flex gap-2">
+            <!-- Mode Toggle (video 仅支持 mapping，隐藏切换) -->
+            <div v-if="form.platform !== 'video'" class="mb-4 flex gap-2">
               <button
                 type="button"
                 @click="modelRestrictionMode = 'whitelist'"
@@ -1202,6 +1221,17 @@
                 </button>
               </div>
             </div>
+
+            <button
+              v-if="isVideoPlatform"
+              type="button"
+              @click="fetchVideoUpstreamModels"
+              :disabled="fetchingVideoModels || !apiKeyValue"
+              class="mb-3 w-full rounded-lg border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 transition-colors hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300"
+            >
+              <Icon name="refresh" size="sm" class="mr-1.5 inline" :class="fetchingVideoModels ? 'animate-spin' : ''" />
+              {{ fetchingVideoModels ? t('admin.accounts.syncUpstreamModelsLoading') : t('admin.accounts.videoFetchUpstreamModels') }}
+            </button>
 
             <button
               type="button"
@@ -1877,6 +1907,17 @@
                 </button>
               </div>
             </div>
+
+            <button
+              v-if="isVideoPlatform"
+              type="button"
+              @click="fetchVideoUpstreamModels"
+              :disabled="fetchingVideoModels || !apiKeyValue"
+              class="mb-3 w-full rounded-lg border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 transition-colors hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300"
+            >
+              <Icon name="refresh" size="sm" class="mr-1.5 inline" :class="fetchingVideoModels ? 'animate-spin' : ''" />
+              {{ fetchingVideoModels ? t('admin.accounts.syncUpstreamModelsLoading') : t('admin.accounts.videoFetchUpstreamModels') }}
+            </button>
 
             <button
               type="button"
@@ -3237,11 +3278,12 @@ import ProxySelector from '@/components/common/ProxySelector.vue'
 import ProxyAdBanner from '@/components/common/ProxyAdBanner.vue'
 import GroupSelector from '@/components/common/GroupSelector.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
+import { syncUpstreamModelsPreview } from '@/api/admin/accounts'
 import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
 import { applyInterceptWarmup } from '@/components/account/credentialsBuilder'
 import { formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/utils/format'
 import { createStableObjectKeyResolver } from '@/utils/stableObjectKey'
-import { VERTEX_LOCATION_OPTIONS } from '@/constants/account'
+import { VERTEX_LOCATION_OPTIONS, apiKeyPlaceholderForPlatform, defaultBaseURLForPlatform } from '@/constants/account'
 import {
   OPENAI_WS_MODE_CTX_POOL,
   OPENAI_WS_MODE_OFF,
@@ -3280,12 +3322,14 @@ const oauthStepTitle = computed(() => {
 const baseUrlHint = computed(() => {
   if (form.platform === 'openai') return t('admin.accounts.openai.baseUrlHint')
   if (form.platform === 'gemini') return t('admin.accounts.gemini.baseUrlHint')
+  if (form.platform === 'video') return '视频上游服务根地址，例如 https://api.example.com；调用模板只配置路径。'
   return t('admin.accounts.baseUrlHint')
 })
 
 const apiKeyHint = computed(() => {
   if (form.platform === 'openai') return t('admin.accounts.openai.apiKeyHint')
   if (form.platform === 'gemini') return t('admin.accounts.gemini.apiKeyHint')
+  if (form.platform === 'video') return '保存到 Account.credentials.api_key，实际鉴权头由视频调用模板按上游要求映射。'
   return t('admin.accounts.apiKeyHint')
 })
 
@@ -3706,6 +3750,9 @@ const isOAuthFlow = computed(() => {
   if (form.platform === 'anthropic' && accountCategory.value === 'bedrock') {
     return false
   }
+  if (form.platform === 'video') {
+    return false
+  }
   return accountCategory.value === 'oauth-based'
 })
 
@@ -3767,6 +3814,11 @@ watch(
 watch(
   [accountCategory, addMethod, antigravityAccountType, () => form.platform],
   ([category, method, agType]) => {
+    if (form.platform === 'video') {
+      form.type = 'apikey'
+      modelRestrictionMode.value = 'mapping'
+      return
+    }
     // Antigravity upstream 类型（实际创建为 apikey）
     if (form.platform === 'antigravity' && agType === 'upstream') {
       form.type = 'apikey'
@@ -3793,12 +3845,7 @@ watch(
   () => form.platform,
   (newPlatform) => {
     // Reset base URL based on platform
-    apiKeyBaseUrl.value =
-      (newPlatform === 'openai')
-        ? 'https://api.openai.com'
-        : newPlatform === 'gemini'
-          ? 'https://generativelanguage.googleapis.com'
-          : 'https://api.anthropic.com'
+    apiKeyBaseUrl.value = defaultBaseURLForPlatform(newPlatform)
     // Clear model-related settings
     allowedModels.value = []
     modelMappings.value = []
@@ -3822,6 +3869,10 @@ watch(
     }
     if (newPlatform !== 'anthropic' && accountCategory.value === 'bedrock') {
       accountCategory.value = 'oauth-based'
+    }
+    if (newPlatform === 'video') {
+      accountCategory.value = 'apikey'
+      addMethod.value = 'oauth'
     }
     // Reset Bedrock fields when switching platforms
     bedrockAccessKeyId.value = ''
@@ -3921,6 +3972,46 @@ watch(
 // Model mapping helpers
 const addModelMapping = () => {
   modelMappings.value.push({ from: '', to: '' })
+}
+
+// Video: fetch the upstream model list and prefill mapping rows (from = to =
+// upstream model name). Reuses the shared sync-upstream-models preview API.
+const fetchingVideoModels = ref(false)
+const isVideoPlatform = computed(() => form.platform === 'video')
+const fetchVideoUpstreamModels = async () => {
+  if (fetchingVideoModels.value) return
+  if (!syncPreviewCredentials.value) {
+    appStore.showError(t('admin.accounts.videoFetchUpstreamModelsNeedKey'))
+    return
+  }
+  fetchingVideoModels.value = true
+  try {
+    const result = await syncUpstreamModelsPreview(syncPreviewCredentials.value)
+    const models = (result.models || []).map(m => m.trim()).filter(Boolean)
+    if (models.length === 0) {
+      appStore.showInfo(t('admin.accounts.syncUpstreamModelsEmpty'))
+      return
+    }
+    const existing = new Set(modelMappings.value.map(m => m.from))
+    let added = 0
+    for (const model of models) {
+      if (!existing.has(model)) {
+        modelMappings.value.push({ from: model, to: model })
+        existing.add(model)
+        added += 1
+      }
+    }
+    if (added > 0) {
+      appStore.showSuccess(t('admin.accounts.syncUpstreamModelsSuccess', { count: added, total: models.length }))
+    } else {
+      appStore.showInfo(t('admin.accounts.syncUpstreamModelsNoChanges', { count: models.length }))
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t('admin.accounts.syncUpstreamModelsFailed')
+    appStore.showError(t('admin.accounts.syncUpstreamModelsError', { message }))
+  } finally {
+    fetchingVideoModels.value = false
+  }
 }
 
 const addOpenAICompactModelMapping = () => {
@@ -4612,12 +4703,7 @@ const handleSubmit = async () => {
   }
 
   // Determine default base URL based on platform
-  const defaultBaseUrl =
-    form.platform === 'openai'
-      ? 'https://api.openai.com'
-      : form.platform === 'gemini'
-        ? 'https://generativelanguage.googleapis.com'
-        : 'https://api.anthropic.com'
+  const defaultBaseUrl = defaultBaseURLForPlatform(form.platform)
 
   // Build credentials with optional model mapping
   const credentials: Record<string, unknown> = {
@@ -4628,7 +4714,7 @@ const handleSubmit = async () => {
     credentials.tier_id = geminiTierAIStudio.value
   }
 
-  // Add model mapping if configured（OpenAI 开启自动透传时不应用）
+  // Add model mapping if configured（OpenAI 开启自动透传时不应用；video 仅 mapping 模式）
   if (!isOpenAIModelRestrictionDisabled.value) {
     const modelMapping = buildModelMappingObject(modelRestrictionMode.value, allowedModels.value, modelMappings.value)
     if (modelMapping) {

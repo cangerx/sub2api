@@ -166,6 +166,18 @@ type CreateAPIKeyRequest struct {
 	RateLimit5h float64 `json:"rate_limit_5h"`
 	RateLimit1d float64 `json:"rate_limit_1d"`
 	RateLimit7d float64 `json:"rate_limit_7d"`
+
+	// Multi-group routing
+	MultiGroupRouting bool                      `json:"multi_group_routing"`
+	GroupBindings     []APIKeyGroupBindingInput `json:"group_bindings"`
+}
+
+// APIKeyGroupBindingInput is a multi-group-routing binding from create/update.
+type APIKeyGroupBindingInput struct {
+	GroupID  int64 `json:"group_id"`
+	Priority int   `json:"priority"`
+	Weight   int   `json:"weight"`
+	Enabled  bool  `json:"enabled"`
 }
 
 // UpdateAPIKeyRequest 更新API Key请求
@@ -187,6 +199,10 @@ type UpdateAPIKeyRequest struct {
 	RateLimit1d         *float64 `json:"rate_limit_1d"`
 	RateLimit7d         *float64 `json:"rate_limit_7d"`
 	ResetRateLimitUsage *bool    `json:"reset_rate_limit_usage"` // Reset all usage counters to 0
+
+	// Multi-group routing (MultiGroupRouting nil = no change; GroupBindings nil = no change)
+	MultiGroupRouting *bool                     `json:"multi_group_routing"`
+	GroupBindings     []APIKeyGroupBindingInput `json:"group_bindings"`
 }
 
 // APIKeyService API Key服务
@@ -400,18 +416,29 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 
 	// 创建API Key记录
 	apiKey := &APIKey{
-		UserID:      userID,
-		Key:         key,
-		Name:        html.EscapeString(req.Name),
-		GroupID:     req.GroupID,
-		Status:      StatusActive,
-		IPWhitelist: req.IPWhitelist,
-		IPBlacklist: req.IPBlacklist,
-		Quota:       req.Quota,
-		QuotaUsed:   0,
-		RateLimit5h: req.RateLimit5h,
-		RateLimit1d: req.RateLimit1d,
-		RateLimit7d: req.RateLimit7d,
+		UserID:            userID,
+		Key:               key,
+		Name:              html.EscapeString(req.Name),
+		GroupID:           req.GroupID,
+		Status:            StatusActive,
+		MultiGroupRouting: req.MultiGroupRouting,
+		IPWhitelist:       req.IPWhitelist,
+		IPBlacklist:       req.IPBlacklist,
+		Quota:             req.Quota,
+		QuotaUsed:         0,
+		RateLimit5h:       req.RateLimit5h,
+		RateLimit1d:       req.RateLimit1d,
+		RateLimit7d:       req.RateLimit7d,
+	}
+
+	// Multi-group routing bindings (validated against the user's allowed groups
+	// and phase-1 non-subscription rule).
+	if req.MultiGroupRouting {
+		bindings, err := s.buildGroupBindings(ctx, user, req.GroupBindings)
+		if err != nil {
+			return nil, err
+		}
+		apiKey.GroupBindings = bindings
 	}
 
 	// Set expiration time if specified
@@ -428,6 +455,49 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 	s.compileAPIKeyIPRules(apiKey)
 
 	return apiKey, nil
+}
+
+// buildGroupBindings validates multi-group-routing bindings for a user and
+// returns the persisted form. Phase 1: only non-subscription (standard) groups
+// the user is allowed to bind; duplicates rejected; weight defaulted to 100.
+func (s *APIKeyService) buildGroupBindings(ctx context.Context, user *User, inputs []APIKeyGroupBindingInput) ([]APIKeyGroupBinding, error) {
+	if len(inputs) == 0 {
+		return nil, nil
+	}
+	seen := make(map[int64]struct{}, len(inputs))
+	out := make([]APIKeyGroupBinding, 0, len(inputs))
+	for _, in := range inputs {
+		if in.GroupID <= 0 {
+			return nil, infraerrors.BadRequest("INVALID_GROUP_BINDING", "group_id is required for each binding")
+		}
+		if _, dup := seen[in.GroupID]; dup {
+			return nil, infraerrors.BadRequest("DUPLICATE_GROUP_BINDING", "duplicate group in bindings")
+		}
+		seen[in.GroupID] = struct{}{}
+
+		group, err := s.groupRepo.GetByID(ctx, in.GroupID)
+		if err != nil {
+			return nil, fmt.Errorf("get binding group: %w", err)
+		}
+		if !s.canUserBindGroup(ctx, user, group) {
+			return nil, ErrGroupNotAllowed
+		}
+		// Phase 1: multi-group routing only for non-subscription groups.
+		if group.IsSubscriptionType() {
+			return nil, infraerrors.BadRequest("SUBSCRIPTION_GROUP_NOT_ROUTABLE", "subscription groups cannot be used in multi-group routing")
+		}
+		weight := in.Weight
+		if weight <= 0 {
+			weight = 100
+		}
+		out = append(out, APIKeyGroupBinding{
+			GroupID:  in.GroupID,
+			Priority: in.Priority,
+			Weight:   weight,
+			Enabled:  in.Enabled,
+		})
+	}
+	return out, nil
 }
 
 // List 获取用户的API Key列表
@@ -622,6 +692,22 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 		apiKey.Window5hStart = nil
 		apiKey.Window1dStart = nil
 		apiKey.Window7dStart = nil
+	}
+
+	// Multi-group routing: toggle and/or rewrite bindings.
+	if req.MultiGroupRouting != nil {
+		apiKey.MultiGroupRouting = *req.MultiGroupRouting
+	}
+	if req.GroupBindings != nil {
+		user, err := s.userRepo.GetByID(ctx, userID)
+		if err != nil {
+			return nil, fmt.Errorf("get user: %w", err)
+		}
+		bindings, err := s.buildGroupBindings(ctx, user, req.GroupBindings)
+		if err != nil {
+			return nil, err
+		}
+		apiKey.GroupBindings = bindings
 	}
 
 	if err := s.apiKeyRepo.Update(ctx, apiKey); err != nil {

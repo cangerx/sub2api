@@ -147,6 +147,15 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 	if apiKey.Group != nil {
 		groupPlatform = apiKey.Group.Platform
 	}
+	// Multi-group routing: resolve the effective group for this request (no-op
+	// pass-through for single-group keys).
+	gf := h.newGroupFailover(c.Request.Context(), apiKey, groupPlatform)
+	if gf.platformOf() != "" {
+		groupPlatform = gf.platformOf()
+	}
+	if gf.enabled {
+		channelMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), gf.groupID(), reqModel)
+	}
 	selectionSessionHash := sessionHash
 	if groupPlatform == service.PlatformGemini && selectionSessionHash != "" {
 		selectionSessionHash = "gemini:" + selectionSessionHash
@@ -159,8 +168,15 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 	}
 
 	for {
-		selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), apiKey.GroupID, selectionSessionHash, reqModel, fs.FailedAccountIDs, "", int64(0))
+		selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), gf.groupID(), selectionSessionHash, reqModel, fs.FailedAccountIDs, "", int64(0))
 		if err != nil {
+			// Multi-group: current group has no usable account → cool it down
+			// and switch to the next eligible group within this request.
+			if gf.advance(c.Request.Context()) {
+				channelMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), gf.groupID(), reqModel)
+				fs.FailedAccountIDs = make(map[int64]struct{})
+				continue
+			}
 			if len(fs.FailedAccountIDs) == 0 {
 				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
 				h.chatCompletionsErrorResponse(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error())

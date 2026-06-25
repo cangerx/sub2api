@@ -6,8 +6,10 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -36,6 +38,14 @@ type ConcurrencyCache interface {
 	AcquireUserSlot(ctx context.Context, userID int64, maxConcurrency int, requestID string) (bool, error)
 	ReleaseUserSlot(ctx context.Context, userID int64, requestID string) error
 	GetUserConcurrency(ctx context.Context, userID int64) (int, error)
+
+	// 视频异步任务专用槽位。成员使用 video task public_id，保证多进程 worker 释放可恢复。
+	AcquireVideoUserSlot(ctx context.Context, userID int64, maxConcurrency int, taskID string) (bool, error)
+	ReleaseVideoUserSlot(ctx context.Context, userID int64, taskID string) error
+	AcquireVideoAPIKeySlot(ctx context.Context, apiKeyID int64, maxConcurrency int, taskID string) (bool, error)
+	ReleaseVideoAPIKeySlot(ctx context.Context, apiKeyID int64, taskID string) error
+	AcquireVideoAccountSlot(ctx context.Context, accountID int64, maxConcurrency int, taskID string) (bool, error)
+	ReleaseVideoAccountSlot(ctx context.Context, accountID int64, taskID string) error
 
 	// 等待队列计数（只在首次创建时设置 TTL）
 	IncrementWaitCount(ctx context.Context, userID int64, maxWait int) (bool, error)
@@ -235,6 +245,82 @@ func (s *ConcurrencyService) AcquireUserSlot(ctx context.Context, userID int64, 
 		Acquired:    false,
 		ReleaseFunc: nil,
 	}, nil
+}
+
+func (s *ConcurrencyService) AcquireVideoSlots(ctx context.Context, taskID string, userID, apiKeyID, accountID int64, userMax, keyMax, accountMax int) (*AcquireResult, error) {
+	if s == nil || s.cache == nil {
+		return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
+	}
+	taskID = strings.TrimSpace(taskID)
+	if taskID == "" {
+		return nil, fmt.Errorf("video task id is required for concurrency slot")
+	}
+	releases := make([]func(), 0, 3)
+	releaseAll := func() {
+		for i := len(releases) - 1; i >= 0; i-- {
+			releases[i]()
+		}
+	}
+	acquire := func(max int, acquireFn func(context.Context, int, string) (bool, error), releaseFn func(context.Context, string) error) (bool, error) {
+		if max <= 0 {
+			return true, nil
+		}
+		ok, err := acquireFn(ctx, max, taskID)
+		if err != nil || !ok {
+			return ok, err
+		}
+		releases = append(releases, func() {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := releaseFn(bgCtx, taskID); err != nil {
+				logger.LegacyPrintf("service.concurrency", "Warning: failed to release video slot task=%s: %v", taskID, err)
+			}
+		})
+		return true, nil
+	}
+	ok, err := acquire(userMax,
+		func(c context.Context, max int, id string) (bool, error) {
+			return s.cache.AcquireVideoUserSlot(c, userID, max, id)
+		},
+		func(c context.Context, id string) error { return s.cache.ReleaseVideoUserSlot(c, userID, id) },
+	)
+	if err != nil || !ok {
+		releaseAll()
+		return &AcquireResult{Acquired: false}, err
+	}
+	ok, err = acquire(keyMax,
+		func(c context.Context, max int, id string) (bool, error) {
+			return s.cache.AcquireVideoAPIKeySlot(c, apiKeyID, max, id)
+		},
+		func(c context.Context, id string) error { return s.cache.ReleaseVideoAPIKeySlot(c, apiKeyID, id) },
+	)
+	if err != nil || !ok {
+		releaseAll()
+		return &AcquireResult{Acquired: false}, err
+	}
+	ok, err = acquire(accountMax,
+		func(c context.Context, max int, id string) (bool, error) {
+			return s.cache.AcquireVideoAccountSlot(c, accountID, max, id)
+		},
+		func(c context.Context, id string) error { return s.cache.ReleaseVideoAccountSlot(c, accountID, id) },
+	)
+	if err != nil || !ok {
+		releaseAll()
+		return &AcquireResult{Acquired: false}, err
+	}
+	return &AcquireResult{Acquired: true, ReleaseFunc: releaseAll}, nil
+}
+
+func (s *ConcurrencyService) ReleaseVideoSlots(ctx context.Context, taskID string, userID, apiKeyID, accountID int64) {
+	if s == nil || s.cache == nil || strings.TrimSpace(taskID) == "" {
+		return
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	_ = s.cache.ReleaseVideoAccountSlot(ctx, accountID, taskID)
+	_ = s.cache.ReleaseVideoAPIKeySlot(ctx, apiKeyID, taskID)
+	_ = s.cache.ReleaseVideoUserSlot(ctx, userID, taskID)
 }
 
 // ============================================

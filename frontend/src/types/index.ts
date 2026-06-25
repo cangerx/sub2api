@@ -100,6 +100,10 @@ export interface User {
   deleted_at?: string | null
 }
 
+export interface UserFeatures {
+  video_enabled: boolean
+}
+
 export interface AdminUser extends User {
   // 管理员备注（普通用户接口不返回）
   notes: string
@@ -487,7 +491,7 @@ export interface PaginationConfig {
 
 // ==================== API Key & Group Types ====================
 
-export type GroupPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity'
+export type GroupPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'video'
 
 export type SubscriptionType = 'standard' | 'subscription'
 
@@ -590,6 +594,16 @@ export interface ApiKey {
   reset_5h_at: string | null
   reset_1d_at: string | null
   reset_7d_at: string | null
+  multi_group_routing?: boolean
+  group_bindings?: ApiKeyGroupBinding[]
+}
+
+export interface ApiKeyGroupBinding {
+  group_id: number
+  priority: number
+  weight: number
+  enabled: boolean
+  group?: Group
 }
 
 export interface CreateApiKeyRequest {
@@ -603,6 +617,15 @@ export interface CreateApiKeyRequest {
   rate_limit_5h?: number
   rate_limit_1d?: number
   rate_limit_7d?: number
+  multi_group_routing?: boolean
+  group_bindings?: ApiKeyGroupBindingInput[]
+}
+
+export interface ApiKeyGroupBindingInput {
+  group_id: number
+  priority?: number
+  weight?: number
+  enabled?: boolean
 }
 
 export interface UpdateApiKeyRequest {
@@ -618,6 +641,8 @@ export interface UpdateApiKeyRequest {
   rate_limit_1d?: number
   rate_limit_7d?: number
   reset_rate_limit_usage?: boolean
+  multi_group_routing?: boolean
+  group_bindings?: ApiKeyGroupBindingInput[]
 }
 
 export interface CreateGroupRequest {
@@ -690,7 +715,7 @@ export interface UpdateGroupRequest {
 
 // ==================== Account & Proxy Types ====================
 
-export type AccountPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity'
+export type AccountPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'video'
 export type AccountType = 'oauth' | 'setup-token' | 'apikey' | 'upstream' | 'bedrock' | 'service_account'
 export type OAuthAddMethod = 'oauth' | 'setup-token'
 export type ProxyProtocol = 'http' | 'https' | 'socks5' | 'socks5h'

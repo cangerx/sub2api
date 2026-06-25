@@ -78,6 +78,24 @@ func (c *stubConcurrencyCacheForTest) ReleaseUserSlot(_ context.Context, _ int64
 func (c *stubConcurrencyCacheForTest) GetUserConcurrency(_ context.Context, _ int64) (int, error) {
 	return c.concurrency, c.concurrencyErr
 }
+func (c *stubConcurrencyCacheForTest) AcquireVideoUserSlot(_ context.Context, _ int64, _ int, _ string) (bool, error) {
+	return c.acquireResult, c.acquireErr
+}
+func (c *stubConcurrencyCacheForTest) ReleaseVideoUserSlot(_ context.Context, _ int64, _ string) error {
+	return c.releaseErr
+}
+func (c *stubConcurrencyCacheForTest) AcquireVideoAPIKeySlot(_ context.Context, _ int64, _ int, _ string) (bool, error) {
+	return c.acquireResult, c.acquireErr
+}
+func (c *stubConcurrencyCacheForTest) ReleaseVideoAPIKeySlot(_ context.Context, _ int64, _ string) error {
+	return c.releaseErr
+}
+func (c *stubConcurrencyCacheForTest) AcquireVideoAccountSlot(_ context.Context, _ int64, _ int, _ string) (bool, error) {
+	return c.acquireResult, c.acquireErr
+}
+func (c *stubConcurrencyCacheForTest) ReleaseVideoAccountSlot(_ context.Context, _ int64, _ string) error {
+	return c.releaseErr
+}
 func (c *stubConcurrencyCacheForTest) IncrementWaitCount(_ context.Context, _ int64, _ int) (bool, error) {
 	return c.waitAllowed, c.waitErr
 }

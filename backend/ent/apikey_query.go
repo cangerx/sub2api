@@ -14,23 +14,27 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
+	"github.com/Wei-Shaw/sub2api/ent/apikeygroupbinding"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
+	"github.com/Wei-Shaw/sub2api/ent/videogenerationtask"
 )
 
 // APIKeyQuery is the builder for querying APIKey entities.
 type APIKeyQuery struct {
 	config
-	ctx           *QueryContext
-	order         []apikey.OrderOption
-	inters        []Interceptor
-	predicates    []predicate.APIKey
-	withUser      *UserQuery
-	withGroup     *GroupQuery
-	withUsageLogs *UsageLogQuery
-	modifiers     []func(*sql.Selector)
+	ctx                      *QueryContext
+	order                    []apikey.OrderOption
+	inters                   []Interceptor
+	predicates               []predicate.APIKey
+	withUser                 *UserQuery
+	withGroup                *GroupQuery
+	withUsageLogs            *UsageLogQuery
+	withVideoGenerationTasks *VideoGenerationTaskQuery
+	withGroupBindings        *APIKeyGroupBindingQuery
+	modifiers                []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -126,6 +130,50 @@ func (_q *APIKeyQuery) QueryUsageLogs() *UsageLogQuery {
 			sqlgraph.From(apikey.Table, apikey.FieldID, selector),
 			sqlgraph.To(usagelog.Table, usagelog.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, apikey.UsageLogsTable, apikey.UsageLogsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVideoGenerationTasks chains the current query on the "video_generation_tasks" edge.
+func (_q *APIKeyQuery) QueryVideoGenerationTasks() *VideoGenerationTaskQuery {
+	query := (&VideoGenerationTaskClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apikey.Table, apikey.FieldID, selector),
+			sqlgraph.To(videogenerationtask.Table, videogenerationtask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, apikey.VideoGenerationTasksTable, apikey.VideoGenerationTasksColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGroupBindings chains the current query on the "group_bindings" edge.
+func (_q *APIKeyQuery) QueryGroupBindings() *APIKeyGroupBindingQuery {
+	query := (&APIKeyGroupBindingClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apikey.Table, apikey.FieldID, selector),
+			sqlgraph.To(apikeygroupbinding.Table, apikeygroupbinding.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, apikey.GroupBindingsTable, apikey.GroupBindingsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -320,14 +368,16 @@ func (_q *APIKeyQuery) Clone() *APIKeyQuery {
 		return nil
 	}
 	return &APIKeyQuery{
-		config:        _q.config,
-		ctx:           _q.ctx.Clone(),
-		order:         append([]apikey.OrderOption{}, _q.order...),
-		inters:        append([]Interceptor{}, _q.inters...),
-		predicates:    append([]predicate.APIKey{}, _q.predicates...),
-		withUser:      _q.withUser.Clone(),
-		withGroup:     _q.withGroup.Clone(),
-		withUsageLogs: _q.withUsageLogs.Clone(),
+		config:                   _q.config,
+		ctx:                      _q.ctx.Clone(),
+		order:                    append([]apikey.OrderOption{}, _q.order...),
+		inters:                   append([]Interceptor{}, _q.inters...),
+		predicates:               append([]predicate.APIKey{}, _q.predicates...),
+		withUser:                 _q.withUser.Clone(),
+		withGroup:                _q.withGroup.Clone(),
+		withUsageLogs:            _q.withUsageLogs.Clone(),
+		withVideoGenerationTasks: _q.withVideoGenerationTasks.Clone(),
+		withGroupBindings:        _q.withGroupBindings.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -364,6 +414,28 @@ func (_q *APIKeyQuery) WithUsageLogs(opts ...func(*UsageLogQuery)) *APIKeyQuery 
 		opt(query)
 	}
 	_q.withUsageLogs = query
+	return _q
+}
+
+// WithVideoGenerationTasks tells the query-builder to eager-load the nodes that are connected to
+// the "video_generation_tasks" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *APIKeyQuery) WithVideoGenerationTasks(opts ...func(*VideoGenerationTaskQuery)) *APIKeyQuery {
+	query := (&VideoGenerationTaskClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withVideoGenerationTasks = query
+	return _q
+}
+
+// WithGroupBindings tells the query-builder to eager-load the nodes that are connected to
+// the "group_bindings" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *APIKeyQuery) WithGroupBindings(opts ...func(*APIKeyGroupBindingQuery)) *APIKeyQuery {
+	query := (&APIKeyGroupBindingClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGroupBindings = query
 	return _q
 }
 
@@ -445,10 +517,12 @@ func (_q *APIKeyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*APIKe
 	var (
 		nodes       = []*APIKey{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [5]bool{
 			_q.withUser != nil,
 			_q.withGroup != nil,
 			_q.withUsageLogs != nil,
+			_q.withVideoGenerationTasks != nil,
+			_q.withGroupBindings != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -488,6 +562,22 @@ func (_q *APIKeyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*APIKe
 		if err := _q.loadUsageLogs(ctx, query, nodes,
 			func(n *APIKey) { n.Edges.UsageLogs = []*UsageLog{} },
 			func(n *APIKey, e *UsageLog) { n.Edges.UsageLogs = append(n.Edges.UsageLogs, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withVideoGenerationTasks; query != nil {
+		if err := _q.loadVideoGenerationTasks(ctx, query, nodes,
+			func(n *APIKey) { n.Edges.VideoGenerationTasks = []*VideoGenerationTask{} },
+			func(n *APIKey, e *VideoGenerationTask) {
+				n.Edges.VideoGenerationTasks = append(n.Edges.VideoGenerationTasks, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGroupBindings; query != nil {
+		if err := _q.loadGroupBindings(ctx, query, nodes,
+			func(n *APIKey) { n.Edges.GroupBindings = []*APIKeyGroupBinding{} },
+			func(n *APIKey, e *APIKeyGroupBinding) { n.Edges.GroupBindings = append(n.Edges.GroupBindings, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -570,6 +660,66 @@ func (_q *APIKeyQuery) loadUsageLogs(ctx context.Context, query *UsageLogQuery, 
 	}
 	query.Where(predicate.UsageLog(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(apikey.UsageLogsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.APIKeyID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "api_key_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *APIKeyQuery) loadVideoGenerationTasks(ctx context.Context, query *VideoGenerationTaskQuery, nodes []*APIKey, init func(*APIKey), assign func(*APIKey, *VideoGenerationTask)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*APIKey)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(videogenerationtask.FieldAPIKeyID)
+	}
+	query.Where(predicate.VideoGenerationTask(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(apikey.VideoGenerationTasksColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.APIKeyID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "api_key_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *APIKeyQuery) loadGroupBindings(ctx context.Context, query *APIKeyGroupBindingQuery, nodes []*APIKey, init func(*APIKey), assign func(*APIKey, *APIKeyGroupBinding)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*APIKey)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(apikeygroupbinding.FieldAPIKeyID)
+	}
+	query.Where(predicate.APIKeyGroupBinding(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(apikey.GroupBindingsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

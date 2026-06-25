@@ -153,12 +153,27 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 	}
 	sessionHash := h.gatewayService.GenerateSessionHash(parsedReq)
 
+	// Multi-group routing: resolve the effective group (no-op for single-group keys).
+	responsesPlatform := ""
+	if apiKey.Group != nil {
+		responsesPlatform = apiKey.Group.Platform
+	}
+	gf := h.newGroupFailover(requestCtx, apiKey, responsesPlatform)
+	if gf.enabled {
+		channelMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(requestCtx, gf.groupID(), reqModel)
+	}
+
 	// 3. Account selection + failover loop
 	fs := NewFailoverState(h.maxAccountSwitches, false)
 
 	for {
-		selection, err := h.gatewayService.SelectAccountWithLoadAwareness(requestCtx, apiKey.GroupID, sessionHash, reqModel, fs.FailedAccountIDs, "", int64(0))
+		selection, err := h.gatewayService.SelectAccountWithLoadAwareness(requestCtx, gf.groupID(), sessionHash, reqModel, fs.FailedAccountIDs, "", int64(0))
 		if err != nil {
+			if gf.advance(requestCtx) {
+				channelMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(requestCtx, gf.groupID(), reqModel)
+				fs.FailedAccountIDs = make(map[int64]struct{})
+				continue
+			}
 			if len(fs.FailedAccountIDs) == 0 {
 				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
 				h.responsesErrorResponse(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error())

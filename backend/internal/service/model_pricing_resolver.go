@@ -29,6 +29,9 @@ type ResolvedPricing struct {
 	// 按次/图片模式：默认价格（未命中层级时使用）
 	DefaultPerRequestPrice float64
 
+	// 视频区间计费单位秒数（billing_mode=segment）
+	UnitSeconds float64
+
 	// 来源标识
 	Source string // "channel", "litellm", "fallback"
 
@@ -72,13 +75,16 @@ func (r *ModelPricingResolver) Resolve(ctx context.Context, input PricingInput) 
 			if mode == "" {
 				mode = BillingModeToken
 			}
-			if mode == BillingModePerRequest || mode == BillingModeImage {
+			if mode == BillingModePerRequest || mode == BillingModeImage || mode == BillingModeSecond || mode == BillingModeSegment {
 				resolved := &ResolvedPricing{
 					Mode:           mode,
 					Source:         PricingSourceChannel,
 					channelPricing: chPricing,
 				}
 				r.applyRequestTierOverrides(chPricing, resolved)
+				if chPricing.UnitSeconds != nil {
+					resolved.UnitSeconds = *chPricing.UnitSeconds
+				}
 				return resolved
 			}
 		}
@@ -134,8 +140,11 @@ func (r *ModelPricingResolver) applyChannelOverrides(ctx context.Context, groupI
 	switch resolved.Mode {
 	case BillingModeToken:
 		r.applyTokenOverrides(chPricing, resolved)
-	case BillingModePerRequest, BillingModeImage:
+	case BillingModePerRequest, BillingModeImage, BillingModeSecond, BillingModeSegment:
 		r.applyRequestTierOverrides(chPricing, resolved)
+		if chPricing.UnitSeconds != nil {
+			resolved.UnitSeconds = *chPricing.UnitSeconds
+		}
 	}
 }
 
