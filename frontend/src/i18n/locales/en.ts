@@ -770,9 +770,11 @@ export default {
       title: 'Multi-group routing',
       hint: 'Bind this key to multiple groups and route by priority/weight (non-subscription groups only)',
       addGroup: 'Add group',
+      group: 'Group',
       priority: 'Priority',
       weight: 'Weight',
       enabled: 'Enabled',
+      noBindings: 'No groups added yet. Use the button below to add one.',
       priorityHint: 'Lower priority value is preferred; traffic splits by weight within the same priority; a failed group cools down then auto-recovers'
     },
     statusLabel: 'Status',

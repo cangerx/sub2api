@@ -138,3 +138,6 @@ docs/*
 frontend/coverage/
 aicodex
 output/
+
+# Playwright MCP test artifacts
+.playwright-mcp/

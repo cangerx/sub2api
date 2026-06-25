@@ -769,9 +769,11 @@ export default {
       title: '多分组路由',
       hint: '开启后可为该 Key 绑定多个分组，按优先级和权重自动切换（仅支持非订阅分组）',
       addGroup: '添加分组',
+      group: '分组',
       priority: '优先级',
       weight: '权重',
       enabled: '启用',
+      noBindings: '尚未添加分组，点击下方按钮添加',
       priorityHint: '优先级数字越小越优先；同优先级内按权重分配流量；某分组失败会冷却后自动恢复'
     },
     statusLabel: '状态',

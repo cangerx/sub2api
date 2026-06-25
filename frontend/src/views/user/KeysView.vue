@@ -453,18 +453,58 @@
           </div>
 
           <div v-if="formData.multi_group_routing" class="mt-3 space-y-2">
+            <!-- Column headers (aligned with the binding rows below) -->
+            <div
+              v-if="formData.group_bindings.length > 0"
+              class="flex items-center gap-2 px-0.5 text-xs font-medium text-gray-500 dark:text-gray-400"
+            >
+              <span class="flex-1 min-w-[160px]">{{ t('keys.multiGroup.group') }}</span>
+              <span class="w-24">{{ t('keys.multiGroup.priority') }}</span>
+              <span class="w-24">{{ t('keys.multiGroup.weight') }}</span>
+              <span class="w-12 text-center">{{ t('keys.multiGroup.enabled') }}</span>
+              <span class="w-8"></span>
+            </div>
             <div
               v-for="(binding, index) in formData.group_bindings"
               :key="index"
               class="flex flex-wrap items-center gap-2"
             >
-              <select v-model.number="binding.group_id" class="input h-9 flex-1 min-w-[160px]">
-                <option :value="null" disabled>{{ t('keys.selectGroup') }}</option>
-                <option v-for="g in routableGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
-              </select>
+              <div class="flex-1 min-w-[160px]">
+                <Select
+                  v-model="binding.group_id"
+                  :options="routableGroupOptions"
+                  :placeholder="t('keys.selectGroup')"
+                  :searchable="true"
+                  :search-placeholder="t('keys.searchGroup')"
+                >
+                  <template #selected="{ option }">
+                    <GroupBadge
+                      v-if="option"
+                      :name="(option as unknown as GroupOption).label"
+                      :platform="(option as unknown as GroupOption).platform"
+                      :subscription-type="(option as unknown as GroupOption).subscriptionType"
+                      :rate-multiplier="(option as unknown as GroupOption).rate"
+                      :user-rate-multiplier="(option as unknown as GroupOption).userRate"
+                    />
+                    <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
+                  </template>
+                  <template #option="{ option, selected }">
+                    <GroupOptionItem
+                      :name="(option as unknown as GroupOption).label"
+                      :platform="(option as unknown as GroupOption).platform"
+                      :subscription-type="(option as unknown as GroupOption).subscriptionType"
+                      :rate-multiplier="(option as unknown as GroupOption).rate"
+                      :user-rate-multiplier="(option as unknown as GroupOption).userRate"
+                      :description="(option as unknown as GroupOption).description"
+                      :selected="selected"
+                    />
+                  </template>
+                </Select>
+              </div>
               <input
                 v-model.number="binding.priority"
                 type="number"
+                min="0"
                 class="input h-9 w-24"
                 :placeholder="t('keys.multiGroup.priority')"
                 :title="t('keys.multiGroup.priority')"
@@ -477,14 +517,19 @@
                 :placeholder="t('keys.multiGroup.weight')"
                 :title="t('keys.multiGroup.weight')"
               />
-              <label class="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
+              <label class="flex w-12 items-center justify-center" :title="t('keys.multiGroup.enabled')">
                 <input type="checkbox" v-model="binding.enabled" />
-                {{ t('keys.multiGroup.enabled') }}
               </label>
-              <button type="button" class="icon-btn text-red-500" @click="removeGroupBinding(index)">
+              <button type="button" class="icon-btn w-8 text-red-500" @click="removeGroupBinding(index)">
                 <Icon name="trash" size="sm" />
               </button>
             </div>
+            <p
+              v-if="formData.group_bindings.length === 0"
+              class="rounded-md border border-dashed border-gray-300 px-3 py-2 text-center text-xs text-gray-400 dark:border-dark-600"
+            >
+              {{ t('keys.multiGroup.noBindings') }}
+            </p>
             <button type="button" class="btn btn-secondary btn-sm" @click="addGroupBinding">
               <Icon name="plus" size="sm" class="mr-1" />
               {{ t('keys.multiGroup.addGroup') }}
@@ -1270,6 +1315,18 @@ const statusOptions = computed(() => [
 // Multi-group routing: only non-subscription (standard) groups are routable (phase 1).
 const routableGroups = computed(() =>
   groups.value.filter((g) => g.subscription_type !== 'subscription')
+)
+// Options for the multi-group binding selects (project Select component shape).
+const routableGroupOptions = computed(() =>
+  routableGroups.value.map((group) => ({
+    value: group.id,
+    label: group.name,
+    description: group.description,
+    rate: group.rate_multiplier,
+    userRate: userGroupRates.value[group.id] ?? null,
+    subscriptionType: group.subscription_type,
+    platform: group.platform
+  }))
 )
 function addGroupBinding() {
   formData.value.group_bindings.push({ group_id: null, priority: 0, weight: 100, enabled: true })
