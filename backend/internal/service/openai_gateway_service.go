@@ -2156,19 +2156,23 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 	return nil, ErrNoAvailableAccounts
 }
 
-func (s *OpenAIGatewayService) listSchedulableAccounts(ctx context.Context, groupID *int64) ([]Account, error) {
+func (s *OpenAIGatewayService) listSchedulableAccounts(ctx context.Context, groupID *int64, platformOverride ...string) ([]Account, error) {
+	platform := PlatformOpenAI
+	if len(platformOverride) > 0 && strings.TrimSpace(platformOverride[0]) != "" {
+		platform = strings.TrimSpace(platformOverride[0])
+	}
 	if s.schedulerSnapshot != nil {
-		accounts, _, err := s.schedulerSnapshot.ListSchedulableAccounts(ctx, groupID, PlatformOpenAI, false)
+		accounts, _, err := s.schedulerSnapshot.ListSchedulableAccounts(ctx, groupID, platform, false)
 		return accounts, err
 	}
 	var accounts []Account
 	var err error
 	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
-		accounts, err = s.accountRepo.ListSchedulableByPlatform(ctx, PlatformOpenAI)
+		accounts, err = s.accountRepo.ListSchedulableByPlatform(ctx, platform)
 	} else if groupID != nil {
-		accounts, err = s.accountRepo.ListSchedulableByGroupIDAndPlatform(ctx, *groupID, PlatformOpenAI)
+		accounts, err = s.accountRepo.ListSchedulableByGroupIDAndPlatform(ctx, *groupID, platform)
 	} else {
-		accounts, err = s.accountRepo.ListSchedulableUngroupedByPlatform(ctx, PlatformOpenAI)
+		accounts, err = s.accountRepo.ListSchedulableUngroupedByPlatform(ctx, platform)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("query accounts failed: %w", err)

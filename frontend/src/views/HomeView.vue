@@ -12,13 +12,13 @@
   </div>
 
   <!-- Default Home Page -->
-  <div v-else class="home-shell min-h-screen text-zinc-900 dark:text-zinc-150 font-sans antialiased selection:bg-zinc-200 dark:selection:bg-zinc-800 transition-colors duration-300">
+  <div v-else class="home-shell min-h-screen text-zinc-900 dark:text-zinc-100 font-sans antialiased selection:bg-zinc-200 dark:selection:bg-zinc-800 transition-colors duration-300">
     
     <!-- Header iOS style -->
-    <header class="glass-header sticky top-0 z-30 border-b border-zinc-200/40 bg-[#f5f5f7]/70 px-5 py-3.5 backdrop-blur-md dark:border-zinc-800/40 dark:bg-[#000000]/70">
+    <header class="glass-header sticky top-0 z-40 border-b border-zinc-200/40 bg-[#f5f5f7]/70 px-4 py-3 sm:px-6 backdrop-blur-md dark:border-zinc-800/40 dark:bg-[#000000]/70">
       <nav class="mx-auto flex max-w-6xl items-center justify-between gap-4">
         <div class="flex min-w-0 items-center gap-3">
-          <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-850 dark:bg-zinc-900">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain p-1" />
           </div>
           <div class="min-w-0">
@@ -27,27 +27,25 @@
           </div>
         </div>
 
-        <div class="hidden items-center gap-8 text-xs font-semibold text-zinc-650 dark:text-zinc-400 md:flex tracking-tight">
-          <a href="#platform" class="hover:text-zinc-950 dark:hover:text-white transition-colors">平台能力</a>
-          <a href="#model-matrix" class="hover:text-zinc-950 dark:hover:text-white transition-colors">模型聚合</a>
-          <a href="#video-models" class="hover:text-zinc-950 dark:hover:text-white transition-colors">视频模型</a>
-          <a href="#china-models" class="hover:text-zinc-950 dark:hover:text-white transition-colors">国产模型</a>
+        <div class="hidden items-center gap-8 text-xs font-semibold text-zinc-600 dark:text-zinc-400 md:flex tracking-tight">
+          <a href="#features" class="hover:text-zinc-950 dark:hover:text-white transition-colors">核心优势</a>
+          <a href="#models" class="hover:text-zinc-950 dark:hover:text-white transition-colors">模型生态</a>
         </div>
 
-        <div class="flex items-center gap-1.5">
-          <LocaleSwitcher />
+        <div class="flex items-center gap-1 sm:gap-2">
+          <LocaleSwitcher class="shrink-0" />
           <a
             v-if="docUrl"
             :href="docUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="nav-icon-btn"
+            class="nav-icon-btn hidden sm:inline-flex shrink-0"
             :title="t('home.viewDocs')"
           >
             <Icon name="book" size="sm" />
           </a>
           <button
-            class="nav-icon-btn"
+            class="nav-icon-btn hidden sm:inline-flex shrink-0"
             :title="isDark ? t('home.switchToLight') : t('home.switchToDark')"
             @click="toggleTheme"
           >
@@ -56,7 +54,7 @@
           </button>
           <router-link
             :to="isAuthenticated ? dashboardPath : '/login'"
-            class="inline-flex h-8 items-center gap-1 rounded-full bg-zinc-900 px-4 text-xs font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 shadow-sm ml-2 active:scale-95"
+            class="inline-flex h-8 items-center gap-1 rounded-full bg-zinc-900 px-3 sm:px-4 text-xs font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 shadow-sm shrink-0 whitespace-nowrap active:scale-95"
           >
             {{ isAuthenticated ? t('home.dashboard') : t('home.login') }}
             <Icon name="arrowRight" size="xs" />
@@ -68,36 +66,34 @@
     <main class="relative">
       
       <!-- Hero Section with background image -->
-      <section class="hero-section flex min-h-screen flex-col items-center justify-center px-5 text-center relative overflow-hidden">
+      <section class="hero-section flex min-h-[90svh] flex-col items-center justify-center px-4 text-center relative overflow-hidden">
         
         <!-- Mask overlay to ensure text readability -->
-        <div class="absolute inset-0 bg-white/10 dark:bg-black/40 pointer-events-none z-0"></div>
+        <div class="absolute inset-0 bg-white/5 dark:bg-black/30 pointer-events-none z-0"></div>
 
-        <div class="relative z-10 max-w-5xl mx-auto flex flex-col items-center pt-24 pb-20">
+        <div class="relative z-10 max-w-4xl mx-auto flex flex-col items-center pt-24 pb-16">
           <!-- Dynamic iOS style Badge -->
-          <div class="animate-fade-up animate-float inline-flex items-center gap-1.5 px-3.5 py-1.5 mb-10 text-[11px] font-semibold rounded-full bg-white/90 text-zinc-850 dark:bg-zinc-900/80 dark:text-zinc-200 border border-zinc-200/60 dark:border-zinc-800/80 backdrop-blur-md shadow-sm hover:border-zinc-350 dark:hover:border-zinc-700 transition-colors">
+          <div class="animate-fade-up animate-float inline-flex items-center gap-1.5 px-3 py-1 mb-8 text-[11px] font-semibold rounded-full bg-white/80 text-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-200 border border-zinc-200/50 dark:border-zinc-800/50 backdrop-blur-md shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
             <span class="flex h-1.5 w-1.5 relative">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
             </span>
             <span>已全面适配 DeepSeek-R1 与 Claude 3.5 全系列大模型</span>
           </div>
 
-          <p class="animate-fade-up animate-fade-up-1 hero-eyebrow text-xs sm:text-sm font-bold tracking-widest text-zinc-500 dark:text-zinc-400 uppercase mb-4">{{ siteName }} &middot; 下一代 AI API 路由与分发底座</p>
-          
           <!-- Large, spacious, Apple-style heading -->
-          <h1 class="animate-fade-up animate-fade-up-2 leading-[1.03] tracking-[-0.035em] text-5xl sm:text-7xl md:text-8xl lg:text-[6.25rem] font-bold text-zinc-950 dark:text-white max-w-5xl mb-8">
-            一个 API 入口，<br/>接入全球大模型智能。
+          <h1 class="animate-fade-up animate-fade-up-2 leading-[1.1] tracking-[-0.03em] text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold text-zinc-950 dark:text-white max-w-4xl mb-6">
+            连接全球智慧<br class="hidden sm:inline"/>赋能 AI 应用创新
           </h1>
           
-          <p class="animate-fade-up animate-fade-up-3 hero-subtitle text-zinc-600 dark:text-zinc-350 text-base sm:text-lg md:text-xl max-w-3xl leading-relaxed mb-12 tracking-tight font-normal">
-            {{ siteSubtitle }}。专为企业与开发者打造的高性能 API 网关底座，统一聚合 ChatGPT、Claude、Gemini、DeepSeek 及国产与视频生成模型，提供超低延迟的智能分发、精细计费与企业级安全治理能力。
+          <p class="animate-fade-up animate-fade-up-3 text-zinc-650 dark:text-zinc-300 text-base sm:text-lg md:text-xl max-w-2xl leading-relaxed mb-10 tracking-tight font-normal">
+            {{ siteSubtitle || '专为开发者与企业打造的下一代 AI API 网关底座。统一聚合全球主流大模型，提供毫秒级智能调度、渠道灾备与精细计费。' }}
           </p>
 
-          <div class="animate-fade-up animate-fade-up-4 hero-actions flex flex-wrap justify-center items-center gap-8">
+          <div class="animate-fade-up animate-fade-up-4 flex flex-wrap justify-center items-center gap-4 sm:gap-6">
             <router-link
               :to="isAuthenticated ? dashboardPath : '/login'"
-              class="shimmer-btn inline-flex items-center gap-1.5 px-9 py-4 rounded-full text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 transition-all duration-205 shadow-sm hover:-translate-y-0.5 active:translate-y-0 overflow-hidden"
+              class="inline-flex items-center gap-1.5 px-8 py-3.5 rounded-full text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 transition-all duration-200 shadow-md hover:-translate-y-0.5 active:translate-y-0"
             >
               <span class="relative z-10 flex items-center gap-1.5">
                 {{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}
@@ -110,289 +106,77 @@
               :href="docUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+              class="inline-flex items-center gap-1 text-xs font-semibold text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-colors py-3"
             >
               <span>查看开发文档</span>
-              <Icon name="chevronRight" size="xs" class="mt-0.5" />
+              <Icon name="chevronRight" size="xs" />
             </a>
           </div>
+        </div>
+      </section>
 
-          <div class="animate-fade-up animate-fade-up-4 hero-models flex flex-wrap justify-center gap-2 max-w-2xl mx-auto mt-20" aria-label="Supported model families">
-            <span
+      <!-- Features Section (Simplified and Refined) -->
+      <section id="features" class="py-24 border-t border-zinc-200/20 dark:border-zinc-900/40 relative">
+        <div class="mx-auto max-w-6xl px-4">
+          <div class="reveal-element section-heading max-w-2xl mx-auto text-center space-y-4 mb-16">
+            <p class="eyebrow text-[10px] font-bold tracking-widest uppercase text-zinc-450 dark:text-zinc-500">Core Features</p>
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">卓越网关性能，赋能业务增长</h2>
+            <p class="text-zinc-555 dark:text-zinc-455 text-sm tracking-tight">为您提供大模型集成与交付的一站式基础设施服务。</p>
+          </div>
+
+          <div class="reveal-element delay-100 grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            <!-- Card 1 -->
+            <div class="feature-card p-8 rounded-3xl border border-zinc-200/50 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/20 backdrop-blur-sm shadow-sm transition-all duration-300">
+              <div class="inline-flex p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm mb-6">
+                <Icon name="server" size="md" />
+              </div>
+              <h3 class="text-lg font-bold text-zinc-950 mb-3 dark:text-white">统一聚合 简易集成</h3>
+              <p class="text-zinc-600 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed tracking-tight">
+                统一多种主流大模型协议。支持流式传输与函数调用，通过单一 API 密钥，在几行代码内接入全球顶尖 AI 能力。
+              </p>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="feature-card p-8 rounded-3xl border border-zinc-200/50 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/20 backdrop-blur-sm shadow-sm transition-all duration-300">
+              <div class="inline-flex p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm mb-6">
+                <Icon name="trendingUp" size="md" />
+              </div>
+              <h3 class="text-lg font-bold text-zinc-950 mb-3 dark:text-white">智能调度 稳定灾备</h3>
+              <p class="text-zinc-600 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed tracking-tight">
+                基于并发数、可用性与耗时自动分发。首字延迟深度优化，支持故障自动重试与上游负载均衡，保障服务始终在线。
+              </p>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="feature-card p-8 rounded-3xl border border-zinc-200/50 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/20 backdrop-blur-sm shadow-sm transition-all duration-300">
+              <div class="inline-flex p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm mb-6">
+                <Icon name="shield" size="md" />
+              </div>
+              <h3 class="text-lg font-bold text-zinc-950 mb-3 dark:text-white">精细管控 安全合规</h3>
+              <p class="text-zinc-600 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed tracking-tight">
+                支持密钥级额度限制、RPM/TPM 频率控制与 Token 细粒度审计。内置合规治理模块，有效规避滥用风险。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Model Ecosystem Section -->
+      <section id="models" class="py-24 border-t border-zinc-200/20 dark:border-zinc-900/40 relative">
+        <div class="mx-auto max-w-6xl px-4">
+          <div class="reveal-element section-heading max-w-2xl mx-auto text-center space-y-4 mb-16">
+            <p class="eyebrow text-[10px] font-bold tracking-widest uppercase text-zinc-450 dark:text-zinc-500">Model Ecosystem</p>
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">全球大模型，一键就绪</h2>
+            <p class="text-zinc-555 dark:text-zinc-455 text-sm tracking-tight">精选全球顶尖 AI 模型，提供全生命周期接入调度。</p>
+          </div>
+
+          <div class="reveal-element delay-100 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+            <div
               v-for="model in modelStrip"
               :key="model"
-              class="px-4.5 py-2 rounded-full text-[10px] font-bold bg-white/70 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-sm text-zinc-550 dark:text-zinc-400 shadow-sm"
+              class="px-4 py-3 rounded-2xl text-center text-xs font-semibold bg-white/40 dark:bg-zinc-900/20 border border-zinc-200/50 dark:border-zinc-800 backdrop-blur-sm text-zinc-750 dark:text-zinc-350 shadow-sm hover:border-zinc-355 dark:hover:border-zinc-700 transition-colors"
             >
               {{ model }}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <!-- Bento Grid Features Section (Apple grid style) -->
-      <section id="platform" class="py-36 border-t border-zinc-200/30 dark:border-zinc-900/60 relative">
-        <div class="mx-auto max-w-6xl px-5">
-          <div class="reveal-element section-heading max-w-2xl mx-auto text-center space-y-4 mb-20">
-            <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">Platform Features</p>
-            <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">专为大模型交付与商业化而生</h2>
-            <p class="text-zinc-500 dark:text-zinc-400 text-sm sm:text-base tracking-tight font-medium">提供全链路的大模型聚合、高可靠调度、精细化计费及安全合规策略，助您构建稳健的 AI 基础设施。</p>
-          </div>
-
-          <div class="reveal-element delay-100 grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            <!-- Bento Card 1: API Aggregation (Spans 2 columns on desktop) -->
-            <div class="col-span-1 md:col-span-2 bento-card p-8 sm:p-10 lg:p-12 rounded-[2.5rem] border border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-[#111112] shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300 flex flex-col md:flex-row gap-8 items-center overflow-hidden">
-              <div class="flex-1 space-y-4">
-                <div class="inline-flex p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-800 shadow-sm">
-                  <Icon name="server" size="lg" />
-                </div>
-                <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">API 统一聚合</h3>
-                <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed tracking-tight font-medium">
-                  统一多种主流大模型协议，支持流式传输与函数调用。通过单一入口和标准化鉴权，使您的应用在几行代码内获得全球顶尖 AI 能力。
-                </p>
-              </div>
-              
-              <!-- Interactive Terminal mockup -->
-              <div class="w-full md:w-80 shrink-0 font-mono text-[10px] rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-950 text-zinc-350 shadow-xl overflow-hidden self-stretch flex flex-col justify-between min-h-[11rem]">
-                <div class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-900 bg-zinc-900/50">
-                  <div class="flex items-center gap-1.5">
-                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-800"></span>
-                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-800"></span>
-                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-800"></span>
-                  </div>
-                  <span class="text-zinc-500 text-[9px] font-bold tracking-tight">Unified Request</span>
-                </div>
-                <div class="p-4.5 space-y-1.5 overflow-x-auto flex-1 select-none">
-                  <div class="text-zinc-500">// POST /v1/chat/completions</div>
-                  <div><span class="text-pink-450 font-bold">const</span> res = <span class="text-pink-450">await</span> ccapi.chat({</div>
-                  <div class="pl-4">model: <span class="text-emerald-400">"deepseek-r1"</span>,</div>
-                  <div class="pl-4">messages: [{</div>
-                  <div class="pl-8">role: <span class="text-emerald-400">"user"</span>,</div>
-                  <div class="pl-8">content: <span class="text-emerald-400">"你好"</span></div>
-                  <div class="pl-4">}]</div>
-                  <div>});</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Bento Card 2: Routing -->
-            <div class="bento-card p-8 sm:p-10 lg:p-12 rounded-[2.5rem] border border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-[#111112] shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300 flex flex-col justify-between gap-6">
-              <div class="space-y-4">
-                <div class="inline-flex p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-800 shadow-sm">
-                  <Icon name="users" size="lg" />
-                </div>
-                <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">智能路由与分发</h3>
-                <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed tracking-tight font-medium">
-                  基于权重、优先级和可用性进行秒级智能调度，自动规避限频限流与供应商故障，保障服务持续在线。
-                </p>
-              </div>
-              
-              <!-- Visual Routing Graph -->
-              <div class="h-28 flex items-center justify-between px-6 bg-zinc-50 dark:bg-zinc-900/30 rounded-2xl border border-zinc-100 dark:border-zinc-900/60 relative overflow-hidden">
-                <div class="flex items-center z-10">
-                  <div class="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-800 text-white flex items-center justify-center font-bold text-[9px] shadow-sm">API</div>
-                </div>
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <svg class="w-full h-full" viewBox="0 0 200 60">
-                    <path d="M 40,30 L 160,15" stroke="currentColor" class="text-zinc-200 dark:text-zinc-800" stroke-width="1.2" stroke-dasharray="3 3" />
-                    <path d="M 40,30 L 160,30" stroke="currentColor" class="text-zinc-200 dark:text-zinc-800" stroke-width="1.2" stroke-dasharray="3 3" />
-                    <path d="M 40,30 L 160,45" stroke="currentColor" class="text-zinc-200 dark:text-zinc-800" stroke-width="1.2" stroke-dasharray="3 3" />
-                    <circle r="1.8" fill="#a1a1aa">
-                      <animateMotion path="M 40,30 L 160,15" dur="2s" repeatCount="indefinite" />
-                    </circle>
-                    <circle r="1.8" fill="#a1a1aa">
-                      <animateMotion path="M 40,30 L 160,30" dur="2.8s" repeatCount="indefinite" />
-                    </circle>
-                    <circle r="1.8" fill="#a1a1aa">
-                      <animateMotion path="M 40,30 L 160,45" dur="2.4s" repeatCount="indefinite" />
-                    </circle>
-                  </svg>
-                </div>
-                <div class="flex flex-col gap-2.5 z-10 text-[7.5px] font-bold">
-                  <div class="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-550 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800/80">OpenAI</div>
-                  <div class="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-550 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800/80">Claude</div>
-                  <div class="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-550 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800/80">DeepSeek</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Bento Card 3: Billing -->
-            <div class="bento-card p-8 sm:p-10 lg:p-12 rounded-[2.5rem] border border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-[#111112] shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300 flex flex-col justify-between gap-6">
-              <div class="space-y-4">
-                <div class="inline-flex p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-800 shadow-sm">
-                  <Icon name="chart" size="lg" />
-                </div>
-                <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">计费与用量核算</h3>
-                <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed tracking-tight font-medium">
-                  提供高并发、低延迟的计费计量引擎，支持实时 Token 消耗审计与精细余额核算，为企业内部划转与代理分销奠定数据基础。
-                </p>
-              </div>
-              
-              <!-- Billing indicator mockup -->
-              <div class="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-2xl border border-zinc-100 dark:border-zinc-900/60 space-y-2">
-                <div class="flex items-center justify-between text-[9px] font-bold text-zinc-500 dark:text-zinc-400">
-                  <span>账户剩余配额</span>
-                  <span class="text-zinc-800 dark:text-zinc-200">84.2%</span>
-                </div>
-                <div class="h-1.5 w-full bg-zinc-250 dark:bg-zinc-800 rounded-full overflow-hidden">
-                  <div class="h-full bg-zinc-900 dark:bg-zinc-100 rounded-full" style="width: 84.2%"></div>
-                </div>
-                <div class="flex justify-between items-center text-[8px] text-zinc-400 font-bold">
-                  <span>已消费: $15.80</span>
-                  <span>总计: $100.00</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Bento Card 4: Security (Spans 2 columns on desktop) -->
-            <div class="col-span-1 md:col-span-2 bento-card p-8 sm:p-10 lg:p-12 rounded-[2.5rem] border border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-[#111112] shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300 flex flex-col md:flex-row gap-8 items-center overflow-hidden">
-              <div class="flex-1 space-y-4">
-                <div class="inline-flex p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-800 shadow-sm">
-                  <Icon name="shield" size="lg" />
-                </div>
-                <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">安全与治理体系</h3>
-                <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed tracking-tight font-medium">
-                  提供密钥细粒度额度控制、高频调用速率限制（RPM/TPM）及全面行为审计拦截，有效防御恶意滥用并确保数据合规。
-                </p>
-              </div>
-              
-              <!-- Security UI control board -->
-              <div class="w-full md:w-80 shrink-0 p-4.5 bg-zinc-50 dark:bg-zinc-900/30 rounded-2xl border border-zinc-100 dark:border-zinc-900/60 space-y-3.5 text-xs select-none">
-                <div class="flex items-center justify-between border-b border-zinc-200/40 dark:border-zinc-800/40 pb-2">
-                  <span class="font-bold text-zinc-800 dark:text-zinc-200 text-[10px]">Access Policy Rule</span>
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] bg-zinc-150 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-300 font-bold border border-zinc-200/20 dark:border-zinc-700/30">Active</span>
-                </div>
-                <div class="space-y-2.5 font-medium">
-                  <div class="flex justify-between items-center text-[9.5px]">
-                    <span class="text-zinc-505">模型分组:</span>
-                    <div class="flex gap-1 font-bold text-[8.5px]">
-                      <span class="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400">Chat</span>
-                      <span class="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400">Video</span>
-                    </div>
-                  </div>
-                  <div class="flex justify-between items-center text-[9.5px]">
-                    <span class="text-zinc-505">频率限制 (Rate Limit):</span>
-                    <span class="font-bold text-zinc-700 dark:text-zinc-300">60 RPM / 3000 TPM</span>
-                  </div>
-                  <div class="flex justify-between items-center text-[9.5px]">
-                    <span class="text-zinc-505">安全拦截 (Auditing):</span>
-                    <span class="inline-flex items-center gap-1 text-zinc-855 dark:text-zinc-200 font-bold">
-                      <Icon name="checkCircle" size="xs" /> 已启用
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-          </div>
-        </div>
-      </section>
-
-      <!-- Interactive Model Matrix Section -->
-      <section id="model-matrix" class="py-36 border-t border-b border-zinc-200/30 dark:border-zinc-900/60 relative">
-        <div class="mx-auto max-w-6xl px-5">
-          <div class="reveal-element section-heading max-w-2xl mx-auto text-center space-y-4 mb-20">
-            <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">Model Aggregation</p>
-            <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">全球顶尖大模型，一键就绪</h2>
-            <p class="text-zinc-500 dark:text-zinc-400 text-sm sm:text-base tracking-tight font-medium">统一聚合全球主流语言、推理与多模态模型，通过标准的 OpenAI 协议提供极速分发与切换。</p>
-          </div>
-
-          <div class="reveal-element delay-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-12">
-            <div
-              v-for="provider in providers"
-              :key="provider.name"
-              class="group p-6.5 rounded-[2rem] border border-zinc-200/60 dark:border-zinc-900 bg-white/50 dark:bg-zinc-900/50 hover:bg-[#ffffff] dark:hover:bg-[#1c1c1e] transition-all duration-350 hover:-translate-y-1 shadow-sm hover:shadow-md flex flex-col justify-between min-h-[14.5rem]"
-            >
-              <div class="space-y-4">
-                <div class="flex items-center justify-between">
-                  <div class="font-extrabold text-[10px] px-2.5 py-0.5 rounded-md bg-zinc-905 dark:bg-zinc-800 text-white dark:text-zinc-300 tracking-wider">
-                    {{ provider.short }}
-                  </div>
-                  <span class="text-[9px] font-bold text-zinc-500 dark:text-zinc-450">
-                    {{ provider.tag }}
-                  </span>
-                </div>
-                <h3 class="text-base font-bold text-zinc-900 dark:text-white mt-1">{{ provider.name }}</h3>
-                <p class="text-zinc-500 dark:text-zinc-400 text-xs leading-relaxed tracking-tight">{{ provider.description }}</p>
-              </div>
-
-              <!-- Mini metrics footer inside card -->
-              <div class="pt-3 border-t border-zinc-200/50 dark:border-zinc-800/85 text-[9px] font-bold text-zinc-400 flex items-center justify-between">
-                <span>可用率承诺:</span>
-                <span class="text-zinc-700 dark:text-zinc-300">
-                  {{ provider.short === 'GPT' ? '99.98%' : provider.short === 'C' ? '99.95%' : provider.short === 'G' ? '99.9%' : '99.99%' }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Video Generation Section -->
-      <section id="video-models" class="py-36 border-b border-zinc-200/30 dark:border-zinc-900/60 relative">
-        <div class="mx-auto grid max-w-6xl gap-12 px-5 lg:grid-cols-[0.9fr_1.1fr] items-center">
-          <div class="reveal-element section-heading section-heading-left space-y-4">
-            <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">Video Generation</p>
-            <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-none">
-              视频生成大模型，<br/>在同一套 API 内重塑想象
-            </h2>
-            <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-md tracking-tight font-medium">
-              全面适配文生视频、图生视频及长视频生成协议。底座封装异步任务处理、查询、取消与状态轮询管理，让复杂的多媒体创作如文本对话般顺畅。
-            </p>
-          </div>
-
-          <div class="reveal-element delay-100 grid grid-cols-1 gap-5">
-            <div
-              v-for="model in videoModels"
-              :key="model.name"
-              class="group p-6 rounded-[1.75rem] border border-zinc-200/50 dark:border-zinc-900 bg-white/50 dark:bg-zinc-900/50 shadow-sm hover:shadow-md transition-all duration-300 flex gap-5 items-center"
-            >
-              <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-800 shadow-sm transition-colors group-hover:bg-zinc-100 dark:group-hover:bg-zinc-750">
-                <Icon name="video" size="md" />
-              </div>
-              <div class="space-y-0.5">
-                <h3 class="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">{{ model.name }}</h3>
-                <p class="text-zinc-500 dark:text-zinc-400 text-xs leading-relaxed tracking-tight">{{ model.description }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Chinese Models Section -->
-      <section id="china-models" class="py-36 border-b border-zinc-200/30 dark:border-zinc-900/60 relative">
-        <div class="mx-auto grid max-w-6xl gap-12 px-5 lg:grid-cols-[0.9fr_1.1fr] items-center">
-          <div class="reveal-element section-heading section-heading-left space-y-4">
-            <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">China Models</p>
-            <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-none">
-              国产大模型精选，<br/>兼顾合规与极致效能
-            </h2>
-            <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-md tracking-tight font-medium">
-              为中文语境深度定制，提供极高性价比与网络合规保障。内置通义千问、DeepSeek、智谱 GLM、文心一言等，助力垂直行业与本土化业务快速落地。
-            </p>
-          </div>
-
-          <div class="reveal-element delay-100 grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div
-              v-for="model in chinaModels"
-              :key="model.name"
-              class="group relative p-6 rounded-2xl border border-zinc-200/60 dark:border-zinc-900 bg-[#f5f5f7] dark:bg-[#111112] hover:bg-white dark:hover:bg-[#1c1c1e] hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300 min-h-[9.5rem] flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-md"
-            >
-              <!-- Elegant subtle watermark monogram as text bg -->
-              <span class="absolute -right-2 -bottom-5 font-mono font-bold text-7xl text-zinc-200/50 dark:text-zinc-900/10 pointer-events-none select-none transition-transform duration-300 group-hover:scale-105">
-                {{ model.short }}
-              </span>
-              <div class="relative z-10 space-y-2">
-                <div class="flex items-center justify-between">
-                  <h3 class="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">{{ model.name }}</h3>
-                  <span class="text-[9px] font-bold text-zinc-550 dark:text-zinc-400 bg-white/90 dark:bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-200/50 dark:border-zinc-700/50">
-                    {{ model.focus }}
-                  </span>
-                </div>
-                <p class="text-zinc-550 dark:text-zinc-400 text-xs leading-relaxed max-w-[85%] tracking-tight">
-                  {{ model.description }}
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -400,12 +184,12 @@
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-zinc-200/40 bg-[#f5f5f7]/70 px-5 py-14 backdrop-blur-md dark:border-zinc-800/40 dark:bg-[#000000]/70">
+    <footer class="border-t border-zinc-200/20 bg-[#f5f5f7]/60 px-4 py-12 backdrop-blur-md dark:border-zinc-900/40 dark:bg-[#000000]/60">
       <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 text-center sm:flex-row sm:text-left">
-        <p class="text-xs font-semibold text-zinc-500 dark:text-zinc-550">
+        <p class="text-xs font-medium text-zinc-500 dark:text-zinc-455">
           &copy; {{ currentYear }} {{ siteName }}. {{ t('home.footer.allRightsReserved') }}
         </p>
-        <div class="flex items-center gap-6 text-xs font-bold">
+        <div class="flex items-center gap-6 text-xs font-semibold">
           <a
             v-if="docUrl"
             :href="docUrl"
@@ -443,7 +227,7 @@ const appStore = useAppStore()
 
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'CCAPI')
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
-const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || 'AI API Gateway Platform')
+const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || '')
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
 
@@ -460,44 +244,13 @@ const isAdmin = computed(() => authStore.isAdmin)
 const dashboardPath = computed(() => isAdmin.value ? '/admin/dashboard' : '/dashboard')
 const currentYear = computed(() => new Date().getFullYear())
 
-const providers = [
-  { short: 'GPT', name: 'ChatGPT / OpenAI', tag: '通用智能', description: '覆盖对话、工具调用、多模态理解和广泛生态集成。' },
-  { short: 'C', name: 'Claude', tag: '推理 / 编码', description: '适合复杂推理、长文本、编码代理和高质量内容生成。' },
-  { short: 'G', name: 'Gemini', tag: '多模态', description: '适合长上下文、视觉理解和 Google 生态工作流。' },
-  { short: 'DS', name: 'DeepSeek', tag: '国产 / 推理', description: '面向中文、推理、代码与高并发极低成本调用场景。' }
-]
-
 const modelStrip = [
-  'GPT-4o',
-  'Claude 3.5 Sonnet',
-  'Gemini 1.5 Pro',
   'DeepSeek-R1',
-  'Qwen-Plus',
-  'GLM-4',
-  'Sora Video',
-  'CogVideo'
-]
-
-const videoModels = [
-  {
-    name: '文生视频',
-    description: '把文案、脚本和提示词转换成异步视频生成任务。'
-  },
-  {
-    name: '图生视频',
-    description: '以静态图片资产为起点生成动态影视级内容，适合产品展示和创意广告。'
-  },
-  {
-    name: '视频工作流',
-    description: '统一处理异步任务创建、查询、取消、下载以及上游厂商映射。'
-  }
-]
-
-const chinaModels = [
-  { short: 'QW', name: '通义千问', focus: '中文 / 企业', description: '适合中文场景问答、办公自动化、本地知识库检索与集成。' },
-  { short: 'DS', name: 'DeepSeek', focus: '推理 / 高性价比', description: '在推理、代码和商业高并发调用中拥有无与伦比的性价比优势。' },
-  { short: 'GLM', name: '智谱 GLM', focus: '知识 / 智能体', description: '适合 Agent、知识检索库、多轮任务编排和垂直行业场景。' },
-  { short: 'ERN', name: '文心一言', focus: '生态 / 内容', description: '适合文案创意内容生成、百度搜索增强和中文原生应用开发。' }
+  'Claude 3.5 Sonnet',
+  'GPT-4o',
+  'Gemini 1.5 Pro',
+  'Qwen-Max',
+  'GLM-4'
 ]
 
 function toggleTheme() {
@@ -606,75 +359,36 @@ onMounted(() => {
 /* Hero Section */
 .hero-section {
   position: relative;
-  min-height: 100svh;
+  min-height: 90svh;
   width: 100%;
   overflow: hidden;
   isolation: isolate;
 }
 
-/* Bento grid custom designs */
-.bento-card {
+/* Feature card styles */
+.feature-card {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.bento-card:hover {
-  transform: translateY(-2px) scale(1.005);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.03);
+.feature-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(161, 161, 170, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04);
 }
 
-.dark .bento-card:hover {
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
+.dark .feature-card:hover {
+  border-color: rgba(161, 161, 170, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
-.dark .bento-card {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
-}
-
-/* Apple style syntax highlighting overrides */
-.text-pink-450 {
-  color: #ff3b30;
-}
-.dark .text-pink-450 {
-  color: #ff453a;
-}
-.text-emerald-400 {
-  color: #34c759;
-}
-.dark .text-emerald-400 {
-  color: #30d158;
-}
-
-.text-zinc-505 {
-  color: rgb(113 113 122);
-}
-.dark .text-zinc-505 {
-  color: rgb(161 161 170);
-}
-
-.text-zinc-905 {
-  background-color: rgb(24 24 27);
-}
-.dark .text-zinc-905 {
-  background-color: rgb(39 39 42);
-}
-
-.text-zinc-855 {
-  color: rgb(39 39 42);
-}
-.dark .text-zinc-855 {
-  color: rgb(228 228 231);
-}
-
-@media (max-width: 768px) {
-  .hero-section {
-    min-height: 100svh;
-  }
+.dark .feature-card {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 /* Scroll Reveal Animations */
 .reveal-element {
   opacity: 0;
-  transform: translateY(24px);
+  transform: translateY(20px);
   transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .reveal-active {
@@ -694,7 +408,7 @@ onMounted(() => {
 .animate-fade-up-4 { animation-delay: 0.4s; }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(30px); }
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -704,28 +418,7 @@ onMounted(() => {
 }
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  50% { transform: translateY(-6px); }
 }
 
-.shimmer-btn {
-  position: relative;
-}
-.shimmer-btn::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
-  transform: skewX(-20deg);
-  animation: shimmer 3s infinite;
-}
-.dark .shimmer-btn::after {
-  background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
-}
-@keyframes shimmer {
-  0% { left: -100%; }
-  20%, 100% { left: 200%; }
-}
 </style>
