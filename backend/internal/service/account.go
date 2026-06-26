@@ -1196,8 +1196,14 @@ func (a *Account) SupportsOpenAIEndpointCapability(capability OpenAIEndpointCapa
 	}
 	switch capability {
 	case OpenAIEndpointCapabilityChatCompletions:
+		if !a.SupportsCapability(AccountCapabilityChat) {
+			return false
+		}
 	case OpenAIEndpointCapabilityEmbeddings:
 		if a.Type != AccountTypeAPIKey {
+			return false
+		}
+		if !a.SupportsCapability(AccountCapabilityEmbeddings) {
 			return false
 		}
 	default:
@@ -1263,6 +1269,9 @@ func (a *Account) SupportsOpenAIImageCapability(capability OpenAIImagesCapabilit
 		return true
 	}
 	if !a.IsOpenAI() {
+		return false
+	}
+	if !a.SupportsCapability(AccountCapabilityImages) {
 		return false
 	}
 	switch capability {

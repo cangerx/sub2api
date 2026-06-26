@@ -1044,14 +1044,16 @@ func (s *VideoService) reserveTaskCost(ctx context.Context, task *VideoGeneratio
 func (s *VideoService) selectVideoAccount(ctx context.Context, groupID *int64, group *Group, model string) (*Account, error) {
 	var accounts []Account
 	var err error
+	platforms := videoCandidatePlatforms(group)
 	if groupID != nil {
-		accounts, err = s.accountRepo.ListSchedulableByGroupIDAndPlatform(ctx, *groupID, PlatformVideo)
+		accounts, err = s.accountRepo.ListSchedulableByGroupIDAndPlatforms(ctx, *groupID, platforms)
 	} else {
-		accounts, err = s.accountRepo.ListSchedulableUngroupedByPlatform(ctx, PlatformVideo)
+		accounts, err = s.accountRepo.ListSchedulableUngroupedByPlatforms(ctx, platforms)
 	}
 	if err != nil {
 		return nil, err
 	}
+	accounts = filterVideoCapableAccounts(accounts, model)
 	if len(accounts) == 0 {
 		return nil, ErrNoAvailableAccounts
 	}
@@ -1073,6 +1075,49 @@ func (s *VideoService) selectVideoAccount(ctx context.Context, groupID *int64, g
 		return nil, err
 	}
 	return full, nil
+}
+
+func videoCandidatePlatforms(group *Group) []string {
+	platforms := []string{PlatformVideo}
+	if group == nil {
+		return platforms
+	}
+	add := func(platform string) {
+		platform = strings.ToLower(strings.TrimSpace(platform))
+		if platform == "" {
+			return
+		}
+		for _, existing := range platforms {
+			if existing == platform {
+				return
+			}
+		}
+		platforms = append(platforms, platform)
+	}
+	for _, scope := range group.SupportedModelScopes {
+		scope = strings.ToLower(strings.TrimSpace(scope))
+		if strings.HasPrefix(scope, "video:") {
+			add(strings.TrimPrefix(scope, "video:"))
+		}
+	}
+	return platforms
+}
+
+func filterVideoCapableAccounts(accounts []Account, model string) []Account {
+	if len(accounts) == 0 {
+		return nil
+	}
+	filtered := make([]Account, 0, len(accounts))
+	for _, account := range accounts {
+		if !account.SupportsCapability(AccountCapabilityVideos) {
+			continue
+		}
+		if !account.IsModelSupported(model) {
+			continue
+		}
+		filtered = append(filtered, account)
+	}
+	return filtered
 }
 
 func selectRoutedVideoAccount(accounts []Account, group *Group, model string) *Account {
