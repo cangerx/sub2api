@@ -1,0 +1,22 @@
+[Unit]
+Description=CCAPI Data Management Daemon
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=ccapi
+Group=ccapi
+WorkingDirectory=/opt/ccapi
+ExecStart=/opt/ccapi/datamanagementd \
+  -socket-path /tmp/ccapi-datamanagement.sock \
+  -sqlite-path /var/lib/ccapi/datamanagement/datamanagementd.db \
+  -version 1.0.0
+Restart=always
+RestartSec=5s
+LimitNOFILE=100000
+NoNewPrivileges=true
+PrivateTmp=false
+
+[Install]
+WantedBy=multi-user.target

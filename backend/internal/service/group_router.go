@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/ccapi/internal/config"
 )
 
 // ErrNoRoutableGroup is returned when multi-group routing is enabled but no
@@ -85,8 +85,8 @@ func (r *GroupRouter) SelectGroup(ctx context.Context, apiKey *APIKey, scope str
 		priority int
 		weight   int
 	}
-	var eligible []candidate         // not cooling, usable
-	var coolingFallback *Group       // shortest-remaining cooling group (last resort)
+	var eligible []candidate   // not cooling, usable
+	var coolingFallback *Group // shortest-remaining cooling group (last resort)
 	var coolingFallbackRemaining time.Duration
 
 	for i := range apiKey.GroupBindings {

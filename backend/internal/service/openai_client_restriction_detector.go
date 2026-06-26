@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
+	"github.com/Wei-Shaw/ccapi/internal/config"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/openai"
 	"github.com/gin-gonic/gin"
 )
 

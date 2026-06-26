@@ -15,8 +15,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/logger"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -47,9 +47,9 @@ var upgrader = websocket.Upgrader{
 		return isAllowedOpsWSOrigin(r)
 	},
 	// Subprotocol negotiation:
-	// - The frontend passes ["sub2api-admin", "jwt.<token>"].
-	// - We always select "sub2api-admin" so the token is never echoed back in the handshake response.
-	Subprotocols: []string{"sub2api-admin"},
+	// - The frontend passes ["ccapi-admin", "jwt.<token>"].
+	// - We always select "ccapi-admin" so the token is never echoed back in the handshake response.
+	Subprotocols: []string{"ccapi-admin"},
 }
 
 const (

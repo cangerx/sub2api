@@ -92,7 +92,7 @@ const apiKeyInput = ref(videoStore.apiKey)
 const selectedTask = ref<VideoObject | null>(null)
 
 const autoRefresh = useAutoRefresh({
-  storageKey: 'sub2api_video_auto_refresh',
+  storageKey: 'ccapi_video_auto_refresh',
   intervals: [5, 10, 15, 30],
   defaultInterval: 5,
   onRefresh: () => videoStore.pollActiveTasks(),

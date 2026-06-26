@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/ccapi/internal/config"
 )
 
 func mgrTestRouter() *GroupRouter {
@@ -67,9 +67,9 @@ func TestSelectGroup_WeightedWithinBucket(t *testing.T) {
 func TestSelectGroup_SkipsSubscriptionAndDisabled(t *testing.T) {
 	r := mgrTestRouter()
 	key := mgrKey(
-		APIKeyGroupBinding{GroupID: 10, Priority: 0, Weight: 100, Enabled: true, Group: mgrGroup(10, "openai", true)}, // subscription -> skip
+		APIKeyGroupBinding{GroupID: 10, Priority: 0, Weight: 100, Enabled: true, Group: mgrGroup(10, "openai", true)},   // subscription -> skip
 		APIKeyGroupBinding{GroupID: 20, Priority: 0, Weight: 100, Enabled: false, Group: mgrGroup(20, "openai", false)}, // disabled -> skip
-		APIKeyGroupBinding{GroupID: 30, Priority: 0, Weight: 100, Enabled: true, Group: mgrGroup(30, "openai", false)}, // only valid
+		APIKeyGroupBinding{GroupID: 30, Priority: 0, Weight: 100, Enabled: true, Group: mgrGroup(30, "openai", false)},  // only valid
 	)
 	got, err := r.SelectGroup(context.Background(), key, "openai", nil)
 	if err != nil || got.ID != 30 {

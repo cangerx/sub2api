@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/payment"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	dbent "github.com/Wei-Shaw/ccapi/ent"
+	"github.com/Wei-Shaw/ccapi/internal/config"
+	"github.com/Wei-Shaw/ccapi/internal/payment"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/antigravity"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/logger"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )

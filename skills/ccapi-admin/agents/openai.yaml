@@ -1,0 +1,7 @@
+interface:
+  display_name: "CCAPI Admin"
+  short_description: "Manage CCAPI admin accounts and settings"
+  default_prompt: "Use $ccapi-admin to inspect and manage CCAPI backend accounts safely."
+
+policy:
+  allow_implicit_invocation: true

@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/sub2api/ent/predicate"
-	"github.com/Wei-Shaw/sub2api/ent/videomodel"
+	"github.com/Wei-Shaw/ccapi/ent/predicate"
+	"github.com/Wei-Shaw/ccapi/ent/videomodel"
 )
 
 // VideoModelDelete is the builder for deleting a VideoModel entity.

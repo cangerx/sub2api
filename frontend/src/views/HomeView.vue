@@ -1,7 +1,6 @@
 <template>
   <!-- Custom Home Content: Full Page Mode -->
   <div v-if="homeContent" class="min-h-screen">
-    <!-- iframe mode -->
     <iframe
       v-if="isHomeContentUrl"
       :src="homeContent.trim()"
@@ -13,380 +12,404 @@
   </div>
 
   <!-- Default Home Page -->
-  <div
-    v-else
-    class="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-50 via-primary-50/30 to-gray-100 dark:from-dark-950 dark:via-dark-900 dark:to-dark-950"
-  >
-    <!-- Background Decorations -->
-    <div class="pointer-events-none absolute inset-0 overflow-hidden">
-      <div
-        class="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-primary-400/20 blur-3xl"
-      ></div>
-      <div
-        class="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-primary-500/15 blur-3xl"
-      ></div>
-      <div
-        class="absolute left-1/3 top-1/4 h-72 w-72 rounded-full bg-primary-300/10 blur-3xl"
-      ></div>
-      <div
-        class="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-primary-400/10 blur-3xl"
-      ></div>
-      <div
-        class="absolute inset-0 bg-[linear-gradient(rgba(20,184,166,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(20,184,166,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"
-      ></div>
-    </div>
-
-    <!-- Header -->
-    <header class="relative z-20 px-6 py-4">
-      <nav class="mx-auto flex max-w-6xl items-center justify-between">
-        <!-- Logo -->
-        <div class="flex items-center">
-          <div class="h-10 w-10 overflow-hidden rounded-xl shadow-md">
-            <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+  <div v-else class="home-shell min-h-screen text-zinc-900 dark:text-zinc-150 font-sans antialiased selection:bg-zinc-200 dark:selection:bg-zinc-800 transition-colors duration-300">
+    
+    <!-- Header iOS style -->
+    <header class="glass-header sticky top-0 z-30 border-b border-zinc-200/40 bg-[#f5f5f7]/70 px-5 py-3.5 backdrop-blur-md dark:border-zinc-800/40 dark:bg-[#000000]/70">
+      <nav class="mx-auto flex max-w-6xl items-center justify-between gap-4">
+        <div class="flex min-w-0 items-center gap-3">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-850 dark:bg-zinc-900">
+            <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain p-1" />
+          </div>
+          <div class="min-w-0">
+            <div class="truncate text-sm font-semibold leading-5 text-zinc-950 dark:text-white tracking-tight">{{ siteName }}</div>
+            <div class="hidden text-[10px] text-zinc-450 dark:text-zinc-500 sm:block tracking-tight font-medium">AI API Gateway Platform</div>
           </div>
         </div>
 
-        <!-- Nav Actions -->
-        <div class="flex items-center gap-3">
-          <!-- Language Switcher -->
-          <LocaleSwitcher />
+        <div class="hidden items-center gap-8 text-xs font-semibold text-zinc-650 dark:text-zinc-400 md:flex tracking-tight">
+          <a href="#platform" class="hover:text-zinc-950 dark:hover:text-white transition-colors">平台能力</a>
+          <a href="#model-matrix" class="hover:text-zinc-950 dark:hover:text-white transition-colors">模型聚合</a>
+          <a href="#video-models" class="hover:text-zinc-950 dark:hover:text-white transition-colors">视频模型</a>
+          <a href="#china-models" class="hover:text-zinc-950 dark:hover:text-white transition-colors">国产模型</a>
+        </div>
 
-          <!-- Doc Link -->
+        <div class="flex items-center gap-1.5">
+          <LocaleSwitcher />
           <a
             v-if="docUrl"
             :href="docUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
+            class="nav-icon-btn"
             :title="t('home.viewDocs')"
           >
-            <Icon name="book" size="md" />
+            <Icon name="book" size="sm" />
           </a>
-
-          <!-- Theme Toggle -->
           <button
-            @click="toggleTheme"
-            class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
+            class="nav-icon-btn"
             :title="isDark ? t('home.switchToLight') : t('home.switchToDark')"
+            @click="toggleTheme"
           >
-            <Icon v-if="isDark" name="sun" size="md" />
-            <Icon v-else name="moon" size="md" />
+            <Icon v-if="isDark" name="sun" size="sm" />
+            <Icon v-else name="moon" size="sm" />
           </button>
-
-          <!-- Login / Dashboard Button -->
           <router-link
-            v-if="isAuthenticated"
-            :to="dashboardPath"
-            class="inline-flex items-center gap-1.5 rounded-full bg-gray-900 py-1 pl-1 pr-2.5 transition-colors hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700"
+            :to="isAuthenticated ? dashboardPath : '/login'"
+            class="inline-flex h-8 items-center gap-1 rounded-full bg-zinc-900 px-4 text-xs font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 shadow-sm ml-2 active:scale-95"
           >
-            <span
-              class="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-[10px] font-semibold text-white"
-            >
-              {{ userInitial }}
-            </span>
-            <span class="text-xs font-medium text-white">{{ t('home.dashboard') }}</span>
-            <svg
-              class="h-3 w-3 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"
-              />
-            </svg>
-          </router-link>
-          <router-link
-            v-else
-            to="/login"
-            class="inline-flex items-center rounded-full bg-gray-900 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700"
-          >
-            {{ t('home.login') }}
+            {{ isAuthenticated ? t('home.dashboard') : t('home.login') }}
+            <Icon name="arrowRight" size="xs" />
           </router-link>
         </div>
       </nav>
     </header>
 
-    <!-- Main Content -->
-    <main class="relative z-10 flex-1 px-6 py-16">
-      <div class="mx-auto max-w-6xl">
-        <!-- Hero Section - Left/Right Layout -->
-        <div class="mb-12 flex flex-col items-center justify-between gap-12 lg:flex-row lg:gap-16">
-          <!-- Left: Text Content -->
-          <div class="flex-1 text-center lg:text-left">
-            <h1
-              class="mb-4 text-4xl font-bold text-gray-900 dark:text-white md:text-5xl lg:text-6xl"
-            >
-              {{ siteName }}
-            </h1>
-            <p class="mb-8 text-lg text-gray-600 dark:text-dark-300 md:text-xl">
-              {{ siteSubtitle }}
-            </p>
+    <main class="relative">
+      
+      <!-- Hero Section with background image -->
+      <section class="hero-section flex min-h-screen flex-col items-center justify-center px-5 text-center relative overflow-hidden">
+        
+        <!-- Mask overlay to ensure text readability -->
+        <div class="absolute inset-0 bg-white/10 dark:bg-black/40 pointer-events-none z-0"></div>
 
-            <!-- CTA Button -->
-            <div>
-              <router-link
-                :to="isAuthenticated ? dashboardPath : '/login'"
-                class="btn btn-primary px-8 py-3 text-base shadow-lg shadow-primary-500/30"
-              >
-                {{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}
-                <Icon name="arrowRight" size="md" class="ml-2" :stroke-width="2" />
-              </router-link>
-            </div>
+        <div class="relative z-10 max-w-5xl mx-auto flex flex-col items-center pt-24 pb-20">
+          <!-- Dynamic iOS style Badge -->
+          <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 mb-10 text-[11px] font-semibold rounded-full bg-white/90 text-zinc-850 dark:bg-zinc-900/80 dark:text-zinc-200 border border-zinc-200/60 dark:border-zinc-800/80 backdrop-blur-md shadow-sm hover:border-zinc-350 dark:hover:border-zinc-700 transition-colors">
+            <span class="flex h-1.5 w-1.5 relative">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+            </span>
+            <span>已全面适配 DeepSeek-R1 与 Claude 3.5 全系列大模型</span>
           </div>
 
-          <!-- Right: Terminal Animation -->
-          <div class="flex flex-1 justify-center lg:justify-end">
-            <div class="terminal-container">
-              <div class="terminal-window">
-                <!-- Window header -->
-                <div class="terminal-header">
-                  <div class="terminal-buttons">
-                    <span class="btn-close"></span>
-                    <span class="btn-minimize"></span>
-                    <span class="btn-maximize"></span>
-                  </div>
-                  <span class="terminal-title">terminal</span>
+          <p class="hero-eyebrow text-xs sm:text-sm font-bold tracking-widest text-zinc-500 dark:text-zinc-400 uppercase mb-4">{{ siteName }} &middot; 下一代 AI API 路由与分发底座</p>
+          
+          <!-- Large, spacious, Apple-style heading -->
+          <h1 class="leading-[1.03] tracking-[-0.035em] text-5xl sm:text-7xl md:text-8xl lg:text-[6.25rem] font-bold text-zinc-950 dark:text-white max-w-5xl mb-8">
+            一个 API 入口，<br/>接入全球大模型智能。
+          </h1>
+          
+          <p class="hero-subtitle text-zinc-600 dark:text-zinc-350 text-base sm:text-lg md:text-xl max-w-3xl leading-relaxed mb-12 tracking-tight font-normal">
+            {{ siteSubtitle }}。专为企业与开发者打造的高性能 API 网关底座，统一聚合 ChatGPT、Claude、Gemini、DeepSeek 及国产与视频生成模型，提供超低延迟的智能分发、精细计费与企业级安全治理能力。
+          </p>
+
+          <div class="hero-actions flex flex-wrap justify-center items-center gap-8">
+            <router-link
+              :to="isAuthenticated ? dashboardPath : '/login'"
+              class="inline-flex items-center gap-1.5 px-9 py-4 rounded-full text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 transition-all duration-205 shadow-sm hover:-translate-y-0.5 active:translate-y-0"
+            >
+              {{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}
+              <Icon name="arrowRight" size="xs" />
+            </router-link>
+            
+            <a
+              v-if="docUrl"
+              :href="docUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              <span>查看开发文档</span>
+              <Icon name="chevronRight" size="xs" class="mt-0.5" />
+            </a>
+          </div>
+
+          <div class="hero-models flex flex-wrap justify-center gap-2 max-w-2xl mx-auto mt-20" aria-label="Supported model families">
+            <span
+              v-for="model in modelStrip"
+              :key="model"
+              class="px-4.5 py-2 rounded-full text-[10px] font-bold bg-white/70 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-sm text-zinc-550 dark:text-zinc-400 shadow-sm"
+            >
+              {{ model }}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bento Grid Features Section (Apple grid style) -->
+      <section id="platform" class="py-36 border-t border-zinc-200/30 dark:border-zinc-900/60 relative">
+        <div class="mx-auto max-w-6xl px-5">
+          <div class="section-heading max-w-2xl mx-auto text-center space-y-4 mb-20">
+            <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">Platform Features</p>
+            <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">专为大模型交付与商业化而生</h2>
+            <p class="text-zinc-500 dark:text-zinc-400 text-sm sm:text-base tracking-tight font-medium">提供全链路的大模型聚合、高可靠调度、精细化计费及安全合规策略，助您构建稳健的 AI 基础设施。</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Bento Card 1: API Aggregation (Spans 2 columns on desktop) -->
+            <div class="col-span-1 md:col-span-2 bento-card p-8 sm:p-10 lg:p-12 rounded-[2.5rem] border border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-[#111112] shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300 flex flex-col md:flex-row gap-8 items-center overflow-hidden">
+              <div class="flex-1 space-y-4">
+                <div class="inline-flex p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-800 shadow-sm">
+                  <Icon name="server" size="lg" />
                 </div>
-                <!-- Terminal content -->
-                <div class="terminal-body">
-                  <div class="code-line line-1">
-                    <span class="code-prompt">$</span>
-                    <span class="code-cmd">curl</span>
-                    <span class="code-flag">-X POST</span>
-                    <span class="code-url">/v1/messages</span>
+                <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">API 统一聚合</h3>
+                <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed tracking-tight font-medium">
+                  统一多种主流大模型协议，支持流式传输与函数调用。通过单一入口和标准化鉴权，使您的应用在几行代码内获得全球顶尖 AI 能力。
+                </p>
+              </div>
+              
+              <!-- Interactive Terminal mockup -->
+              <div class="w-full md:w-80 shrink-0 font-mono text-[10px] rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-950 text-zinc-350 shadow-xl overflow-hidden self-stretch flex flex-col justify-between min-h-[11rem]">
+                <div class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-900 bg-zinc-900/50">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-800"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-800"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-800"></span>
                   </div>
-                  <div class="code-line line-2">
-                    <span class="code-comment"># Routing to upstream...</span>
+                  <span class="text-zinc-500 text-[9px] font-bold tracking-tight">Unified Request</span>
+                </div>
+                <div class="p-4.5 space-y-1.5 overflow-x-auto flex-1 select-none">
+                  <div class="text-zinc-500">// POST /v1/chat/completions</div>
+                  <div><span class="text-pink-450 font-bold">const</span> res = <span class="text-pink-450">await</span> ccapi.chat({</div>
+                  <div class="pl-4">model: <span class="text-emerald-400">"deepseek-r1"</span>,</div>
+                  <div class="pl-4">messages: [{</div>
+                  <div class="pl-8">role: <span class="text-emerald-400">"user"</span>,</div>
+                  <div class="pl-8">content: <span class="text-emerald-400">"你好"</span></div>
+                  <div class="pl-4">}]</div>
+                  <div>});</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bento Card 2: Routing -->
+            <div class="bento-card p-8 sm:p-10 lg:p-12 rounded-[2.5rem] border border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-[#111112] shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300 flex flex-col justify-between gap-6">
+              <div class="space-y-4">
+                <div class="inline-flex p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-800 shadow-sm">
+                  <Icon name="users" size="lg" />
+                </div>
+                <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">智能路由与分发</h3>
+                <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed tracking-tight font-medium">
+                  基于权重、优先级和可用性进行秒级智能调度，自动规避限频限流与供应商故障，保障服务持续在线。
+                </p>
+              </div>
+              
+              <!-- Visual Routing Graph -->
+              <div class="h-28 flex items-center justify-between px-6 bg-zinc-50 dark:bg-zinc-900/30 rounded-2xl border border-zinc-100 dark:border-zinc-900/60 relative overflow-hidden">
+                <div class="flex items-center z-10">
+                  <div class="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-800 text-white flex items-center justify-center font-bold text-[9px] shadow-sm">API</div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <svg class="w-full h-full" viewBox="0 0 200 60">
+                    <path d="M 40,30 L 160,15" stroke="currentColor" class="text-zinc-200 dark:text-zinc-800" stroke-width="1.2" stroke-dasharray="3 3" />
+                    <path d="M 40,30 L 160,30" stroke="currentColor" class="text-zinc-200 dark:text-zinc-800" stroke-width="1.2" stroke-dasharray="3 3" />
+                    <path d="M 40,30 L 160,45" stroke="currentColor" class="text-zinc-200 dark:text-zinc-800" stroke-width="1.2" stroke-dasharray="3 3" />
+                    <circle r="1.8" fill="#a1a1aa">
+                      <animateMotion path="M 40,30 L 160,15" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    <circle r="1.8" fill="#a1a1aa">
+                      <animateMotion path="M 40,30 L 160,30" dur="2.8s" repeatCount="indefinite" />
+                    </circle>
+                    <circle r="1.8" fill="#a1a1aa">
+                      <animateMotion path="M 40,30 L 160,45" dur="2.4s" repeatCount="indefinite" />
+                    </circle>
+                  </svg>
+                </div>
+                <div class="flex flex-col gap-2.5 z-10 text-[7.5px] font-bold">
+                  <div class="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-550 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800/80">OpenAI</div>
+                  <div class="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-550 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800/80">Claude</div>
+                  <div class="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-550 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800/80">DeepSeek</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bento Card 3: Billing -->
+            <div class="bento-card p-8 sm:p-10 lg:p-12 rounded-[2.5rem] border border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-[#111112] shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300 flex flex-col justify-between gap-6">
+              <div class="space-y-4">
+                <div class="inline-flex p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-800 shadow-sm">
+                  <Icon name="chart" size="lg" />
+                </div>
+                <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">计费与用量核算</h3>
+                <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed tracking-tight font-medium">
+                  提供高并发、低延迟的计费计量引擎，支持实时 Token 消耗审计与精细余额核算，为企业内部划转与代理分销奠定数据基础。
+                </p>
+              </div>
+              
+              <!-- Billing indicator mockup -->
+              <div class="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-2xl border border-zinc-100 dark:border-zinc-900/60 space-y-2">
+                <div class="flex items-center justify-between text-[9px] font-bold text-zinc-500 dark:text-zinc-400">
+                  <span>账户剩余配额</span>
+                  <span class="text-zinc-800 dark:text-zinc-200">84.2%</span>
+                </div>
+                <div class="h-1.5 w-full bg-zinc-250 dark:bg-zinc-800 rounded-full overflow-hidden">
+                  <div class="h-full bg-zinc-900 dark:bg-zinc-100 rounded-full" style="width: 84.2%"></div>
+                </div>
+                <div class="flex justify-between items-center text-[8px] text-zinc-400 font-bold">
+                  <span>已消费: $15.80</span>
+                  <span>总计: $100.00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bento Card 4: Security (Spans 2 columns on desktop) -->
+            <div class="col-span-1 md:col-span-2 bento-card p-8 sm:p-10 lg:p-12 rounded-[2.5rem] border border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-[#111112] shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300 flex flex-col md:flex-row gap-8 items-center overflow-hidden">
+              <div class="flex-1 space-y-4">
+                <div class="inline-flex p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-800 shadow-sm">
+                  <Icon name="shield" size="lg" />
+                </div>
+                <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">安全与治理体系</h3>
+                <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed tracking-tight font-medium">
+                  提供密钥细粒度额度控制、高频调用速率限制（RPM/TPM）及全面行为审计拦截，有效防御恶意滥用并确保数据合规。
+                </p>
+              </div>
+              
+              <!-- Security UI control board -->
+              <div class="w-full md:w-80 shrink-0 p-4.5 bg-zinc-50 dark:bg-zinc-900/30 rounded-2xl border border-zinc-100 dark:border-zinc-900/60 space-y-3.5 text-xs select-none">
+                <div class="flex items-center justify-between border-b border-zinc-200/40 dark:border-zinc-800/40 pb-2">
+                  <span class="font-bold text-zinc-800 dark:text-zinc-200 text-[10px]">Access Policy Rule</span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] bg-zinc-150 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-300 font-bold border border-zinc-200/20 dark:border-zinc-700/30">Active</span>
+                </div>
+                <div class="space-y-2.5 font-medium">
+                  <div class="flex justify-between items-center text-[9.5px]">
+                    <span class="text-zinc-505">模型分组:</span>
+                    <div class="flex gap-1 font-bold text-[8.5px]">
+                      <span class="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400">Chat</span>
+                      <span class="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400">Video</span>
+                    </div>
                   </div>
-                  <div class="code-line line-3">
-                    <span class="code-success">200 OK</span>
-                    <span class="code-response">{ "content": "Hello!" }</span>
+                  <div class="flex justify-between items-center text-[9.5px]">
+                    <span class="text-zinc-505">频率限制 (Rate Limit):</span>
+                    <span class="font-bold text-zinc-700 dark:text-zinc-300">60 RPM / 3000 TPM</span>
                   </div>
-                  <div class="code-line line-4">
-                    <span class="code-prompt">$</span>
-                    <span class="cursor"></span>
+                  <div class="flex justify-between items-center text-[9.5px]">
+                    <span class="text-zinc-505">安全拦截 (Auditing):</span>
+                    <span class="inline-flex items-center gap-1 text-zinc-855 dark:text-zinc-200 font-bold">
+                      <Icon name="checkCircle" size="xs" /> 已启用
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
+            
           </div>
         </div>
+      </section>
 
-        <!-- Feature Tags - Centered -->
-        <div class="mb-12 flex flex-wrap items-center justify-center gap-4 md:gap-6">
-          <div
-            class="inline-flex items-center gap-2.5 rounded-full border border-gray-200/50 bg-white/80 px-5 py-2.5 shadow-sm backdrop-blur-sm dark:border-dark-700/50 dark:bg-dark-800/80"
-          >
-            <Icon name="swap" size="sm" class="text-primary-500" />
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">{{
-              t('home.tags.subscriptionToApi')
-            }}</span>
+      <!-- Interactive Model Matrix Section -->
+      <section id="model-matrix" class="py-36 border-t border-b border-zinc-200/30 dark:border-zinc-900/60 relative">
+        <div class="mx-auto max-w-6xl px-5">
+          <div class="section-heading max-w-2xl mx-auto text-center space-y-4 mb-20">
+            <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">Model Aggregation</p>
+            <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">全球顶尖大模型，一键就绪</h2>
+            <p class="text-zinc-500 dark:text-zinc-400 text-sm sm:text-base tracking-tight font-medium">统一聚合全球主流语言、推理与多模态模型，通过标准的 OpenAI 协议提供极速分发与切换。</p>
           </div>
-          <div
-            class="inline-flex items-center gap-2.5 rounded-full border border-gray-200/50 bg-white/80 px-5 py-2.5 shadow-sm backdrop-blur-sm dark:border-dark-700/50 dark:bg-dark-800/80"
-          >
-            <Icon name="shield" size="sm" class="text-primary-500" />
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">{{
-              t('home.tags.stickySession')
-            }}</span>
-          </div>
-          <div
-            class="inline-flex items-center gap-2.5 rounded-full border border-gray-200/50 bg-white/80 px-5 py-2.5 shadow-sm backdrop-blur-sm dark:border-dark-700/50 dark:bg-dark-800/80"
-          >
-            <Icon name="chart" size="sm" class="text-primary-500" />
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">{{
-              t('home.tags.realtimeBilling')
-            }}</span>
-          </div>
-        </div>
 
-        <!-- Features Grid -->
-        <div class="mb-12 grid gap-6 md:grid-cols-3">
-          <!-- Feature 1: Unified Gateway -->
-          <div
-            class="group rounded-2xl border border-gray-200/50 bg-white/60 p-6 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/10 dark:border-dark-700/50 dark:bg-dark-800/60"
-          >
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-12">
             <div
-              class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30 transition-transform group-hover:scale-110"
+              v-for="provider in providers"
+              :key="provider.name"
+              class="group p-6.5 rounded-[2rem] border border-zinc-200/60 dark:border-zinc-900 bg-white/50 dark:bg-zinc-900/50 hover:bg-[#ffffff] dark:hover:bg-[#1c1c1e] transition-all duration-350 hover:-translate-y-1 shadow-sm hover:shadow-md flex flex-col justify-between min-h-[14.5rem]"
             >
-              <Icon name="server" size="lg" class="text-white" />
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <div class="font-extrabold text-[10px] px-2.5 py-0.5 rounded-md bg-zinc-905 dark:bg-zinc-800 text-white dark:text-zinc-300 tracking-wider">
+                    {{ provider.short }}
+                  </div>
+                  <span class="text-[9px] font-bold text-zinc-500 dark:text-zinc-450">
+                    {{ provider.tag }}
+                  </span>
+                </div>
+                <h3 class="text-base font-bold text-zinc-900 dark:text-white mt-1">{{ provider.name }}</h3>
+                <p class="text-zinc-500 dark:text-zinc-400 text-xs leading-relaxed tracking-tight">{{ provider.description }}</p>
+              </div>
+
+              <!-- Mini metrics footer inside card -->
+              <div class="pt-3 border-t border-zinc-200/50 dark:border-zinc-800/85 text-[9px] font-bold text-zinc-400 flex items-center justify-between">
+                <span>可用率承诺:</span>
+                <span class="text-zinc-700 dark:text-zinc-300">
+                  {{ provider.short === 'GPT' ? '99.98%' : provider.short === 'C' ? '99.95%' : provider.short === 'G' ? '99.9%' : '99.99%' }}
+                </span>
+              </div>
             </div>
-            <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-              {{ t('home.features.unifiedGateway') }}
-            </h3>
-            <p class="text-sm leading-relaxed text-gray-600 dark:text-dark-400">
-              {{ t('home.features.unifiedGatewayDesc') }}
+          </div>
+        </div>
+      </section>
+
+      <!-- Video Generation Section -->
+      <section id="video-models" class="py-36 border-b border-zinc-200/30 dark:border-zinc-900/60 relative">
+        <div class="mx-auto grid max-w-6xl gap-12 px-5 lg:grid-cols-[0.9fr_1.1fr] items-center">
+          <div class="section-heading section-heading-left space-y-4">
+            <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">Video Generation</p>
+            <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-none">
+              视频生成大模型，<br/>在同一套 API 内重塑想象
+            </h2>
+            <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-md tracking-tight font-medium">
+              全面适配文生视频、图生视频及长视频生成协议。底座封装异步任务处理、查询、取消与状态轮询管理，让复杂的多媒体创作如文本对话般顺畅。
             </p>
           </div>
 
-          <!-- Feature 2: Account Pool -->
-          <div
-            class="group rounded-2xl border border-gray-200/50 bg-white/60 p-6 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/10 dark:border-dark-700/50 dark:bg-dark-800/60"
-          >
+          <div class="grid grid-cols-1 gap-5">
             <div
-              class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary-500/30 transition-transform group-hover:scale-110"
+              v-for="model in videoModels"
+              :key="model.name"
+              class="group p-6 rounded-[1.75rem] border border-zinc-200/50 dark:border-zinc-900 bg-white/50 dark:bg-zinc-900/50 shadow-sm hover:shadow-md transition-all duration-300 flex gap-5 items-center"
             >
-              <svg
-                class="h-6 w-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.5"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
-                />
-              </svg>
+              <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-800 shadow-sm transition-colors group-hover:bg-zinc-100 dark:group-hover:bg-zinc-750">
+                <Icon name="video" size="md" />
+              </div>
+              <div class="space-y-0.5">
+                <h3 class="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">{{ model.name }}</h3>
+                <p class="text-zinc-500 dark:text-zinc-400 text-xs leading-relaxed tracking-tight">{{ model.description }}</p>
+              </div>
             </div>
-            <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-              {{ t('home.features.multiAccount') }}
-            </h3>
-            <p class="text-sm leading-relaxed text-gray-600 dark:text-dark-400">
-              {{ t('home.features.multiAccountDesc') }}
+          </div>
+        </div>
+      </section>
+
+      <!-- Chinese Models Section -->
+      <section id="china-models" class="py-36 border-b border-zinc-200/30 dark:border-zinc-900/60 relative">
+        <div class="mx-auto grid max-w-6xl gap-12 px-5 lg:grid-cols-[0.9fr_1.1fr] items-center">
+          <div class="section-heading section-heading-left space-y-4">
+            <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">China Models</p>
+            <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-none">
+              国产大模型精选，<br/>兼顾合规与极致效能
+            </h2>
+            <p class="text-zinc-550 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-md tracking-tight font-medium">
+              为中文语境深度定制，提供极高性价比与网络合规保障。内置通义千问、DeepSeek、智谱 GLM、文心一言等，助力垂直行业与本土化业务快速落地。
             </p>
           </div>
 
-          <!-- Feature 3: Billing & Quota -->
-          <div
-            class="group rounded-2xl border border-gray-200/50 bg-white/60 p-6 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/10 dark:border-dark-700/50 dark:bg-dark-800/60"
-          >
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div
-              class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg shadow-purple-500/30 transition-transform group-hover:scale-110"
+              v-for="model in chinaModels"
+              :key="model.name"
+              class="group relative p-6 rounded-2xl border border-zinc-200/60 dark:border-zinc-900 bg-[#f5f5f7] dark:bg-[#111112] hover:bg-white dark:hover:bg-[#1c1c1e] hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300 min-h-[9.5rem] flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-md"
             >
-              <svg
-                class="h-6 w-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.5"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
-                />
-              </svg>
+              <!-- Elegant subtle watermark monogram as text bg -->
+              <span class="absolute -right-2 -bottom-5 font-mono font-bold text-7xl text-zinc-200/50 dark:text-zinc-900/10 pointer-events-none select-none transition-transform duration-300 group-hover:scale-105">
+                {{ model.short }}
+              </span>
+              <div class="relative z-10 space-y-2">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">{{ model.name }}</h3>
+                  <span class="text-[9px] font-bold text-zinc-550 dark:text-zinc-400 bg-white/90 dark:bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-200/50 dark:border-zinc-700/50">
+                    {{ model.focus }}
+                  </span>
+                </div>
+                <p class="text-zinc-550 dark:text-zinc-400 text-xs leading-relaxed max-w-[85%] tracking-tight">
+                  {{ model.description }}
+                </p>
+              </div>
             </div>
-            <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-              {{ t('home.features.balanceQuota') }}
-            </h3>
-            <p class="text-sm leading-relaxed text-gray-600 dark:text-dark-400">
-              {{ t('home.features.balanceQuotaDesc') }}
-            </p>
           </div>
         </div>
-
-        <!-- Supported Providers -->
-        <div class="mb-8 text-center">
-          <h2 class="mb-3 text-2xl font-bold text-gray-900 dark:text-white">
-            {{ t('home.providers.title') }}
-          </h2>
-          <p class="text-sm text-gray-600 dark:text-dark-400">
-            {{ t('home.providers.description') }}
-          </p>
-        </div>
-
-        <div class="mb-16 flex flex-wrap items-center justify-center gap-4">
-          <!-- Claude - Supported -->
-          <div
-            class="flex items-center gap-2 rounded-xl border border-primary-200 bg-white/60 px-5 py-3 ring-1 ring-primary-500/20 backdrop-blur-sm dark:border-primary-800 dark:bg-dark-800/60"
-          >
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-orange-500"
-            >
-              <span class="text-xs font-bold text-white">C</span>
-            </div>
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">{{ t('home.providers.claude') }}</span>
-            <span
-              class="rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
-              >{{ t('home.providers.supported') }}</span
-            >
-          </div>
-          <!-- GPT - Supported -->
-          <div
-            class="flex items-center gap-2 rounded-xl border border-primary-200 bg-white/60 px-5 py-3 ring-1 ring-primary-500/20 backdrop-blur-sm dark:border-primary-800 dark:bg-dark-800/60"
-          >
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-green-600"
-            >
-              <span class="text-xs font-bold text-white">G</span>
-            </div>
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">GPT</span>
-            <span
-              class="rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
-              >{{ t('home.providers.supported') }}</span
-            >
-          </div>
-          <!-- Gemini - Supported -->
-          <div
-            class="flex items-center gap-2 rounded-xl border border-primary-200 bg-white/60 px-5 py-3 ring-1 ring-primary-500/20 backdrop-blur-sm dark:border-primary-800 dark:bg-dark-800/60"
-          >
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600"
-            >
-              <span class="text-xs font-bold text-white">G</span>
-            </div>
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">{{ t('home.providers.gemini') }}</span>
-            <span
-              class="rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
-              >{{ t('home.providers.supported') }}</span
-            >
-          </div>
-          <!-- Antigravity - Supported -->
-          <div
-            class="flex items-center gap-2 rounded-xl border border-primary-200 bg-white/60 px-5 py-3 ring-1 ring-primary-500/20 backdrop-blur-sm dark:border-primary-800 dark:bg-dark-800/60"
-          >
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-pink-600"
-            >
-              <span class="text-xs font-bold text-white">A</span>
-            </div>
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">{{ t('home.providers.antigravity') }}</span>
-            <span
-              class="rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
-              >{{ t('home.providers.supported') }}</span
-            >
-          </div>
-          <!-- More - Coming Soon -->
-          <div
-            class="flex items-center gap-2 rounded-xl border border-gray-200/50 bg-white/40 px-5 py-3 opacity-60 backdrop-blur-sm dark:border-dark-700/50 dark:bg-dark-800/40"
-          >
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-gray-500 to-gray-600"
-            >
-              <span class="text-xs font-bold text-white">+</span>
-            </div>
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">{{ t('home.providers.more') }}</span>
-            <span
-              class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-dark-700 dark:text-dark-400"
-              >{{ t('home.providers.soon') }}</span
-            >
-          </div>
-        </div>
-      </div>
+      </section>
     </main>
 
     <!-- Footer -->
-    <footer class="relative z-10 border-t border-gray-200/50 px-6 py-8 dark:border-dark-800/50">
-      <div
-        class="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 text-center sm:flex-row sm:text-left"
-      >
-        <p class="text-sm text-gray-500 dark:text-dark-400">
+    <footer class="border-t border-zinc-200/40 bg-[#f5f5f7]/70 px-5 py-14 backdrop-blur-md dark:border-zinc-800/40 dark:bg-[#000000]/70">
+      <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 text-center sm:flex-row sm:text-left">
+        <p class="text-xs font-semibold text-zinc-500 dark:text-zinc-550">
           &copy; {{ currentYear }} {{ siteName }}. {{ t('home.footer.allRightsReserved') }}
         </p>
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-6 text-xs font-bold">
           <a
             v-if="docUrl"
             :href="docUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-white"
+            class="text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-colors"
           >
             {{ t('home.docs') }}
           </a>
@@ -394,7 +417,7 @@
             :href="githubUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-white"
+            class="text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-colors"
           >
             GitHub
           </a>
@@ -416,46 +439,71 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 
-// Site settings - directly from appStore (already initialized from injected config)
-const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Sub2API')
+const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'CCAPI')
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || 'AI API Gateway Platform')
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
 
-// Check if homeContent is a URL (for iframe display)
 const isHomeContentUrl = computed(() => {
   const content = homeContent.value.trim()
   return content.startsWith('http://') || content.startsWith('https://')
 })
 
-// Theme
 const isDark = ref(document.documentElement.classList.contains('dark'))
+const githubUrl = 'https://github.com/Wei-Shaw/ccapi'
 
-// GitHub URL
-const githubUrl = 'https://github.com/Wei-Shaw/sub2api'
-
-// Auth state
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const dashboardPath = computed(() => isAdmin.value ? '/admin/dashboard' : '/dashboard')
-const userInitial = computed(() => {
-  const user = authStore.user
-  if (!user || !user.email) return ''
-  return user.email.charAt(0).toUpperCase()
-})
-
-// Current year for footer
 const currentYear = computed(() => new Date().getFullYear())
 
-// Toggle theme
+const providers = [
+  { short: 'GPT', name: 'ChatGPT / OpenAI', tag: '通用智能', description: '覆盖对话、工具调用、多模态理解和广泛生态集成。' },
+  { short: 'C', name: 'Claude', tag: '推理 / 编码', description: '适合复杂推理、长文本、编码代理和高质量内容生成。' },
+  { short: 'G', name: 'Gemini', tag: '多模态', description: '适合长上下文、视觉理解和 Google 生态工作流。' },
+  { short: 'DS', name: 'DeepSeek', tag: '国产 / 推理', description: '面向中文、推理、代码与高并发极低成本调用场景。' }
+]
+
+const modelStrip = [
+  'GPT-4o',
+  'Claude 3.5 Sonnet',
+  'Gemini 1.5 Pro',
+  'DeepSeek-R1',
+  'Qwen-Plus',
+  'GLM-4',
+  'Sora Video',
+  'CogVideo'
+]
+
+const videoModels = [
+  {
+    name: '文生视频',
+    description: '把文案、脚本和提示词转换成异步视频生成任务。'
+  },
+  {
+    name: '图生视频',
+    description: '以静态图片资产为起点生成动态影视级内容，适合产品展示和创意广告。'
+  },
+  {
+    name: '视频工作流',
+    description: '统一处理异步任务创建、查询、取消、下载以及上游厂商映射。'
+  }
+]
+
+const chinaModels = [
+  { short: 'QW', name: '通义千问', focus: '中文 / 企业', description: '适合中文场景问答、办公自动化、本地知识库检索与集成。' },
+  { short: 'DS', name: 'DeepSeek', focus: '推理 / 高性价比', description: '在推理、代码和商业高并发调用中拥有无与伦比的性价比优势。' },
+  { short: 'GLM', name: '智谱 GLM', focus: '知识 / 智能体', description: '适合 Agent、知识检索库、多轮任务编排和垂直行业场景。' },
+  { short: 'ERN', name: '文心一言', focus: '生态 / 内容', description: '适合文案创意内容生成、百度搜索增强和中文原生应用开发。' }
+]
+
 function toggleTheme() {
   isDark.value = !isDark.value
   document.documentElement.classList.toggle('dark', isDark.value)
   localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
 }
 
-// Initialize theme
 function initTheme() {
   const savedTheme = localStorage.getItem('theme')
   if (
@@ -469,11 +517,8 @@ function initTheme() {
 
 onMounted(() => {
   initTheme()
-
-  // Check auth state
   authStore.checkAuth()
 
-  // Ensure public settings are loaded (will use cache if already loaded from injected config)
   if (!appStore.publicSettingsLoaded) {
     appStore.fetchPublicSettings()
   }
@@ -481,164 +526,126 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Terminal Container */
-.terminal-container {
+.nav-icon-btn {
+  display: inline-flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: rgb(113 113 122);
+  transition: all 180ms ease;
+}
+
+.nav-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgb(9 9 11);
+}
+
+.nav-icon-btn:active {
+  transform: scale(0.95);
+}
+
+.dark .nav-icon-btn {
+  color: rgb(161 161 170);
+}
+
+.dark .nav-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+/* Glass Header base style */
+.glass-header {
+  position: fixed !important;
+  inset: 0 0 auto 0;
+  z-index: 40;
+}
+
+/* Full screen fixed background for the entire home shell */
+.home-shell {
   position: relative;
-  display: inline-block;
 }
 
-/* Terminal Window */
-.terminal-window {
-  width: 420px;
-  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 14px;
-  box-shadow:
-    0 25px 50px -12px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+.home-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #f5f5f7 url('/ccapi-home-bg.webp') center / cover no-repeat;
+  pointer-events: none;
+}
+
+.dark .home-shell::before {
+  background: #000000 url('/ccapi-home-bg.webp') center / cover no-repeat;
+  background-blend-mode: multiply;
+}
+
+/* Hero Section */
+.hero-section {
+  position: relative;
+  min-height: 100svh;
+  width: 100%;
   overflow: hidden;
-  transform: perspective(1000px) rotateX(2deg) rotateY(-2deg);
-  transition: transform 0.3s ease;
+  isolation: isolate;
 }
 
-.terminal-window:hover {
-  transform: perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(-4px);
+/* Bento grid custom designs */
+.bento-card {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Terminal Header */
-.terminal-header {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: rgba(30, 41, 59, 0.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+.bento-card:hover {
+  transform: translateY(-2px) scale(1.005);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.03);
 }
 
-.terminal-buttons {
-  display: flex;
-  gap: 8px;
+.dark .bento-card:hover {
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
 }
 
-.terminal-buttons span {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+.dark .bento-card {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-.btn-close {
-  background: #ef4444;
+/* Apple style syntax highlighting overrides */
+.text-pink-450 {
+  color: #ff3b30;
 }
-.btn-minimize {
-  background: #eab308;
+.dark .text-pink-450 {
+  color: #ff453a;
 }
-.btn-maximize {
-  background: #3b82f6;
+.text-emerald-400 {
+  color: #34c759;
 }
-
-.terminal-title {
-  flex: 1;
-  text-align: center;
-  font-size: 12px;
-  font-family: ui-monospace, monospace;
-  color: #64748b;
-  margin-right: 52px;
+.dark .text-emerald-400 {
+  color: #30d158;
 }
 
-/* Terminal Body */
-.terminal-body {
-  padding: 20px 24px;
-  font-family: ui-monospace, 'Fira Code', monospace;
-  font-size: 14px;
-  line-height: 2;
+.text-zinc-505 {
+  color: rgb(113 113 122);
+}
+.dark .text-zinc-505 {
+  color: rgb(161 161 170);
 }
 
-.code-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  opacity: 0;
-  animation: line-appear 0.5s ease forwards;
+.text-zinc-905 {
+  background-color: rgb(24 24 27);
+}
+.dark .text-zinc-905 {
+  background-color: rgb(39 39 42);
 }
 
-.line-1 {
-  animation-delay: 0.3s;
+.text-zinc-855 {
+  color: rgb(39 39 42);
 }
-.line-2 {
-  animation-delay: 1s;
-}
-.line-3 {
-  animation-delay: 1.8s;
-}
-.line-4 {
-  animation-delay: 2.5s;
+.dark .text-zinc-855 {
+  color: rgb(228 228 231);
 }
 
-@keyframes line-appear {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
+@media (max-width: 768px) {
+  .hero-section {
+    min-height: 100svh;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.code-prompt {
-  color: #3b82f6;
-  font-weight: bold;
-}
-.code-cmd {
-  color: #38bdf8;
-}
-.code-flag {
-  color: #a78bfa;
-}
-.code-url {
-  color: #14b8a6;
-}
-.code-comment {
-  color: #64748b;
-  font-style: italic;
-}
-.code-success {
-  color: #3b82f6;
-  background: rgba(34, 197, 94, 0.15);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 600;
-}
-.code-response {
-  color: #fbbf24;
-}
-
-/* Blinking Cursor */
-.cursor {
-  display: inline-block;
-  width: 8px;
-  height: 16px;
-  background: #3b82f6;
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-  0%,
-  50% {
-    opacity: 1;
-  }
-  51%,
-  100% {
-    opacity: 0;
-  }
-}
-
-/* Dark mode adjustments */
-:deep(.dark) .terminal-window {
-  box-shadow:
-    0 25px 50px -12px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(20, 184, 166, 0.2),
-    0 0 40px rgba(20, 184, 166, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 </style>

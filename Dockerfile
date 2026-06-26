@@ -1,5 +1,5 @@
 # =============================================================================
-# Sub2API Multi-Stage Dockerfile
+# CCAPI Multi-Stage Dockerfile
 # =============================================================================
 # Stage 1: Build frontend
 # Stage 2: Build Go backend with embedded frontend
@@ -75,7 +75,7 @@ RUN VERSION_VALUE="${VERSION}" && \
     -tags embed \
     -ldflags="-s -w -X main.Version=${VERSION_VALUE} -X main.Commit=${COMMIT} -X main.Date=${DATE_VALUE} -X main.BuildType=release" \
     -trimpath \
-    -o /app/sub2api \
+    -o /app/ccapi \
     ./cmd/server
 
 # -----------------------------------------------------------------------------
@@ -90,8 +90,8 @@ FROM ${ALPINE_IMAGE}
 
 # Labels
 LABEL maintainer="Wei-Shaw <github.com/Wei-Shaw>"
-LABEL description="Sub2API - AI API Gateway Platform"
-LABEL org.opencontainers.image.source="https://github.com/Wei-Shaw/sub2api"
+LABEL description="CCAPI - AI API Gateway Platform"
+LABEL org.opencontainers.image.source="https://github.com/Wei-Shaw/ccapi"
 
 # Install runtime dependencies
 RUN apk add --no-cache \
@@ -113,20 +113,20 @@ COPY --from=pg-client /usr/local/bin/psql /usr/local/bin/psql
 COPY --from=pg-client /usr/local/lib/libpq.so.5* /usr/local/lib/
 
 # Create non-root user
-RUN addgroup -g 1000 sub2api && \
-    adduser -u 1000 -G sub2api -s /bin/sh -D sub2api
+RUN addgroup -g 1000 ccapi && \
+    adduser -u 1000 -G ccapi -s /bin/sh -D ccapi
 
 # Set working directory
 WORKDIR /app
 
 # Copy binary/resources with ownership to avoid extra full-layer chown copy
-COPY --from=backend-builder --chown=sub2api:sub2api /app/sub2api /app/sub2api
-COPY --from=backend-builder --chown=sub2api:sub2api /app/backend/resources /app/resources
+COPY --from=backend-builder --chown=ccapi:ccapi /app/ccapi /app/ccapi
+COPY --from=backend-builder --chown=ccapi:ccapi /app/backend/resources /app/resources
 
 # Create data directory
-RUN mkdir -p /app/data && chown sub2api:sub2api /app/data
+RUN mkdir -p /app/data && chown ccapi:ccapi /app/data
 
-# Copy entrypoint script (fixes volume permissions then drops to sub2api)
+# Copy entrypoint script (fixes volume permissions then drops to ccapi)
 COPY deploy/docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
@@ -137,6 +137,6 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD wget -q -T 5 -O /dev/null http://localhost:${SERVER_PORT:-8080}/health || exit 1
 
-# Run the application (entrypoint fixes /app/data ownership then execs as sub2api)
+# Run the application (entrypoint fixes /app/data ownership then execs as ccapi)
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["/app/sub2api"]
+CMD ["/app/ccapi"]

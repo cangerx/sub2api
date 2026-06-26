@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/claude"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )

@@ -10,7 +10,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/sub2api/ent/videocalltemplate"
+	"github.com/Wei-Shaw/ccapi/ent/videocalltemplate"
 )
 
 // VideoCallTemplate is the model entity for the VideoCallTemplate schema.

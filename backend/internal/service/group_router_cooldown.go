@@ -37,7 +37,7 @@ type GroupCooldownRedis interface {
 // memoryGroupCooldown is the in-memory fallback (and also fronts Redis as a
 // fast local cache to avoid a round-trip on every selection).
 type memoryGroupCooldown struct {
-	mu   sync.Mutex
+	mu    sync.Mutex
 	until map[string]time.Time
 }
 
