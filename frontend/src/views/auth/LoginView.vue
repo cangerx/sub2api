@@ -1,22 +1,14 @@
 <template>
   <AuthLayout>
     <div class="space-y-6">
-      <!-- Title -->
-      <div class="text-center">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-          {{ t('auth.welcomeBack') }}
-        </h2>
-        <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-          {{ t('auth.signInToAccount') }}
-        </p>
+      <!-- Title / Single Tab -->
+      <div class="flex items-center justify-center gap-8 mb-8 border-b border-gray-100 dark:border-zinc-800">
+        <div class="pb-3 text-[1.1rem] font-bold text-gray-900 dark:text-white border-b-2 border-blue-600 px-2">密码登录</div>
       </div>
       <!-- Login Form -->
       <form @submit.prevent="handleLogin" class="space-y-5">
         <!-- Email Input -->
         <div>
-          <label for="email" class="input-label">
-            {{ t('auth.emailLabel') }}
-          </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
               <Icon name="mail" size="md" class="text-gray-400 dark:text-dark-500" />
@@ -29,7 +21,7 @@
               autofocus
               autocomplete="email"
               :disabled="authActionDisabled"
-              class="input pl-11"
+              class="input pl-11 border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-zinc-800/50 rounded-lg focus:bg-white"
               :class="{ 'input-error': errors.email }"
               :placeholder="t('auth.emailPlaceholder')"
             />
@@ -38,9 +30,6 @@
 
         <!-- Password Input -->
         <div>
-          <label for="password" class="input-label">
-            {{ t('auth.passwordLabel') }}
-          </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
               <Icon name="lock" size="md" class="text-gray-400 dark:text-dark-500" />
@@ -52,7 +41,7 @@
               required
               autocomplete="current-password"
               :disabled="authActionDisabled"
-              class="input pl-11 pr-11"
+              class="input pl-11 pr-11 border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-zinc-800/50 rounded-lg focus:bg-white"
               :class="{ 'input-error': errors.password }"
               :placeholder="t('auth.passwordPlaceholder')"
             />
@@ -66,12 +55,16 @@
               <Icon v-else name="eye" size="md" />
             </button>
           </div>
-          <div class="mt-1 flex items-center justify-between">
-            <span></span>
+          <div class="mt-4 flex items-center justify-between">
+            <!-- Left side empty to push Forgot Password to the right, or we can add a visual-only Remember me -->
+            <label class="flex items-center gap-2 cursor-pointer">
+               <input type="checkbox" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-600" />
+               <span class="text-xs text-gray-500 dark:text-gray-400">14天内免登录</span>
+            </label>
             <router-link
               v-if="passwordResetEnabled && !backendModeEnabled"
               to="/forgot-password"
-              class="text-sm font-medium text-primary-600 transition-colors hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
+              class="text-xs font-medium text-gray-500 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
             >
               {{ t('auth.forgotPassword') }}
             </router-link>
@@ -93,7 +86,7 @@
         <button
           type="submit"
           :disabled="authActionDisabled || (turnstileEnabled && !turnstileToken)"
-          class="btn btn-primary w-full"
+          class="w-full rounded-lg bg-[#093266] text-white py-2.5 font-medium hover:bg-[#07244a] transition-colors focus:ring-4 focus:ring-blue-900/30 flex justify-center items-center mt-6"
         >
           <svg
             v-if="isLoading"
@@ -115,7 +108,6 @@
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          <Icon v-else name="login" size="md" class="mr-2" />
           {{ isLoading ? t('auth.signingIn') : t('auth.signIn') }}
         </button>
 
@@ -131,13 +123,13 @@
           @open="showAgreementModal = true"
         />
 
-        <div v-if="showOAuthLogin" class="space-y-3 pt-1">
+        <div v-if="showOAuthLogin" class="space-y-4 pt-4">
           <div class="flex items-center gap-3">
-            <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
-            <span class="text-xs text-gray-500 dark:text-dark-400">
+            <div class="h-[1px] border-t border-dashed border-gray-300 dark:border-zinc-700 flex-1"></div>
+            <span class="text-xs text-gray-400 dark:text-gray-500 tracking-wider">
               {{ t('auth.oauthOrContinue') }}
             </span>
-            <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
+            <div class="h-[1px] border-t border-dashed border-gray-300 dark:border-zinc-700 flex-1"></div>
           </div>
 
           <EmailOAuthButtons
