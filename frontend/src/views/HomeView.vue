@@ -75,7 +75,7 @@
 
         <div class="relative z-10 max-w-5xl mx-auto flex flex-col items-center pt-24 pb-20">
           <!-- Dynamic iOS style Badge -->
-          <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 mb-10 text-[11px] font-semibold rounded-full bg-white/90 text-zinc-850 dark:bg-zinc-900/80 dark:text-zinc-200 border border-zinc-200/60 dark:border-zinc-800/80 backdrop-blur-md shadow-sm hover:border-zinc-350 dark:hover:border-zinc-700 transition-colors">
+          <div class="animate-fade-up animate-float inline-flex items-center gap-1.5 px-3.5 py-1.5 mb-10 text-[11px] font-semibold rounded-full bg-white/90 text-zinc-850 dark:bg-zinc-900/80 dark:text-zinc-200 border border-zinc-200/60 dark:border-zinc-800/80 backdrop-blur-md shadow-sm hover:border-zinc-350 dark:hover:border-zinc-700 transition-colors">
             <span class="flex h-1.5 w-1.5 relative">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
@@ -83,24 +83,26 @@
             <span>已全面适配 DeepSeek-R1 与 Claude 3.5 全系列大模型</span>
           </div>
 
-          <p class="hero-eyebrow text-xs sm:text-sm font-bold tracking-widest text-zinc-500 dark:text-zinc-400 uppercase mb-4">{{ siteName }} &middot; 下一代 AI API 路由与分发底座</p>
+          <p class="animate-fade-up animate-fade-up-1 hero-eyebrow text-xs sm:text-sm font-bold tracking-widest text-zinc-500 dark:text-zinc-400 uppercase mb-4">{{ siteName }} &middot; 下一代 AI API 路由与分发底座</p>
           
           <!-- Large, spacious, Apple-style heading -->
-          <h1 class="leading-[1.03] tracking-[-0.035em] text-5xl sm:text-7xl md:text-8xl lg:text-[6.25rem] font-bold text-zinc-950 dark:text-white max-w-5xl mb-8">
+          <h1 class="animate-fade-up animate-fade-up-2 leading-[1.03] tracking-[-0.035em] text-5xl sm:text-7xl md:text-8xl lg:text-[6.25rem] font-bold text-zinc-950 dark:text-white max-w-5xl mb-8">
             一个 API 入口，<br/>接入全球大模型智能。
           </h1>
           
-          <p class="hero-subtitle text-zinc-600 dark:text-zinc-350 text-base sm:text-lg md:text-xl max-w-3xl leading-relaxed mb-12 tracking-tight font-normal">
+          <p class="animate-fade-up animate-fade-up-3 hero-subtitle text-zinc-600 dark:text-zinc-350 text-base sm:text-lg md:text-xl max-w-3xl leading-relaxed mb-12 tracking-tight font-normal">
             {{ siteSubtitle }}。专为企业与开发者打造的高性能 API 网关底座，统一聚合 ChatGPT、Claude、Gemini、DeepSeek 及国产与视频生成模型，提供超低延迟的智能分发、精细计费与企业级安全治理能力。
           </p>
 
-          <div class="hero-actions flex flex-wrap justify-center items-center gap-8">
+          <div class="animate-fade-up animate-fade-up-4 hero-actions flex flex-wrap justify-center items-center gap-8">
             <router-link
               :to="isAuthenticated ? dashboardPath : '/login'"
-              class="inline-flex items-center gap-1.5 px-9 py-4 rounded-full text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 transition-all duration-205 shadow-sm hover:-translate-y-0.5 active:translate-y-0"
+              class="shimmer-btn inline-flex items-center gap-1.5 px-9 py-4 rounded-full text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 transition-all duration-205 shadow-sm hover:-translate-y-0.5 active:translate-y-0 overflow-hidden"
             >
-              {{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}
-              <Icon name="arrowRight" size="xs" />
+              <span class="relative z-10 flex items-center gap-1.5">
+                {{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}
+                <Icon name="arrowRight" size="xs" />
+              </span>
             </router-link>
             
             <a
@@ -115,7 +117,7 @@
             </a>
           </div>
 
-          <div class="hero-models flex flex-wrap justify-center gap-2 max-w-2xl mx-auto mt-20" aria-label="Supported model families">
+          <div class="animate-fade-up animate-fade-up-4 hero-models flex flex-wrap justify-center gap-2 max-w-2xl mx-auto mt-20" aria-label="Supported model families">
             <span
               v-for="model in modelStrip"
               :key="model"
@@ -130,13 +132,13 @@
       <!-- Bento Grid Features Section (Apple grid style) -->
       <section id="platform" class="py-36 border-t border-zinc-200/30 dark:border-zinc-900/60 relative">
         <div class="mx-auto max-w-6xl px-5">
-          <div class="section-heading max-w-2xl mx-auto text-center space-y-4 mb-20">
+          <div class="reveal-element section-heading max-w-2xl mx-auto text-center space-y-4 mb-20">
             <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">Platform Features</p>
             <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">专为大模型交付与商业化而生</h2>
             <p class="text-zinc-500 dark:text-zinc-400 text-sm sm:text-base tracking-tight font-medium">提供全链路的大模型聚合、高可靠调度、精细化计费及安全合规策略，助您构建稳健的 AI 基础设施。</p>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="reveal-element delay-100 grid grid-cols-1 md:grid-cols-3 gap-8">
             
             <!-- Bento Card 1: API Aggregation (Spans 2 columns on desktop) -->
             <div class="col-span-1 md:col-span-2 bento-card p-8 sm:p-10 lg:p-12 rounded-[2.5rem] border border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-[#111112] shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300 flex flex-col md:flex-row gap-8 items-center overflow-hidden">
@@ -289,13 +291,13 @@
       <!-- Interactive Model Matrix Section -->
       <section id="model-matrix" class="py-36 border-t border-b border-zinc-200/30 dark:border-zinc-900/60 relative">
         <div class="mx-auto max-w-6xl px-5">
-          <div class="section-heading max-w-2xl mx-auto text-center space-y-4 mb-20">
+          <div class="reveal-element section-heading max-w-2xl mx-auto text-center space-y-4 mb-20">
             <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">Model Aggregation</p>
             <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">全球顶尖大模型，一键就绪</h2>
             <p class="text-zinc-500 dark:text-zinc-400 text-sm sm:text-base tracking-tight font-medium">统一聚合全球主流语言、推理与多模态模型，通过标准的 OpenAI 协议提供极速分发与切换。</p>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-12">
+          <div class="reveal-element delay-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-12">
             <div
               v-for="provider in providers"
               :key="provider.name"
@@ -329,7 +331,7 @@
       <!-- Video Generation Section -->
       <section id="video-models" class="py-36 border-b border-zinc-200/30 dark:border-zinc-900/60 relative">
         <div class="mx-auto grid max-w-6xl gap-12 px-5 lg:grid-cols-[0.9fr_1.1fr] items-center">
-          <div class="section-heading section-heading-left space-y-4">
+          <div class="reveal-element section-heading section-heading-left space-y-4">
             <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">Video Generation</p>
             <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-none">
               视频生成大模型，<br/>在同一套 API 内重塑想象
@@ -339,7 +341,7 @@
             </p>
           </div>
 
-          <div class="grid grid-cols-1 gap-5">
+          <div class="reveal-element delay-100 grid grid-cols-1 gap-5">
             <div
               v-for="model in videoModels"
               :key="model.name"
@@ -360,7 +362,7 @@
       <!-- Chinese Models Section -->
       <section id="china-models" class="py-36 border-b border-zinc-200/30 dark:border-zinc-900/60 relative">
         <div class="mx-auto grid max-w-6xl gap-12 px-5 lg:grid-cols-[0.9fr_1.1fr] items-center">
-          <div class="section-heading section-heading-left space-y-4">
+          <div class="reveal-element section-heading section-heading-left space-y-4">
             <p class="eyebrow text-[11px] font-bold tracking-wider uppercase text-zinc-450 dark:text-zinc-500">China Models</p>
             <h2 class="text-3xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-none">
               国产大模型精选，<br/>兼顾合规与极致效能
@@ -370,7 +372,7 @@
             </p>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div class="reveal-element delay-100 grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div
               v-for="model in chinaModels"
               :key="model.name"
@@ -522,6 +524,26 @@ onMounted(() => {
   if (!appStore.publicSettingsLoaded) {
     appStore.fetchPublicSettings()
   }
+
+  // Set up intersection observer for scroll reveal animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('reveal-active')
+        observer.unobserve(entry.target)
+      }
+    })
+  }, {
+    root: null,
+    rootMargin: '0px',
+    threshold: 0.1
+  })
+
+  setTimeout(() => {
+    document.querySelectorAll('.reveal-element').forEach((el) => {
+      observer.observe(el)
+    })
+  }, 100)
 })
 </script>
 
@@ -647,5 +669,63 @@ onMounted(() => {
   .hero-section {
     min-height: 100svh;
   }
+}
+
+/* Scroll Reveal Animations */
+.reveal-element {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+.delay-100 { transition-delay: 100ms; }
+
+/* Hero Load Animations */
+.animate-fade-up {
+  animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+.animate-fade-up-1 { animation-delay: 0.1s; }
+.animate-fade-up-2 { animation-delay: 0.2s; }
+.animate-fade-up-3 { animation-delay: 0.3s; }
+.animate-fade-up-4 { animation-delay: 0.4s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Micro-animations */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.shimmer-btn {
+  position: relative;
+}
+.shimmer-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
+  transform: skewX(-20deg);
+  animation: shimmer 3s infinite;
+}
+.dark .shimmer-btn::after {
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+}
+@keyframes shimmer {
+  0% { left: -100%; }
+  20%, 100% { left: 200%; }
 }
 </style>
