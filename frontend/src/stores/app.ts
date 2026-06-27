@@ -41,6 +41,7 @@ export const useAppStore = defineStore('app', () => {
   const hasUpdate = ref<boolean>(false)
   const buildType = ref<string>('source')
   const releaseInfo = ref<ReleaseInfo | null>(null)
+  const versionRepository = ref<string>('cangerx/sub2api')
 
   // Auto-incrementing ID for toasts
   let toastIdCounter = 0
@@ -247,7 +248,8 @@ export const useAppStore = defineStore('app', () => {
         has_update: hasUpdate.value,
         build_type: buildType.value,
         release_info: releaseInfo.value || undefined,
-        cached: true
+        cached: true,
+        repository: versionRepository.value
       }
     }
 
@@ -264,6 +266,7 @@ export const useAppStore = defineStore('app', () => {
       hasUpdate.value = data.has_update
       buildType.value = data.build_type || 'source'
       releaseInfo.value = data.release_info || null
+      versionRepository.value = data.repository || 'cangerx/sub2api'
       versionLoaded.value = true
       return data
     } catch (error) {
@@ -430,6 +433,7 @@ export const useAppStore = defineStore('app', () => {
     hasUpdate,
     buildType,
     releaseInfo,
+    versionRepository,
 
     // Computed
     hasActiveToasts,

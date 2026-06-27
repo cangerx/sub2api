@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -95,6 +96,91 @@ func TestUpdateServiceRepositoryCanBeOverridden(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, "example/custom", client.repo)
+}
+
+func TestUpdateServiceIgnoresCachedReleaseFromDifferentRepository(t *testing.T) {
+	t.Setenv("UPDATE_GITHUB_REPO", "cangerx/sub2api")
+	cached, err := json.Marshal(struct {
+		Latest      string       `json:"latest"`
+		ReleaseInfo *ReleaseInfo `json:"release_info"`
+		Timestamp   int64        `json:"timestamp"`
+		Repository  string       `json:"repository"`
+	}{
+		Latest:     "9.9.9",
+		Timestamp:  time.Now().Unix(),
+		Repository: "Wei-Shaw/sub2api",
+	})
+	require.NoError(t, err)
+
+	client := &updateServiceGitHubClientStub{
+		release: &GitHubRelease{
+			TagName: "v0.1.133",
+			Name:    "v0.1.133",
+		},
+	}
+	svc := NewUpdateService(&updateServiceCacheStub{data: string(cached)}, client, "0.1.132", "release")
+
+	info, err := svc.CheckUpdate(context.Background(), false)
+
+	require.NoError(t, err)
+	require.False(t, info.Cached)
+	require.Equal(t, "0.1.133", info.LatestVersion)
+	require.Equal(t, "cangerx/sub2api", info.Repository)
+	require.Equal(t, "cangerx/sub2api", client.repo)
+}
+
+func TestUpdateServiceIgnoresLegacyCachedReleaseWithoutRepository(t *testing.T) {
+	t.Setenv("UPDATE_GITHUB_REPO", "cangerx/sub2api")
+	cached, err := json.Marshal(struct {
+		Latest      string       `json:"latest"`
+		ReleaseInfo *ReleaseInfo `json:"release_info"`
+		Timestamp   int64        `json:"timestamp"`
+	}{
+		Latest:    "9.9.9",
+		Timestamp: time.Now().Unix(),
+	})
+	require.NoError(t, err)
+
+	client := &updateServiceGitHubClientStub{
+		release: &GitHubRelease{
+			TagName: "v0.1.133",
+			Name:    "v0.1.133",
+		},
+	}
+	svc := NewUpdateService(&updateServiceCacheStub{data: string(cached)}, client, "0.1.132", "release")
+
+	info, err := svc.CheckUpdate(context.Background(), false)
+
+	require.NoError(t, err)
+	require.False(t, info.Cached)
+	require.Equal(t, "0.1.133", info.LatestVersion)
+	require.Equal(t, "cangerx/sub2api", info.Repository)
+	require.Equal(t, "cangerx/sub2api", client.repo)
+}
+
+func TestUpdateServiceReturnsRepositoryInCachedResult(t *testing.T) {
+	t.Setenv("UPDATE_GITHUB_REPO", "cangerx/sub2api")
+	cached, err := json.Marshal(struct {
+		Latest      string       `json:"latest"`
+		ReleaseInfo *ReleaseInfo `json:"release_info"`
+		Timestamp   int64        `json:"timestamp"`
+		Repository  string       `json:"repository"`
+	}{
+		Latest:     "0.1.133",
+		Timestamp:  time.Now().Unix(),
+		Repository: "cangerx/sub2api",
+	})
+	require.NoError(t, err)
+
+	client := &updateServiceGitHubClientStub{}
+	svc := NewUpdateService(&updateServiceCacheStub{data: string(cached)}, client, "0.1.132", "release")
+
+	info, err := svc.CheckUpdate(context.Background(), false)
+
+	require.NoError(t, err)
+	require.True(t, info.Cached)
+	require.Equal(t, "cangerx/sub2api", info.Repository)
+	require.Empty(t, client.repo)
 }
 
 func TestValidateDownloadURLRejectsOtherGitHubRepositories(t *testing.T) {
