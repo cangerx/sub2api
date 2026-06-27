@@ -1649,13 +1649,17 @@ export default {
 
     backup: {
       title: 'Database Backup',
-      description: 'Full database backup to S3-compatible storage with scheduled backup and restore',
+      description: 'Full database backup to object storage with local, R2, OSS, S3, scheduled backup and restore',
       s3: {
-        title: 'S3 Storage Configuration',
-        description: 'Configure S3-compatible storage (supports Cloudflare R2)',
-        descriptionPrefix: 'Configure S3-compatible storage (supports',
-        descriptionSuffix: ')',
-        enabled: 'Enable S3 Storage',
+        title: 'Object Storage Configuration',
+        description: 'Configure local, Cloudflare R2, Aliyun OSS, or S3-compatible storage',
+        descriptionPrefix: 'Configure object storage (supports',
+        descriptionSuffix: ', OSS, local)',
+        enabled: 'Enable Object Storage',
+        provider: 'Storage Type',
+        local: 'Local Storage',
+        localPath: 'Local Path',
+        publicBaseUrl: 'Public Base URL',
         endpoint: 'Endpoint',
         region: 'Region',
         bucket: 'Bucket',
@@ -1665,9 +1669,13 @@ export default {
         secretConfigured: 'Already configured, leave empty to keep',
         forcePathStyle: 'Force Path Style',
         testConnection: 'Test Connection',
-        testSuccess: 'S3 connection test successful',
-        testFailed: 'S3 connection test failed',
-        saved: 'S3 configuration saved'
+        testSuccess: 'Storage connection test successful',
+        testFailed: 'Storage connection test failed',
+        saved: 'Storage configuration saved',
+        errors: {
+          localPathRequired: 'Please enter a local storage path',
+          objectStorageRequired: 'Please enter bucket, Access Key ID, and Secret Access Key'
+        }
       },
       schedule: {
         title: 'Scheduled Backup',
@@ -1693,6 +1701,17 @@ export default {
         backupFailed: 'Backup failed',
         restoreRunning: 'Restore in progress...',
         restoreFailed: 'Restore failed',
+      },
+      errors: {
+        storageNotConfigured: 'Please configure object storage first',
+        notFound: 'Backup record not found',
+        notCompleted: 'Only completed backups can be restored',
+        recordsCorrupt: 'Backup records data is corrupted',
+        storageConfigCorrupt: 'Object storage configuration data is corrupted',
+        cronRequired: 'Please enter a cron expression when scheduled backup is enabled',
+        invalidCron: 'Invalid cron expression',
+        incorrectPassword: 'Incorrect admin password',
+        passwordRequired: 'Admin password is required to restore a backup'
       },
       columns: {
         status: 'Status',

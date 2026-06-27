@@ -1670,13 +1670,17 @@ export default {
 
     backup: {
       title: '数据库备份',
-      description: '全量数据库备份到 S3 兼容存储，支持定时备份与恢复',
+      description: '全量数据库备份到对象存储，支持本地、R2、OSS、S3 与定时恢复',
       s3: {
-        title: 'S3 存储配置',
-        description: '配置 S3 兼容存储（支持 Cloudflare R2）',
-        descriptionPrefix: '配置 S3 兼容存储（支持',
-        descriptionSuffix: '）',
-        enabled: '启用 S3 存储',
+        title: '对象存储配置',
+        description: '配置本地、Cloudflare R2、阿里云 OSS 或 S3 兼容存储',
+        descriptionPrefix: '配置对象存储（支持',
+        descriptionSuffix: '、OSS、本地）',
+        enabled: '启用对象存储',
+        provider: '存储类型',
+        local: '本地存储',
+        localPath: '本地目录',
+        publicBaseUrl: '公开访问地址',
         endpoint: '端点地址',
         region: '区域',
         bucket: '存储桶',
@@ -1686,9 +1690,13 @@ export default {
         secretConfigured: '已配置，留空保持不变',
         forcePathStyle: '强制路径风格',
         testConnection: '测试连接',
-        testSuccess: 'S3 连接测试成功',
-        testFailed: 'S3 连接测试失败',
-        saved: 'S3 配置已保存'
+        testSuccess: '存储连接测试成功',
+        testFailed: '存储连接测试失败',
+        saved: '存储配置已保存',
+        errors: {
+          localPathRequired: '请填写本地存储目录',
+          objectStorageRequired: '请填写存储桶、Access Key ID 和 Secret Access Key'
+        }
       },
       schedule: {
         title: '定时备份',
@@ -1714,6 +1722,17 @@ export default {
         backupFailed: '备份失败',
         restoreRunning: '恢复进行中...',
         restoreFailed: '恢复失败',
+      },
+      errors: {
+        storageNotConfigured: '请先配置对象存储',
+        notFound: '备份记录不存在',
+        notCompleted: '只能恢复已完成的备份',
+        recordsCorrupt: '备份记录数据异常',
+        storageConfigCorrupt: '对象存储配置数据异常',
+        cronRequired: '启用定时备份时请填写 Cron 表达式',
+        invalidCron: 'Cron 表达式格式不正确',
+        incorrectPassword: '管理员密码不正确',
+        passwordRequired: '恢复备份需要输入管理员密码'
       },
       columns: {
         status: '状态',

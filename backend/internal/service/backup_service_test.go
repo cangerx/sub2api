@@ -541,6 +541,70 @@ func TestBackupService_Schedule_CronValidation(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestBackupService_LocalStorageConfigDoesNotRequireCredentials(t *testing.T) {
+	repo := newMockSettingRepo()
+	store := newMockObjectStore()
+	svc := newTestBackupService(repo, &mockDumper{}, store)
+
+	cfg, err := svc.UpdateS3Config(context.Background(), BackupS3Config{
+		Provider:  "local",
+		LocalPath: "/tmp/ccapi-backup-test",
+		Prefix:    "backups/",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "local", cfg.Provider)
+	require.Empty(t, cfg.SecretAccessKey)
+
+	err = svc.TestS3Connection(context.Background(), BackupS3Config{
+		Provider:  "local",
+		LocalPath: "/tmp/ccapi-backup-test",
+	})
+	require.NoError(t, err)
+}
+
+func TestBackupService_LocalStorageClearsObjectStorageCredentials(t *testing.T) {
+	repo := newMockSettingRepo()
+	svc := newTestBackupService(repo, &mockDumper{}, newMockObjectStore())
+
+	_, err := svc.UpdateS3Config(context.Background(), BackupS3Config{
+		Provider:        "r2",
+		Endpoint:        "https://example.r2.cloudflarestorage.com",
+		Region:          "auto",
+		Bucket:          "old-bucket",
+		AccessKeyID:     "old-ak",
+		SecretAccessKey: "old-sk",
+		Prefix:          "backups/",
+	})
+	require.NoError(t, err)
+
+	cfg, err := svc.UpdateS3Config(context.Background(), BackupS3Config{
+		Provider:        "local",
+		Endpoint:        "https://should-be-cleared.example.com",
+		Region:          "auto",
+		Bucket:          "should-be-cleared",
+		AccessKeyID:     "should-be-cleared",
+		SecretAccessKey: "should-be-cleared",
+		ForcePathStyle:  true,
+		LocalPath:       "/tmp/ccapi-backup-test",
+		Prefix:          "backups/",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "local", cfg.Provider)
+	require.Empty(t, cfg.Endpoint)
+	require.Empty(t, cfg.Region)
+	require.Empty(t, cfg.Bucket)
+	require.Empty(t, cfg.AccessKeyID)
+	require.Empty(t, cfg.SecretAccessKey)
+	require.False(t, cfg.ForcePathStyle)
+
+	internal, err := svc.loadS3Config(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, "local", internal.Provider)
+	require.Equal(t, "/tmp/ccapi-backup-test", internal.LocalPath)
+	require.Empty(t, internal.SecretAccessKey)
+	require.True(t, internal.IsConfigured())
+}
+
 func TestBackupService_LoadS3Config_Corrupted(t *testing.T) {
 	repo := newMockSettingRepo()
 	_ = repo.Set(context.Background(), settingKeyBackupS3Config, "not json!!!!")

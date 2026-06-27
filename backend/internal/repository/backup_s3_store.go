@@ -5,6 +5,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -25,6 +29,10 @@ type S3BackupStore struct {
 // NewS3BackupStoreFactory returns a BackupObjectStoreFactory that creates S3-backed stores
 func NewS3BackupStoreFactory() service.BackupObjectStoreFactory {
 	return func(ctx context.Context, cfg *service.BackupS3Config) (service.BackupObjectStore, error) {
+		if strings.EqualFold(strings.TrimSpace(cfg.Provider), "local") {
+			return NewLocalBackupStore(cfg.LocalPath, cfg.PublicBaseURL)
+		}
+
 		region := cfg.Region
 		if region == "" {
 			region = "auto" // Cloudflare R2 默认 region
@@ -53,6 +61,143 @@ func NewS3BackupStoreFactory() service.BackupObjectStoreFactory {
 
 		return &S3BackupStore{client: client, bucket: cfg.Bucket}, nil
 	}
+}
+
+// LocalBackupStore implements BackupObjectStore using the local filesystem.
+type LocalBackupStore struct {
+	root          string
+	publicBaseURL string
+}
+
+func NewLocalBackupStore(root string, publicBaseURL string) (*LocalBackupStore, error) {
+	root = strings.TrimSpace(root)
+	if root == "" {
+		return nil, fmt.Errorf("local storage path is required")
+	}
+	abs, err := filepath.Abs(root)
+	if err != nil {
+		return nil, fmt.Errorf("resolve local storage path: %w", err)
+	}
+	if err := os.MkdirAll(abs, 0o750); err != nil {
+		return nil, fmt.Errorf("create local storage path: %w", err)
+	}
+	return &LocalBackupStore{
+		root:          abs,
+		publicBaseURL: strings.TrimRight(strings.TrimSpace(publicBaseURL), "/"),
+	}, nil
+}
+
+func (s *LocalBackupStore) Upload(ctx context.Context, key string, body io.Reader, contentType string) (int64, error) {
+	path, err := s.pathForKey(key)
+	if err != nil {
+		return 0, err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+		return 0, fmt.Errorf("create local object directory: %w", err)
+	}
+	tmp := path + ".tmp"
+	file, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o640)
+	if err != nil {
+		return 0, fmt.Errorf("create local object: %w", err)
+	}
+	written, copyErr := io.Copy(file, body)
+	closeErr := file.Close()
+	if copyErr != nil {
+		_ = os.Remove(tmp)
+		return written, fmt.Errorf("write local object: %w", copyErr)
+	}
+	if closeErr != nil {
+		_ = os.Remove(tmp)
+		return written, fmt.Errorf("close local object: %w", closeErr)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		return written, fmt.Errorf("commit local object: %w", err)
+	}
+	return written, ctx.Err()
+}
+
+func (s *LocalBackupStore) Download(ctx context.Context, key string) (io.ReadCloser, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	path, err := s.pathForKey(key)
+	if err != nil {
+		return nil, err
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("open local object: %w", err)
+	}
+	return file, nil
+}
+
+func (s *LocalBackupStore) Delete(ctx context.Context, key string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	path, err := s.pathForKey(key)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("delete local object: %w", err)
+	}
+	return nil
+}
+
+func (s *LocalBackupStore) PresignURL(ctx context.Context, key string, _ time.Duration) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	if s.publicBaseURL != "" {
+		return s.publicBaseURL + "/" + escapeObjectKey(key), nil
+	}
+	path, err := s.pathForKey(key)
+	if err != nil {
+		return "", err
+	}
+	return "file://" + path, nil
+}
+
+func (s *LocalBackupStore) HeadBucket(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	info, err := os.Stat(s.root)
+	if err != nil {
+		return fmt.Errorf("stat local storage path: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("local storage path is not a directory")
+	}
+	testFile := filepath.Join(s.root, ".ccapi-write-test")
+	if err := os.WriteFile(testFile, []byte("ok"), 0o640); err != nil {
+		return fmt.Errorf("write local storage test file: %w", err)
+	}
+	_ = os.Remove(testFile)
+	return nil
+}
+
+func (s *LocalBackupStore) pathForKey(key string) (string, error) {
+	cleanKey := filepath.Clean(strings.TrimLeft(strings.TrimSpace(key), "/"))
+	if cleanKey == "." || cleanKey == "" || strings.HasPrefix(cleanKey, "..") {
+		return "", fmt.Errorf("invalid local object key")
+	}
+	path := filepath.Join(s.root, cleanKey)
+	rel, err := filepath.Rel(s.root, path)
+	if err != nil || strings.HasPrefix(rel, "..") || filepath.IsAbs(rel) {
+		return "", fmt.Errorf("invalid local object key")
+	}
+	return path, nil
+}
+
+func escapeObjectKey(key string) string {
+	parts := strings.Split(strings.TrimLeft(key, "/"), "/")
+	for i := range parts {
+		parts[i] = url.PathEscape(parts[i])
+	}
+	return strings.Join(parts, "/")
 }
 
 func (s *S3BackupStore) Upload(ctx context.Context, key string, body io.Reader, contentType string) (int64, error) {

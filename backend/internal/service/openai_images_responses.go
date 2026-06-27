@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -38,6 +39,21 @@ type OpenAIImagesUpstreamError struct {
 	Param             string
 	UpstreamRequestID string
 }
+
+type openAIImagesOAuthAsyncPollContext struct {
+	ctx         context.Context
+	c           *gin.Context
+	account     *Account
+	initialReq  *http.Request
+	proxyURL    string
+	fallbackURL string
+}
+
+const (
+	openAIImagesAsyncPollTimeout  = 2 * time.Minute
+	openAIImagesAsyncPollInterval = time.Second
+	openAIImagesAsyncPollWarmup   = 250 * time.Millisecond
+)
 
 func (e *OpenAIImagesUpstreamError) Error() string {
 	if e == nil {
@@ -576,6 +592,170 @@ func collectOpenAIImagesFromResponsesBody(body []byte) ([]openAIResponsesImageRe
 	return nil, createdAt, usageRaw, openAIResponsesImageResult{}, foundFinal, nil
 }
 
+func extractOpenAIImagesPendingResponseID(body []byte) (string, string, bool) {
+	var responseID, status string
+	var terminal bool
+	forEachOpenAISSEDataPayload(string(body), func(payload []byte) {
+		if terminal || !gjson.ValidBytes(payload) {
+			return
+		}
+		eventType := strings.TrimSpace(gjson.GetBytes(payload, "type").String())
+		switch eventType {
+		case "response.completed", "response.failed", "response.incomplete", "response.cancelled", "response.canceled":
+			terminal = true
+			return
+		case "response.created", "response.in_progress":
+		default:
+			return
+		}
+		response := gjson.GetBytes(payload, "response")
+		if !response.Exists() {
+			return
+		}
+		if id := strings.TrimSpace(response.Get("id").String()); id != "" {
+			responseID = id
+		}
+		if s := strings.TrimSpace(response.Get("status").String()); s != "" {
+			status = s
+		}
+	})
+	if terminal || responseID == "" || openAIImagesResponseStatusTerminal(status) {
+		return "", "", false
+	}
+	return responseID, status, true
+}
+
+func openAIImagesResponseStatusTerminal(status string) bool {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "completed", "failed", "incomplete", "cancelled", "canceled":
+		return true
+	default:
+		return false
+	}
+}
+
+func openAIImagesResponseJSONToSSEBody(body []byte) []byte {
+	body = bytes.TrimSpace(body)
+	if len(body) == 0 {
+		return nil
+	}
+	if strings.HasPrefix(string(body), "data:") {
+		return body
+	}
+	if !gjson.ValidBytes(body) {
+		return body
+	}
+	payload := body
+	eventType := strings.TrimSpace(gjson.GetBytes(body, "type").String())
+	response := gjson.GetBytes(body, "response")
+	if eventType == "" {
+		status := strings.TrimSpace(gjson.GetBytes(body, "status").String())
+		if status == "" {
+			status = "in_progress"
+		}
+		eventType = "response." + status
+		payload = []byte(`{"type":"","response":{}}`)
+		payload, _ = sjson.SetBytes(payload, "type", eventType)
+		payload, _ = sjson.SetRawBytes(payload, "response", body)
+	} else if !response.Exists() && strings.HasPrefix(eventType, "response.") {
+		wrapped := []byte(`{"type":"","response":{}}`)
+		wrapped, _ = sjson.SetBytes(wrapped, "type", eventType)
+		wrapped, _ = sjson.SetRawBytes(wrapped, "response", body)
+		payload = wrapped
+	}
+	return []byte("data: " + string(payload) + "\n\n")
+}
+
+func (s *OpenAIGatewayService) pollOpenAIImagesOAuthResponse(poll *openAIImagesOAuthAsyncPollContext, responseID string) ([]byte, http.Header, error) {
+	if poll == nil || poll.ctx == nil || poll.account == nil || poll.initialReq == nil || strings.TrimSpace(responseID) == "" {
+		return nil, nil, nil
+	}
+
+	ctx, cancel := context.WithTimeout(poll.ctx, openAIImagesAsyncPollTimeout)
+	defer cancel()
+
+	targetURL := strings.TrimRight(poll.initialReq.URL.String(), "/") + "/" + url.PathEscape(strings.TrimSpace(responseID))
+	if trimmed := strings.TrimSpace(poll.fallbackURL); trimmed != "" {
+		targetURL = strings.TrimRight(trimmed, "/") + "/" + url.PathEscape(strings.TrimSpace(responseID))
+	}
+
+	var lastHeader http.Header
+	for attempt := 0; ; attempt++ {
+		if attempt > 0 {
+			interval := openAIImagesAsyncPollInterval
+			if attempt <= 3 {
+				interval = openAIImagesAsyncPollWarmup
+			}
+			timer := time.NewTimer(interval)
+			select {
+			case <-ctx.Done():
+				if !timer.Stop() {
+					<-timer.C
+				}
+				return nil, lastHeader, openAIImagesAsyncPollTimeoutError(responseID)
+			case <-timer.C:
+			}
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
+		if err != nil {
+			return nil, lastHeader, err
+		}
+		req = req.WithContext(WithHTTPUpstreamProfile(req.Context(), HTTPUpstreamProfileOpenAI))
+		req.Header = poll.initialReq.Header.Clone()
+		req.Header.Del("Content-Type")
+		req.Header.Set("Accept", "application/json")
+		req.Host = poll.initialReq.Host
+
+		resp, err := s.httpUpstream.Do(req, poll.proxyURL, poll.account.ID, poll.account.Concurrency)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, lastHeader, openAIImagesAsyncPollTimeoutError(responseID)
+			}
+			return nil, lastHeader, err
+		}
+		if resp == nil {
+			return nil, lastHeader, fmt.Errorf("poll image response failed: empty upstream response")
+		}
+		lastHeader = resp.Header.Clone()
+		body, readErr := ReadUpstreamResponseBody(resp.Body, s.cfg, poll.c, openAITooLargeError)
+		_ = resp.Body.Close()
+		if readErr != nil {
+			return nil, lastHeader, readErr
+		}
+		if resp.StatusCode >= 400 {
+			return nil, lastHeader, openAIImagesUpstreamErrorFromHTTP(resp.StatusCode, resp.Header, body)
+		}
+
+		eventBody := openAIImagesResponseJSONToSSEBody(body)
+		status := strings.TrimSpace(gjson.GetBytes(body, "status").String())
+		if status == "" && gjson.GetBytes(eventBody, "type").Exists() {
+			status = strings.TrimPrefix(gjson.GetBytes(eventBody, "type").String(), "response.")
+		}
+		if openAIImagesResponseStatusTerminal(status) {
+			return eventBody, lastHeader, nil
+		}
+		if _, _, _, _, foundFinal, err := collectOpenAIImagesFromResponsesBody(eventBody); err != nil {
+			return nil, lastHeader, err
+		} else if foundFinal {
+			return eventBody, lastHeader, nil
+		}
+	}
+}
+
+func openAIImagesAsyncPollTimeoutError(responseID string) *OpenAIImagesUpstreamError {
+	message := "Upstream image generation did not complete before timeout"
+	if strings.TrimSpace(responseID) != "" {
+		message = fmt.Sprintf("%s: %s", message, strings.TrimSpace(responseID))
+	}
+	return &OpenAIImagesUpstreamError{
+		StatusCode: http.StatusGatewayTimeout,
+		ErrorType:  "timeout_error",
+		Code:       "response_poll_timeout",
+		Message:    sanitizeUpstreamErrorMessage(message),
+	}
+}
+
 func extractOpenAIImagesUpstreamError(body []byte) *OpenAIImagesUpstreamError {
 	var upstreamErr *OpenAIImagesUpstreamError
 	forEachOpenAISSEDataPayload(string(body), func(payload []byte) {
@@ -1071,10 +1251,25 @@ func (s *OpenAIGatewayService) handleOpenAIImagesOAuthNonStreamingResponse(
 	c *gin.Context,
 	responseFormat string,
 	fallbackModel string,
+	poll *openAIImagesOAuthAsyncPollContext,
 ) (OpenAIUsage, int, []string, error) {
 	body, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
 	if err != nil {
 		return OpenAIUsage{}, 0, nil, err
+	}
+
+	responseHeader := resp.Header
+	if responseID, _, ok := extractOpenAIImagesPendingResponseID(body); ok {
+		polledBody, polledHeader, pollErr := s.pollOpenAIImagesOAuthResponse(poll, responseID)
+		if pollErr != nil {
+			return OpenAIUsage{}, 0, nil, pollErr
+		}
+		if len(polledBody) > 0 {
+			body = append(append(body, '\n'), polledBody...)
+		}
+		if len(polledHeader) > 0 {
+			responseHeader = polledHeader
+		}
 	}
 
 	var usage OpenAIUsage
@@ -1133,7 +1328,7 @@ func (s *OpenAIGatewayService) handleOpenAIImagesOAuthNonStreamingResponse(
 	if err != nil {
 		return OpenAIUsage{}, 0, nil, err
 	}
-	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
+	responseheaders.WriteFilteredHeaders(c.Writer.Header(), responseHeader, s.responseHeaderFilter)
 	c.Data(resp.StatusCode, "application/json; charset=utf-8", responseBody)
 	return usage, len(results), openAIResponsesImageResultSizes(results), nil
 }
@@ -1623,7 +1818,13 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesOAuth(
 			)
 		}
 	} else {
-		usage, imageCount, imageOutputSizes, err = s.handleOpenAIImagesOAuthNonStreamingResponse(resp, c, parsed.ResponseFormat, requestModel)
+		usage, imageCount, imageOutputSizes, err = s.handleOpenAIImagesOAuthNonStreamingResponse(resp, c, parsed.ResponseFormat, requestModel, &openAIImagesOAuthAsyncPollContext{
+			ctx:        upstreamCtx,
+			c:          c,
+			account:    account,
+			initialReq: upstreamReq,
+			proxyURL:   proxyURL,
+		})
 		if err != nil {
 			return nil, s.handleOpenAIImagesOAuthResponseError(
 				upstreamCtx,

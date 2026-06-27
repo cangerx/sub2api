@@ -55,7 +55,7 @@ func (h *BackupHandler) TestS3Connection(c *gin.Context) {
 		response.Success(c, gin.H{"ok": false, "message": err.Error()})
 		return
 	}
-	response.Success(c, gin.H{"ok": true, "message": "connection successful"})
+	response.Success(c, gin.H{"ok": true})
 }
 
 // ─── 定时备份 ───
