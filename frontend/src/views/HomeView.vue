@@ -20,11 +20,11 @@
       :class="[isScrolled ? 'pt-4 px-4' : 'pt-0 px-0']"
     >
       <nav 
-        class="mx-auto flex items-center justify-between transition-all duration-500 pointer-events-auto"
+        class="liquid-nav mx-auto flex items-center justify-between transition-all duration-500 pointer-events-auto"
         :class="[
           isScrolled 
-            ? 'max-w-5xl rounded-full bg-white/90 dark:bg-[#000000]/80 border border-zinc-200/30 dark:border-white/10 shadow-lg px-6 py-2 backdrop-blur-md scale-95 md:scale-100' 
-            : 'max-w-7xl border-b border-transparent bg-transparent px-4 py-5 sm:px-6 w-full'
+            ? 'max-w-5xl rounded-full px-6 py-2 scale-95 md:scale-100 liquid-nav-compact' 
+            : 'max-w-7xl rounded-none px-4 py-5 sm:px-6 w-full liquid-nav-expanded'
         ]"
       >
         <div 
@@ -44,11 +44,11 @@
 
         <!-- Floating Capsule Pill Menu -->
         <div 
-          class="hidden md:flex items-center gap-10 tracking-tight transition-all duration-500"
+          class="liquid-menu hidden md:flex items-center gap-10 tracking-tight transition-all duration-500"
           :class="[
             isScrolled 
-              ? 'text-xs bg-transparent border-transparent px-0 py-0 text-zinc-700 dark:text-zinc-300' 
-              : 'text-sm bg-white/80 dark:bg-black/35 border border-zinc-200/50 dark:border-white/10 rounded-full px-9 py-3 shadow-sm text-zinc-700 dark:text-zinc-300 font-semibold'
+              ? 'text-xs rounded-full px-7 py-2.5 text-zinc-700 dark:text-zinc-300 liquid-menu-capsule' 
+              : 'text-sm rounded-full px-9 py-3 text-zinc-700 dark:text-zinc-300 font-semibold liquid-menu-capsule'
           ]"
         >
           <a href="#" class="hover:text-zinc-900 dark:hover:text-white transition-colors">首页</a>
@@ -94,11 +94,11 @@
           <!-- Capsule Action Button -->
           <router-link
             :to="isAuthenticated ? dashboardPath : '/login'"
-            class="inline-flex h-9 items-center rounded-full border px-5 text-xs font-semibold backdrop-blur-md transition-all duration-500 active:scale-95 whitespace-nowrap"
+            class="liquid-action inline-flex h-9 items-center rounded-full border px-5 text-xs font-semibold backdrop-blur-md transition-all duration-500 active:scale-95 whitespace-nowrap"
             :class="[
               isScrolled
-                ? 'border-zinc-950 bg-zinc-950 text-white hover:bg-zinc-850 dark:border-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 shadow-sm'
-                : 'border-zinc-200 dark:border-white/15 bg-white/80 dark:bg-white/10 text-zinc-800 dark:text-white hover:bg-white/95 dark:hover:bg-white/20'
+                ? 'text-white dark:text-zinc-950 liquid-action-solid'
+                : 'text-zinc-800 dark:text-white liquid-action-glass'
             ]"
           >
             {{ isAuthenticated ? t('home.dashboard') : t('home.login') }}
@@ -112,15 +112,16 @@
       <!-- Hero Section with background image -->
       <section class="hero-section flex min-h-screen flex-col items-center justify-center px-4 text-center relative overflow-hidden">
         <!-- Physical DOM background wrapper for strict isolation (only inside Hero Section) -->
-        <div class="home-bg-overlay"></div>
+        <div class="home-bg-overlay">
+          <div ref="grainShaderEl" class="hero-grain-shader"></div>
+        </div>
         
         <!-- Mask overlay to ensure text readability -->
-        <div class="absolute inset-0 bg-white/5 dark:bg-black/30 pointer-events-none z-0"></div>
-        <div class="hero-vellum-light pointer-events-none z-0"></div>
+        <div class="hero-gradient-scrim pointer-events-none z-0"></div>
 
         <div class="relative z-10 max-w-4xl mx-auto flex flex-col items-center pt-24 pb-16">
           <!-- Dynamic Stepfun style Badge -->
-          <div class="animate-fade-up animate-float inline-flex items-center gap-2.5 px-4 h-10 mb-8 text-xs font-medium rounded-full bg-zinc-150/80 text-zinc-805 dark:bg-white/[0.04] dark:text-zinc-200 border border-zinc-200/50 dark:border-white/[0.12] backdrop-blur-md shadow-sm hover:border-zinc-350 dark:hover:border-white/[0.2] transition-colors cursor-default">
+          <div class="hero-badge animate-fade-up animate-float inline-flex items-center gap-2.5 px-4 h-10 mb-8 text-xs font-medium rounded-full bg-zinc-150/80 text-zinc-805 dark:bg-white/[0.04] dark:text-zinc-200 border border-zinc-200/50 dark:border-white/[0.12] backdrop-blur-md shadow-sm hover:border-zinc-350 dark:hover:border-white/[0.2] transition-colors cursor-default">
             <span class="flex h-1.5 w-1.5 relative">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
@@ -139,17 +140,17 @@
             </span>
           </h1>
           
-          <div class="animate-fade-up animate-fade-up-3 flex items-center justify-center gap-2 mb-8">
+          <div class="hero-kicker animate-fade-up animate-fade-up-3 flex items-center justify-center gap-2 mb-8">
             <span class="h-px w-6 bg-zinc-300 dark:bg-white/20"></span>
             <span class="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Build with models, create with agents</span>
             <span class="h-px w-6 bg-zinc-300 dark:bg-white/20"></span>
           </div>
           
-          <p class="animate-fade-up animate-fade-up-3 text-zinc-650 dark:text-zinc-300 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed mb-10 tracking-tight font-medium">
+          <p class="animate-fade-up animate-fade-up-3 text-zinc-650 dark:text-white/76 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed mb-10 tracking-tight font-medium">
             {{ siteSubtitle || '专为开发者与企业打造的下一代 AI API 网关底座。统一聚合全球主流大模型，提供毫秒级智能调度、渠道灾备与精细计费。' }}
           </p>
 
-          <div class="animate-fade-up animate-fade-up-4 flex flex-wrap justify-center items-center gap-4 sm:gap-6">
+          <div class="hero-actions animate-fade-up animate-fade-up-4 flex flex-wrap justify-center items-center gap-4 sm:gap-6">
             <router-link
               :to="isAuthenticated ? dashboardPath : '/login'"
               class="shimmer-btn inline-flex items-center justify-center gap-1.5 h-[52px] px-10 rounded-[60px] text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-850 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 transition-all duration-200 shadow-md hover:-translate-y-0.5 active:translate-y-0 overflow-hidden"
@@ -277,10 +278,10 @@
 
             <!-- Right macOS Console Mockup (7 columns) -->
             <div class="reveal-element delay-100 lg:col-span-7 w-full">
-              <div class="w-full rounded-2xl border border-zinc-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#0b0b0d]/80 backdrop-blur-md shadow-2xl overflow-hidden text-left flex flex-col h-[520px]">
+              <div class="playground-console w-full rounded-2xl border border-zinc-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#0b0b0d]/80 backdrop-blur-md shadow-2xl overflow-hidden text-left flex flex-col h-[520px]">
                 
                 <!-- macOS Window Header -->
-                <div class="h-12 border-b border-zinc-200/60 dark:border-white/[0.06] bg-zinc-100/50 dark:bg-[#121215]/50 px-4 flex items-center justify-between shrink-0 select-none">
+                <div class="playground-console-header h-12 border-b border-zinc-200/60 dark:border-white/[0.06] bg-zinc-100/50 dark:bg-[#121215]/50 px-4 flex items-center justify-between shrink-0 select-none">
                   <!-- Traffic Lights -->
                   <div class="flex items-center gap-1.5 w-16">
                     <span class="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]"></span>
@@ -288,7 +289,7 @@
                     <span class="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]"></span>
                   </div>
                   <!-- Tabs -->
-                  <div class="flex items-center gap-1 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                  <div class="playground-tabs flex items-center gap-1 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                     <span class="px-3 py-1.5 rounded-md bg-white dark:bg-[#1c1c21] text-zinc-800 dark:text-white border border-zinc-200/40 dark:border-white/[0.04] flex items-center gap-1.5">
                       <Icon name="chat" size="xs" class="text-blue-500"/> Chat Playground
                     </span>
@@ -300,7 +301,7 @@
                     </span>
                   </div>
                   <!-- Status Indicator -->
-                  <div class="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  <div class="playground-status flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>ONLINE</span>
                   </div>
@@ -399,7 +400,7 @@
                 </div>
 
                 <!-- Footer Console Stats -->
-                <div class="h-8 border-t border-zinc-200/60 dark:border-white/[0.06] bg-zinc-150/40 dark:bg-[#0b0b0e]/80 px-4 flex items-center justify-between shrink-0 select-none text-[10px] font-bold text-zinc-450 dark:text-zinc-500">
+                <div class="playground-console-footer h-8 border-t border-zinc-200/60 dark:border-white/[0.06] bg-zinc-150/40 dark:bg-[#0b0b0e]/80 px-4 flex items-center justify-between shrink-0 select-none text-[10px] font-bold text-zinc-450 dark:text-zinc-500">
                   <div class="flex items-center gap-3">
                     <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Latency: 12ms</span>
                     <span class="hidden sm:inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Uptime: 99.99%</span>
@@ -432,7 +433,7 @@
           </div>
 
           <!-- Hero Banner -->
-          <div class="reveal-element delay-100 relative w-full rounded-2xl overflow-hidden mb-12 bg-gradient-to-br from-blue-950 via-slate-900 to-indigo-950 text-white shadow-xl flex flex-col justify-between p-8 md:p-12">
+          <div class="model-banner reveal-element delay-100 relative w-full rounded-2xl overflow-hidden mb-12 bg-gradient-to-br from-blue-950 via-slate-900 to-indigo-950 text-white shadow-xl flex flex-col justify-between p-8 md:p-12">
             <!-- Decorative diagonal lines -->
             <div class="absolute inset-0 opacity-10 bg-[linear-gradient(45deg,transparent_48%,rgba(255,255,255,0.8)_50%,transparent_52%)] bg-[length:40px_40px]"></div>
             
@@ -507,7 +508,7 @@
           </div>
 
           <!-- Hero Banner -->
-          <div class="reveal-element delay-100 relative w-full rounded-2xl overflow-hidden mb-12 bg-gradient-to-br from-fuchsia-950 via-zinc-900 to-purple-950 text-white shadow-xl flex flex-col justify-between p-8 md:p-12">
+          <div class="model-banner reveal-element delay-100 relative w-full rounded-2xl overflow-hidden mb-12 bg-gradient-to-br from-fuchsia-950 via-zinc-900 to-purple-950 text-white shadow-xl flex flex-col justify-between p-8 md:p-12">
             <div class="absolute inset-0 opacity-[0.03] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,1)_0%,transparent_100%)] bg-[length:120px_120px] bg-repeat"></div>
             
             <div class="relative z-10 flex flex-col gap-6 max-w-sm mb-12 md:mb-16">
@@ -579,7 +580,7 @@
           </div>
 
           <!-- Hero Banner -->
-          <div class="reveal-element delay-100 relative w-full rounded-2xl overflow-hidden mb-12 bg-gradient-to-br from-zinc-900 via-[#111111] to-stone-900 text-white shadow-xl flex flex-col justify-between p-8 md:p-12 border border-zinc-800">
+          <div class="model-banner reveal-element delay-100 relative w-full rounded-2xl overflow-hidden mb-12 bg-gradient-to-br from-zinc-900 via-[#111111] to-stone-900 text-white shadow-xl flex flex-col justify-between p-8 md:p-12 border border-zinc-800">
             <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .3) 25%, rgba(255, 255, 255, .3) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .3) 75%, rgba(255, 255, 255, .3) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .3) 25%, rgba(255, 255, 255, .3) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .3) 75%, rgba(255, 255, 255, .3) 76%, transparent 77%, transparent); background-size: 30px 30px;"></div>
             
             <div class="relative z-10 flex flex-col gap-6 max-w-sm mb-12 md:mb-16">
@@ -682,8 +683,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
+import {
+  ShaderFitOptions,
+  ShaderMount,
+  defaultObjectSizing,
+  grainGradientFragmentShader,
+  GrainGradientShapes,
+  getShaderColorFromString,
+  getShaderNoiseTexture
+} from '@paper-design/shaders'
 import { useAuthStore, useAppStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -691,6 +701,8 @@ import Icon from '@/components/icons/Icon.vue'
 const { t } = useI18n()
 
 const isScrolled = ref(false)
+const grainShaderEl = ref<HTMLElement | null>(null)
+let heroShader: ShaderMount | null = null
 
 function handleScroll() {
   isScrolled.value = window.scrollY > 80
@@ -746,6 +758,7 @@ function toggleTheme() {
   isDark.value = !isDark.value
   document.documentElement.classList.toggle('dark', isDark.value)
   localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+  applyHeroShaderTheme()
 }
 
 function initTheme() {
@@ -756,6 +769,9 @@ function initTheme() {
   ) {
     isDark.value = true
     document.documentElement.classList.add('dark')
+  } else {
+    isDark.value = false
+    document.documentElement.classList.remove('dark')
   }
 }
 
@@ -779,9 +795,101 @@ function animateCounter(el: HTMLElement, target: number, decimals: number) {
   requestAnimationFrame(tick)
 }
 
+async function initHeroShader() {
+  if (!grainShaderEl.value || heroShader) return
+
+  try {
+    await nextTick()
+
+    const noiseTexture = getShaderNoiseTexture()
+    if (noiseTexture) {
+      await waitForShaderImage(noiseTexture)
+    }
+
+    const sizing = defaultObjectSizing
+    const theme = getHeroShaderTheme()
+
+    heroShader = new ShaderMount(
+      grainShaderEl.value,
+      grainGradientFragmentShader,
+      {
+        u_fit: ShaderFitOptions.cover,
+        u_scale: 1,
+        u_rotation: sizing.rotation,
+        u_originX: sizing.originX,
+        u_originY: sizing.originY,
+        u_offsetX: sizing.offsetX,
+        u_offsetY: sizing.offsetY,
+        u_worldWidth: sizing.worldWidth,
+        u_worldHeight: sizing.worldHeight,
+        u_colorBack: getShaderColorFromString(theme.colorBack),
+        u_colors: theme.colors.map(getShaderColorFromString),
+        u_colorsCount: theme.colors.length,
+        u_softness: 1,
+        u_intensity: theme.intensity,
+        u_noise: theme.noise,
+        u_shape: GrainGradientShapes.corners,
+        u_noiseTexture: noiseTexture
+      },
+      { alpha: true, antialias: true, premultipliedAlpha: false },
+      1.85,
+      0,
+      1,
+      1920 * 1080 * 2
+    )
+    grainShaderEl.value?.classList.add('is-ready')
+  } catch (error) {
+    console.warn('[home] Paper shader background disabled:', error)
+    grainShaderEl.value?.classList.remove('is-ready')
+    heroShader = null
+  }
+}
+
+function waitForShaderImage(image: HTMLImageElement) {
+  if (image.complete && image.naturalWidth > 0) {
+    return Promise.resolve()
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve()
+    image.onerror = () => reject(new Error('Paper shader noise texture failed to load'))
+  })
+}
+
+function getHeroShaderTheme() {
+  return isDark.value
+    ? {
+        colorBack: '#030305',
+        colors: ['#00D5FF', '#7C3AED', '#FF2E88', '#2563EB00'],
+        intensity: 1,
+        noise: 0.72
+      }
+    : {
+        colorBack: '#F7FAFF',
+        colors: ['#0EA5E9', '#8B5CF6', '#F43F5E', '#22D3EE00'],
+        intensity: 0.96,
+        noise: 0.5
+      }
+}
+
+function applyHeroShaderTheme() {
+  if (!heroShader) return
+
+  const theme = getHeroShaderTheme()
+  heroShader.setUniforms({
+    u_colorBack: getShaderColorFromString(theme.colorBack),
+    u_colors: theme.colors.map(getShaderColorFromString),
+    u_colorsCount: theme.colors.length,
+    u_intensity: theme.intensity,
+    u_noise: theme.noise
+  })
+  heroShader.setSpeed(1.85)
+}
+
 onMounted(() => {
   initTheme()
   authStore.checkAuth()
+  void initHeroShader()
 
   if (!appStore.publicSettingsLoaded) {
     appStore.fetchPublicSettings()
@@ -833,6 +941,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
+  heroShader?.dispose()
+  heroShader = null
 })
 </script>
 
@@ -877,24 +987,51 @@ onBeforeUnmount(() => {
   justify-content: center;
   border-radius: 999px;
   color: rgb(113 113 122);
-  transition: all 180ms ease;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14),
+    0 8px 22px rgba(15, 23, 42, 0.08);
+  -webkit-backdrop-filter: blur(18px) saturate(1.55) brightness(1.04);
+  backdrop-filter: blur(18px) saturate(1.55) brightness(1.04);
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 180ms ease, background 180ms ease, color 180ms ease;
 }
 
 .nav-icon-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.22)),
+    rgba(255, 255, 255, 0.28);
   color: rgb(9 9 11);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.18),
+    0 12px 28px rgba(15, 23, 42, 0.12);
 }
 
 .nav-icon-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.94);
 }
 
 .dark .nav-icon-btn {
   color: rgb(161 161 170);
+  border-color: rgba(255, 255, 255, 0.13);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.035)),
+    rgba(12, 12, 14, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 24px rgba(0, 0, 0, 0.28);
 }
 
 .dark .nav-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06)),
+    rgba(20, 20, 24, 0.42);
   color: white;
 }
 
@@ -905,10 +1042,221 @@ onBeforeUnmount(() => {
   z-index: 40;
 }
 
+.liquid-nav {
+  position: relative;
+}
+
+.liquid-nav-compact {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.dark .liquid-nav-compact {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.liquid-nav-expanded {
+  background: transparent;
+}
+
+.dark .liquid-nav-expanded {
+  background: transparent;
+}
+
+.liquid-menu,
+.liquid-action {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  -webkit-backdrop-filter: blur(22px) saturate(1.65) contrast(1.08) brightness(1.04);
+  backdrop-filter: blur(22px) saturate(1.65) contrast(1.08) brightness(1.04);
+  transform: translateZ(0);
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 220ms ease,
+    background 220ms ease,
+    border-color 220ms ease;
+}
+
+.liquid-menu::before,
+.liquid-action::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.18) 28%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.32) 100%),
+    radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.78), transparent 28%),
+    radial-gradient(circle at 78% 92%, rgba(255, 255, 255, 0.26), transparent 32%);
+  opacity: 0.62;
+  mix-blend-mode: screen;
+}
+
+.liquid-menu::after,
+.liquid-action::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2),
+    inset 1px 0 0 rgba(255, 255, 255, 0.24),
+    inset -1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 18px rgba(255, 255, 255, 0.12);
+}
+
+.liquid-menu-capsule {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  box-shadow:
+    0 16px 36px rgba(15, 23, 42, 0.12),
+    0 1px 1px rgba(255, 255, 255, 0.38),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.42);
+}
+
+.liquid-menu-capsule:hover,
+.liquid-action:hover {
+  transform: translateY(-1px) translateZ(0);
+}
+
+.dark .liquid-menu-capsule {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.035)),
+    rgba(10, 10, 12, 0.38);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 16px 38px rgba(0, 0, 0, 0.34),
+    0 1px 1px rgba(255, 255, 255, 0.06),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+}
+
+.dark .liquid-menu::before,
+.dark .liquid-action::before {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.045) 48%, rgba(255, 255, 255, 0.1)),
+    radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.28), transparent 34%),
+    radial-gradient(circle at 76% 92%, rgba(255, 255, 255, 0.1), transparent 34%);
+  opacity: 0.76;
+}
+
+.dark .liquid-menu::after,
+.dark .liquid-action::after {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+    inset 1px 0 0 rgba(255, 255, 255, 0.1),
+    inset -1px 0 0 rgba(255, 255, 255, 0.05),
+    inset 0 0 18px rgba(255, 255, 255, 0.04);
+}
+
+.liquid-menu a {
+  position: relative;
+  z-index: 1;
+}
+
+.liquid-menu a::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -0.45rem;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0;
+  transform: translateX(-50%) scale(0.4);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.liquid-menu a:hover::after {
+  opacity: 0.42;
+  transform: translateX(-50%) scale(1);
+}
+
+.liquid-action-glass {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.58);
+  box-shadow:
+    0 12px 28px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.liquid-action-glass:hover {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.26)),
+    rgba(255, 255, 255, 0.3);
+}
+
+.dark .liquid-action-glass {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.045)),
+    rgba(16, 16, 20, 0.38);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.liquid-action-solid {
+  background:
+    linear-gradient(135deg, rgba(24, 24, 27, 0.82), rgba(9, 9, 11, 0.62)),
+    rgba(9, 9, 11, 0.56);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 12px 30px rgba(15, 23, 42, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.dark .liquid-action-solid {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.58)),
+    rgba(255, 255, 255, 0.68);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.liquid-action > span,
+.liquid-action > svg {
+  position: relative;
+  z-index: 1;
+}
+
+.liquid-menu-capsule::before,
+.liquid-action::before {
+  animation: liquidSpecularShift 8s ease-in-out infinite alternate;
+}
+
+@keyframes liquidSpecularShift {
+  0% {
+    background-position: 0% 0%, 18% 8%, 78% 92%;
+  }
+  100% {
+    background-position: 100% 100%, 28% 16%, 68% 82%;
+  }
+}
+
 /* Full screen background for the entire home shell */
 .home-shell {
   position: relative;
-  background-color: #f5f5f7;
+  background-color: #f7f8fb;
 }
 
 .dark .home-shell {
@@ -918,14 +1266,52 @@ onBeforeUnmount(() => {
 .home-bg-overlay {
   position: absolute;
   inset: 0;
-  z-index: -1;
-  background: #f5f5f7 url('/ccapi-home-bg.webp') center / cover no-repeat;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(14, 165, 233, 0.88), transparent 34%),
+    radial-gradient(circle at 78% 20%, rgba(139, 92, 246, 0.8), transparent 36%),
+    radial-gradient(circle at 58% 76%, rgba(244, 63, 94, 0.72), transparent 38%),
+    #f8fafc;
   pointer-events: none;
 }
 
 .dark .home-bg-overlay {
-  background: #000000 url('/ccapi-home-bg.webp') center / cover no-repeat;
-  background-blend-mode: multiply;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(0, 213, 255, 0.68), transparent 34%),
+    radial-gradient(circle at 78% 24%, rgba(124, 58, 237, 0.62), transparent 36%),
+    radial-gradient(circle at 58% 76%, rgba(255, 46, 136, 0.54), transparent 38%),
+    #050505;
+}
+
+.hero-grain-shader {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 1;
+  mix-blend-mode: normal;
+  pointer-events: none;
+}
+
+.hero-grain-shader canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-gradient-scrim {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.24) 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(248, 250, 252, 0.34));
+}
+
+.dark .hero-gradient-scrim {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.34) 68%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.38));
 }
 
 /* Hero Section */
@@ -1017,7 +1403,7 @@ onBeforeUnmount(() => {
 .hero-title {
   color: #09090b;
   text-wrap: balance;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4), 0 24px 80px rgba(255, 255, 255, 0.28);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72), 0 22px 64px rgba(255, 255, 255, 0.65);
 }
 .dark .hero-title {
   color: #ffffff;
@@ -1056,36 +1442,6 @@ onBeforeUnmount(() => {
   }
 }
 
-.hero-vellum-light {
-  position: absolute;
-  left: 50%;
-  top: 48%;
-  width: min(72vw, 920px);
-  height: min(42vw, 520px);
-  transform: translate(-50%, -50%);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.32);
-  filter: blur(56px);
-  opacity: 0.9;
-  animation: heroVellumBreath 8s ease-in-out infinite;
-}
-
-.dark .hero-vellum-light {
-  background: rgba(255, 255, 255, 0.05);
-  opacity: 0.78;
-}
-
-@keyframes heroVellumBreath {
-  0%, 100% {
-    transform: translate(-50%, -50%) scale(0.98);
-    opacity: 0.78;
-  }
-  50% {
-    transform: translate(-50%, -51.5%) scale(1.04);
-    opacity: 0.96;
-  }
-}
-
 /* Card Stagger Entrance */
 .reveal-active .card-stagger {
   animation: cardSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -1118,5 +1474,217 @@ onBeforeUnmount(() => {
 /* Counter value tabular nums for smooth counting */
 .counter-value {
   font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 767px) {
+  .home-shell {
+    overflow-x: hidden;
+  }
+
+  .glass-header {
+    padding-top: max(0.75rem, env(safe-area-inset-top)) !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .liquid-nav {
+    width: 100%;
+    min-height: 3.25rem;
+    gap: 0.625rem;
+    border-radius: 999px !important;
+    padding: 0.5rem 0.625rem !important;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.22)),
+      rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.54);
+    box-shadow:
+      0 14px 34px rgba(15, 23, 42, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    -webkit-backdrop-filter: blur(22px) saturate(1.45);
+    backdrop-filter: blur(22px) saturate(1.45);
+  }
+
+  .dark .liquid-nav {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+      rgba(10, 10, 12, 0.42);
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow:
+      0 14px 34px rgba(0, 0, 0, 0.36),
+      inset 0 1px 0 rgba(255, 255, 255, 0.17);
+  }
+
+  .liquid-nav > div:first-child {
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .liquid-nav > div:first-child > div:first-child {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.75rem;
+  }
+
+  .liquid-nav .liquid-action {
+    height: 2.25rem;
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+    font-size: 0.72rem;
+  }
+
+  .hero-section {
+    min-height: 100svh;
+    padding-left: 1.125rem;
+    padding-right: 1.125rem;
+  }
+
+  .hero-section > .relative {
+    padding-top: 5.5rem;
+    padding-bottom: 4rem;
+  }
+
+  .hero-badge {
+    max-width: 100%;
+    height: auto;
+    min-height: 2.25rem;
+    margin-bottom: 1.35rem;
+    padding: 0.55rem 0.8rem;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  .hero-title {
+    max-width: 22rem;
+    margin-bottom: 1rem;
+    font-size: clamp(2.55rem, 12vw, 3.45rem);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+  }
+
+  .hero-kicker {
+    width: 100%;
+    margin-bottom: 1.35rem;
+  }
+
+  .hero-kicker span:nth-child(2) {
+    max-width: 15rem;
+    line-height: 1.4;
+    white-space: normal;
+  }
+
+  .hero-section p {
+    max-width: 21rem;
+    margin-bottom: 1.75rem;
+    font-size: 0.9rem;
+    line-height: 1.75;
+  }
+
+  .hero-actions {
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .hero-actions > a {
+    width: min(100%, 20.5rem);
+    height: 3rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  main section:not(.hero-section) {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .section-heading {
+    margin-bottom: 2.25rem;
+  }
+
+  .feature-card {
+    border-radius: 1.25rem !important;
+  }
+
+  .playground-console {
+    height: 30rem !important;
+    border-radius: 1.25rem;
+  }
+
+  .playground-console-header {
+    height: auto;
+    min-height: 3.25rem;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .playground-tabs {
+    min-width: 0;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .playground-tabs span {
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+  }
+
+  .playground-status {
+    display: none;
+  }
+
+  .playground-console-footer {
+    height: auto;
+    min-height: 2rem;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .playground-console-footer > div:last-child {
+    display: none;
+  }
+
+  .model-banner {
+    min-height: auto;
+    padding: 1.5rem !important;
+    border-radius: 1.25rem;
+  }
+
+  .model-banner .counter-section {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding-top: 1.25rem;
+  }
+
+  footer .max-w-7xl {
+    align-items: stretch;
+  }
+
+  footer .flex-wrap {
+    width: 100%;
+    gap: 0.625rem;
+  }
+
+  footer .flex-wrap > * {
+    flex: 1 1 calc(50% - 0.625rem);
+    justify-content: center;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .liquid-nav .liquid-action {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .hero-title {
+    font-size: clamp(2.25rem, 11.2vw, 2.85rem);
+  }
+
+  .hero-actions > a,
+  .auth-panel {
+    width: 100%;
+  }
 }
 </style>
