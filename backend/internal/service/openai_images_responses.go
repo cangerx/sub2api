@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -17,12 +19,14 @@ import (
 	"github.com/Wei-Shaw/ccapi/internal/pkg/logger"
 	"github.com/Wei-Shaw/ccapi/internal/util/responseheaders"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
 
 type openAIResponsesImageResult struct {
 	Result        string
+	URL           string
 	RevisedPrompt string
 	OutputFormat  string
 	Size          string
@@ -291,7 +295,11 @@ func buildOpenAIImagesStreamCompletedPayload(
 	payload, _ = sjson.SetBytes(payload, "created_at", createdAt)
 	payload, _ = sjson.SetBytes(payload, "b64_json", img.Result)
 	if strings.EqualFold(strings.TrimSpace(responseFormat), "url") {
-		payload, _ = sjson.SetBytes(payload, "url", "data:"+openAIImageOutputMIMEType(img.OutputFormat)+";base64,"+img.Result)
+		imageURL := strings.TrimSpace(img.URL)
+		if imageURL == "" {
+			imageURL = "data:" + openAIImageOutputMIMEType(img.OutputFormat) + ";base64," + img.Result
+		}
+		payload, _ = sjson.SetBytes(payload, "url", imageURL)
 	}
 	if img.Background != "" {
 		payload, _ = sjson.SetBytes(payload, "background", img.Background)
@@ -331,6 +339,93 @@ func openAIImageOutputMIMEType(outputFormat string) string {
 	default:
 		return "image/png"
 	}
+}
+
+func openAIImageOutputExtension(outputFormat string) string {
+	switch strings.ToLower(strings.TrimSpace(outputFormat)) {
+	case "jpg", "jpeg", "image/jpeg":
+		return ".jpg"
+	case "webp", "image/webp":
+		return ".webp"
+	default:
+		return ".png"
+	}
+}
+
+func openAIImagesLocalPublicBaseURL(c *gin.Context) string {
+	if c == nil || c.Request == nil {
+		return "/api/v1/media"
+	}
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	if proto := strings.TrimSpace(c.GetHeader("X-Forwarded-Proto")); proto != "" {
+		scheme = strings.Split(proto, ",")[0]
+	}
+	host := strings.TrimSpace(c.GetHeader("X-Forwarded-Host"))
+	if host == "" {
+		host = c.Request.Host
+	}
+	if host == "" {
+		return "/api/v1/media"
+	}
+	return strings.TrimRight(scheme+"://"+host, "/") + "/api/v1/media"
+}
+
+func (s *OpenAIGatewayService) persistOpenAIImageResults(ctx context.Context, c *gin.Context, results []openAIResponsesImageResult) ([]openAIResponsesImageResult, error) {
+	if len(results) == 0 || s == nil || s.settingService == nil || s.imageStoreFactory == nil {
+		return results, nil
+	}
+	cfg, err := s.settingService.GetBackupStorageConfig(ctx)
+	if err != nil {
+		if errors.Is(err, ErrSettingNotFound) {
+			return results, nil
+		}
+		return nil, err
+	}
+	if cfg == nil || !cfg.IsConfigured() {
+		return results, nil
+	}
+	if normalizeBackupStorageProvider(cfg.Provider) == "local" && strings.TrimSpace(cfg.PublicBaseURL) == "" {
+		clone := *cfg
+		clone.PublicBaseURL = openAIImagesLocalPublicBaseURL(c)
+		cfg = &clone
+	}
+	store, err := s.imageStoreFactory(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	persisted := make([]openAIResponsesImageResult, len(results))
+	copy(persisted, results)
+	for i := range persisted {
+		raw := strings.TrimSpace(persisted[i].Result)
+		if raw == "" {
+			continue
+		}
+		data, err := base64.StdEncoding.DecodeString(raw)
+		if err != nil {
+			return nil, fmt.Errorf("decode generated image: %w", err)
+		}
+		sum := sha256.Sum256(data)
+		key := fmt.Sprintf(
+			"images/openai/%s/%s-%s%s",
+			time.Now().UTC().Format("2006/01/02"),
+			uuid.NewString(),
+			hex.EncodeToString(sum[:8]),
+			openAIImageOutputExtension(persisted[i].OutputFormat),
+		)
+		contentType := openAIImageOutputMIMEType(persisted[i].OutputFormat)
+		if _, err := store.Upload(ctx, key, bytes.NewReader(data), contentType); err != nil {
+			return nil, fmt.Errorf("store generated image: %w", err)
+		}
+		mediaURL, err := store.PresignURL(ctx, key, 24*time.Hour)
+		if err != nil {
+			return nil, fmt.Errorf("build generated image URL: %w", err)
+		}
+		persisted[i].URL = mediaURL
+	}
+	return persisted, nil
 }
 
 func openAIImageUploadToDataURL(upload OpenAIImagesUpload) (string, error) {
@@ -1128,7 +1223,11 @@ func buildOpenAIImagesAPIResponse(
 	for _, img := range results {
 		item := []byte(`{}`)
 		if format == "url" {
-			item, _ = sjson.SetBytes(item, "url", "data:"+openAIImageOutputMIMEType(img.OutputFormat)+";base64,"+img.Result)
+			imageURL := strings.TrimSpace(img.URL)
+			if imageURL == "" {
+				imageURL = "data:" + openAIImageOutputMIMEType(img.OutputFormat) + ";base64," + img.Result
+			}
+			item, _ = sjson.SetBytes(item, "url", imageURL)
 		} else {
 			item, _ = sjson.SetBytes(item, "b64_json", img.Result)
 		}
@@ -1324,6 +1423,10 @@ func (s *OpenAIGatewayService) handleOpenAIImagesOAuthNonStreamingResponse(
 		firstMeta.Model = strings.TrimSpace(fallbackModel)
 	}
 
+	results, err = s.persistOpenAIImageResults(c.Request.Context(), c, results)
+	if err != nil {
+		return OpenAIUsage{}, 0, nil, err
+	}
 	responseBody, err := buildOpenAIImagesAPIResponse(results, createdAt, usageRaw, firstMeta, responseFormat)
 	if err != nil {
 		return OpenAIUsage{}, 0, nil, err
@@ -1463,6 +1566,14 @@ func (s *OpenAIGatewayService) handleOpenAIImagesOAuthStreamingResponse(
 				processDataDone = true
 				return
 			}
+			persistedResults, persistErr := s.persistOpenAIImageResults(c.Request.Context(), c, finalResults)
+			if persistErr != nil {
+				s.tryWriteOpenAIImagesStreamEvent(c, flusher, &clientDisconnected, &lastDownstreamWriteAt, "error", buildOpenAIImagesStreamErrorBody(persistErr.Error()))
+				processDataErr = persistErr
+				processDataDone = true
+				return
+			}
+			finalResults = persistedResults
 			eventName := streamPrefix + ".completed"
 			for _, img := range finalResults {
 				key := openAIResponsesImageResultKey("", img)
@@ -1514,6 +1625,11 @@ func (s *OpenAIGatewayService) handleOpenAIImagesOAuthStreamingResponse(
 			return nil
 		}
 		if len(pendingResults) > 0 {
+			persistedResults, persistErr := s.persistOpenAIImageResults(c.Request.Context(), c, pendingResults)
+			if persistErr != nil {
+				return persistErr
+			}
+			pendingResults = persistedResults
 			eventName := streamPrefix + ".completed"
 			for _, img := range pendingResults {
 				mergeOpenAIResponsesImageMeta(&img, streamMeta)

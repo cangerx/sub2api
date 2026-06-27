@@ -794,6 +794,8 @@ export default {
     groupChangedSuccess: '分组更换成功',
     failedToChangeGroup: '更换分组失败',
     groupRequired: '请选择分组',
+    forceImageUrlResponse: '图片强制返回 URL',
+    forceImageUrlResponseHint: '开启后此密钥调用图片生成/编辑接口时，即使客户端请求 base64，也会返回可访问的图片地址。',
     usage: '用量',
     today: '今日',
     total: '近30天',

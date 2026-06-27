@@ -356,6 +356,7 @@ type OpenAIGatewayService struct {
 	balanceNotifyService  *BalanceNotifyService
 	settingService        *SettingService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
+	imageStoreFactory     BackupObjectStoreFactory
 
 	openaiWSPoolOnce              sync.Once
 	openaiWSStateStoreOnce        sync.Once
@@ -444,6 +445,15 @@ func NewOpenAIGatewayService(
 	}
 	svc.logOpenAIWSModeBootstrap()
 	return svc
+}
+
+// SetImageObjectStoreFactory injects the shared object storage factory used to
+// persist generated images when object storage is configured.
+func (s *OpenAIGatewayService) SetImageObjectStoreFactory(factory BackupObjectStoreFactory) {
+	if s == nil {
+		return
+	}
+	s.imageStoreFactory = factory
 }
 
 // ResolveChannelMapping 解析渠道级模型映射（代理到 ChannelService）

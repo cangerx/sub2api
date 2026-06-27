@@ -118,6 +118,7 @@ func APIKeyFromService(k *service.APIKey) *APIKey {
 		out.Reset7dAt = &t
 	}
 	out.MultiGroupRouting = k.MultiGroupRouting
+	out.ForceImageURLResponse = k.ForceImageURLResponse
 	if len(k.GroupBindings) > 0 {
 		out.GroupBindings = make([]APIKeyGroupBinding, 0, len(k.GroupBindings))
 		for i := range k.GroupBindings {

@@ -556,6 +556,23 @@ func (s *OpenAIGatewayService) ForwardImages(
 	}
 }
 
+func ForceOpenAIImagesURLResponse(body []byte, contentType string, parsed *OpenAIImagesRequest) ([]byte, string, error) {
+	if parsed == nil {
+		return body, contentType, nil
+	}
+	parsed.ResponseFormat = "url"
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err == nil && strings.EqualFold(mediaType, "multipart/form-data") {
+		rewrittenBody, rewrittenType, rewriteErr := rewriteOpenAIImagesMultipartField(body, contentType, "response_format", "url")
+		return rewrittenBody, rewrittenType, rewriteErr
+	}
+	rewritten, err := sjson.SetBytes(body, "response_format", "url")
+	if err != nil {
+		return nil, "", fmt.Errorf("rewrite image request response_format: %w", err)
+	}
+	return rewritten, contentType, nil
+}
+
 func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 	ctx context.Context,
 	c *gin.Context,
@@ -785,6 +802,10 @@ func rewriteOpenAIImagesModel(body []byte, contentType string, model string) ([]
 }
 
 func rewriteOpenAIImagesMultipartModel(body []byte, contentType string, model string) ([]byte, string, error) {
+	return rewriteOpenAIImagesMultipartField(body, contentType, "model", model)
+}
+
+func rewriteOpenAIImagesMultipartField(body []byte, contentType string, fieldName string, value string) ([]byte, string, error) {
 	_, params, err := mime.ParseMediaType(contentType)
 	if err != nil {
 		return nil, "", fmt.Errorf("parse multipart content-type: %w", err)
@@ -797,7 +818,7 @@ func rewriteOpenAIImagesMultipartModel(body []byte, contentType string, model st
 	reader := multipart.NewReader(bytes.NewReader(body), boundary)
 	var buffer bytes.Buffer
 	writer := multipart.NewWriter(&buffer)
-	modelWritten := false
+	fieldWritten := false
 
 	for {
 		part, err := reader.NextPart()
@@ -816,12 +837,12 @@ func rewriteOpenAIImagesMultipartModel(body []byte, contentType string, model st
 			return nil, "", fmt.Errorf("create multipart part: %w", err)
 		}
 
-		if formName == "model" && part.FileName() == "" {
-			if _, err := target.Write([]byte(model)); err != nil {
+		if formName == fieldName && part.FileName() == "" {
+			if _, err := target.Write([]byte(value)); err != nil {
 				_ = part.Close()
-				return nil, "", fmt.Errorf("rewrite multipart model: %w", err)
+				return nil, "", fmt.Errorf("rewrite multipart %s: %w", fieldName, err)
 			}
-			modelWritten = true
+			fieldWritten = true
 			_ = part.Close()
 			continue
 		}
@@ -832,9 +853,9 @@ func rewriteOpenAIImagesMultipartModel(body []byte, contentType string, model st
 		_ = part.Close()
 	}
 
-	if !modelWritten {
-		if err := writer.WriteField("model", model); err != nil {
-			return nil, "", fmt.Errorf("append multipart model field: %w", err)
+	if !fieldWritten {
+		if err := writer.WriteField(fieldName, value); err != nil {
+			return nil, "", fmt.Errorf("append multipart %s field: %w", fieldName, err)
 		}
 	}
 	if err := writer.Close(); err != nil {
@@ -858,6 +879,11 @@ func (s *OpenAIGatewayService) handleOpenAIImagesNonStreamingResponse(resp *http
 	if err != nil {
 		return OpenAIUsage{}, 0, nil, err
 	}
+	if rewritten, rewriteErr := s.persistOpenAIImagesAPIResponseBody(c.Request.Context(), c, body); rewriteErr != nil {
+		return OpenAIUsage{}, 0, nil, rewriteErr
+	} else if len(rewritten) > 0 {
+		body = rewritten
+	}
 	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
 	contentType := "application/json"
 	if s.cfg != nil && !s.cfg.Security.ResponseHeaders.Enabled {
@@ -869,6 +895,88 @@ func (s *OpenAIGatewayService) handleOpenAIImagesNonStreamingResponse(resp *http
 
 	usage, _ := extractOpenAIUsageFromJSONBytes(body)
 	return usage, extractOpenAIImageCountFromJSONBytes(body), collectOpenAIResponseImageOutputSizesFromJSONBytes(body), nil
+}
+
+func (s *OpenAIGatewayService) persistOpenAIImagesAPIResponseBody(ctx context.Context, c *gin.Context, body []byte) ([]byte, error) {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return body, nil
+	}
+	data := gjson.GetBytes(body, "data")
+	if !data.IsArray() {
+		return body, nil
+	}
+	items := data.Array()
+	results := make([]openAIResponsesImageResult, 0, len(items))
+	indexes := make([]int, 0, len(items))
+	rootFormat := strings.TrimSpace(gjson.GetBytes(body, "output_format").String())
+	for i, item := range items {
+		result := openAIResponsesImageResult{
+			Result:        normalizeOpenAIImageBase64(item.Get("b64_json").String()),
+			URL:           strings.TrimSpace(item.Get("url").String()),
+			RevisedPrompt: strings.TrimSpace(item.Get("revised_prompt").String()),
+			OutputFormat:  strings.TrimSpace(item.Get("output_format").String()),
+			Size:          strings.TrimSpace(item.Get("size").String()),
+		}
+		if result.OutputFormat == "" {
+			result.OutputFormat = rootFormat
+		}
+		if result.Result == "" {
+			if mimeType, b64, ok := splitOpenAIImageDataURL(result.URL); ok {
+				result.Result = b64
+				if result.OutputFormat == "" {
+					result.OutputFormat = mimeType
+				}
+			}
+		}
+		if result.Result == "" {
+			continue
+		}
+		results = append(results, result)
+		indexes = append(indexes, i)
+	}
+	if len(results) == 0 {
+		return body, nil
+	}
+	persisted, err := s.persistOpenAIImageResults(ctx, c, results)
+	if err != nil {
+		return nil, err
+	}
+	rewritten := body
+	for i, img := range persisted {
+		if strings.TrimSpace(img.URL) == "" {
+			continue
+		}
+		rewritten, err = sjson.SetBytes(rewritten, fmt.Sprintf("data.%d.url", indexes[i]), img.URL)
+		if err != nil {
+			return nil, fmt.Errorf("rewrite image response url: %w", err)
+		}
+	}
+	return rewritten, nil
+}
+
+func splitOpenAIImageDataURL(raw string) (string, string, bool) {
+	raw = strings.TrimSpace(raw)
+	if !strings.HasPrefix(strings.ToLower(raw), "data:") {
+		return "", "", false
+	}
+	comma := strings.Index(raw, ",")
+	if comma < 0 || comma+1 >= len(raw) {
+		return "", "", false
+	}
+	meta := strings.TrimSpace(raw[len("data:"):comma])
+	b64 := strings.TrimSpace(raw[comma+1:])
+	if b64 == "" {
+		return "", "", false
+	}
+	mimeType := ""
+	for _, part := range strings.Split(meta, ";") {
+		part = strings.TrimSpace(part)
+		if strings.Contains(part, "/") {
+			mimeType = part
+			break
+		}
+	}
+	return mimeType, b64, true
 }
 
 func (s *OpenAIGatewayService) handleOpenAIImagesStreamingResponse(

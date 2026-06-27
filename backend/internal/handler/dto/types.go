@@ -82,8 +82,9 @@ type APIKey struct {
 	Group *Group `json:"group,omitempty"`
 
 	// Multi-group routing
-	MultiGroupRouting bool                 `json:"multi_group_routing"`
-	GroupBindings     []APIKeyGroupBinding `json:"group_bindings,omitempty"`
+	MultiGroupRouting     bool                 `json:"multi_group_routing"`
+	ForceImageURLResponse bool                 `json:"force_image_url_response"`
+	GroupBindings         []APIKeyGroupBinding `json:"group_bindings,omitempty"`
 }
 
 // APIKeyGroupBinding is a multi-group-routing binding in API responses.

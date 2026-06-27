@@ -95,6 +95,11 @@ func MultiGroupRouting(v bool) predicate.APIKey {
 	return predicate.APIKey(sql.FieldEQ(FieldMultiGroupRouting, v))
 }
 
+// ForceImageURLResponse applies equality check predicate on the "force_image_url_response" field. It's identical to ForceImageURLResponseEQ.
+func ForceImageURLResponse(v bool) predicate.APIKey {
+	return predicate.APIKey(sql.FieldEQ(FieldForceImageURLResponse, v))
+}
+
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.APIKey {
 	return predicate.APIKey(sql.FieldEQ(FieldStatus, v))
@@ -483,6 +488,16 @@ func MultiGroupRoutingEQ(v bool) predicate.APIKey {
 // MultiGroupRoutingNEQ applies the NEQ predicate on the "multi_group_routing" field.
 func MultiGroupRoutingNEQ(v bool) predicate.APIKey {
 	return predicate.APIKey(sql.FieldNEQ(FieldMultiGroupRouting, v))
+}
+
+// ForceImageURLResponseEQ applies the EQ predicate on the "force_image_url_response" field.
+func ForceImageURLResponseEQ(v bool) predicate.APIKey {
+	return predicate.APIKey(sql.FieldEQ(FieldForceImageURLResponse, v))
+}
+
+// ForceImageURLResponseNEQ applies the NEQ predicate on the "force_image_url_response" field.
+func ForceImageURLResponseNEQ(v bool) predicate.APIKey {
+	return predicate.APIKey(sql.FieldNEQ(FieldForceImageURLResponse, v))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

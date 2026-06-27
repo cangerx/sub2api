@@ -795,6 +795,8 @@ export default {
     groupChangedSuccess: 'Group changed successfully',
     failedToChangeGroup: 'Failed to change group',
     groupRequired: 'Please select a group',
+    forceImageUrlResponse: 'Force image URL response',
+    forceImageUrlResponseHint: 'When enabled, image generation/edit requests using this key return accessible image URLs even if the client requests base64.',
     usage: 'Usage',
     today: 'Today',
     total: 'Last 30d',

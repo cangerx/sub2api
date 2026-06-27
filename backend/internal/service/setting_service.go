@@ -67,6 +67,24 @@ type SettingRepository interface {
 	Delete(ctx context.Context, key string) error
 }
 
+// GetBackupStorageConfig returns the shared object storage configuration used
+// by backups and generated media.
+func (s *SettingService) GetBackupStorageConfig(ctx context.Context) (*BackupS3Config, error) {
+	if s == nil || s.settingRepo == nil {
+		return nil, ErrBackupS3NotConfigured
+	}
+	raw, err := s.settingRepo.GetValue(ctx, settingKeyBackupS3Config)
+	if err != nil {
+		return nil, err
+	}
+	var cfg BackupS3Config
+	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
+		return nil, ErrBackupS3ConfigCorrupt
+	}
+	cfg.normalize()
+	return &cfg, nil
+}
+
 // cachedVersionBounds 缓存 Claude Code 版本号上下限（进程内缓存，60s TTL）
 type cachedVersionBounds struct {
 	min       string // 空字符串 = 不检查

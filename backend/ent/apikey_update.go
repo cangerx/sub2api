@@ -136,6 +136,20 @@ func (_u *APIKeyUpdate) SetNillableMultiGroupRouting(v *bool) *APIKeyUpdate {
 	return _u
 }
 
+// SetForceImageURLResponse sets the "force_image_url_response" field.
+func (_u *APIKeyUpdate) SetForceImageURLResponse(v bool) *APIKeyUpdate {
+	_u.mutation.SetForceImageURLResponse(v)
+	return _u
+}
+
+// SetNillableForceImageURLResponse sets the "force_image_url_response" field if the given value is not nil.
+func (_u *APIKeyUpdate) SetNillableForceImageURLResponse(v *bool) *APIKeyUpdate {
+	if v != nil {
+		_u.SetForceImageURLResponse(*v)
+	}
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *APIKeyUpdate) SetStatus(v string) *APIKeyUpdate {
 	_u.mutation.SetStatus(v)
@@ -684,6 +698,9 @@ func (_u *APIKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.MultiGroupRouting(); ok {
 		_spec.SetField(apikey.FieldMultiGroupRouting, field.TypeBool, value)
 	}
+	if value, ok := _u.mutation.ForceImageURLResponse(); ok {
+		_spec.SetField(apikey.FieldForceImageURLResponse, field.TypeBool, value)
+	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(apikey.FieldStatus, field.TypeString, value)
 	}
@@ -1098,6 +1115,20 @@ func (_u *APIKeyUpdateOne) SetMultiGroupRouting(v bool) *APIKeyUpdateOne {
 func (_u *APIKeyUpdateOne) SetNillableMultiGroupRouting(v *bool) *APIKeyUpdateOne {
 	if v != nil {
 		_u.SetMultiGroupRouting(*v)
+	}
+	return _u
+}
+
+// SetForceImageURLResponse sets the "force_image_url_response" field.
+func (_u *APIKeyUpdateOne) SetForceImageURLResponse(v bool) *APIKeyUpdateOne {
+	_u.mutation.SetForceImageURLResponse(v)
+	return _u
+}
+
+// SetNillableForceImageURLResponse sets the "force_image_url_response" field if the given value is not nil.
+func (_u *APIKeyUpdateOne) SetNillableForceImageURLResponse(v *bool) *APIKeyUpdateOne {
+	if v != nil {
+		_u.SetForceImageURLResponse(*v)
 	}
 	return _u
 }
@@ -1679,6 +1710,9 @@ func (_u *APIKeyUpdateOne) sqlSave(ctx context.Context) (_node *APIKey, err erro
 	}
 	if value, ok := _u.mutation.MultiGroupRouting(); ok {
 		_spec.SetField(apikey.FieldMultiGroupRouting, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.ForceImageURLResponse(); ok {
+		_spec.SetField(apikey.FieldForceImageURLResponse, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(apikey.FieldStatus, field.TypeString, value)

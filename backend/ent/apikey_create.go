@@ -115,6 +115,20 @@ func (_c *APIKeyCreate) SetNillableMultiGroupRouting(v *bool) *APIKeyCreate {
 	return _c
 }
 
+// SetForceImageURLResponse sets the "force_image_url_response" field.
+func (_c *APIKeyCreate) SetForceImageURLResponse(v bool) *APIKeyCreate {
+	_c.mutation.SetForceImageURLResponse(v)
+	return _c
+}
+
+// SetNillableForceImageURLResponse sets the "force_image_url_response" field if the given value is not nil.
+func (_c *APIKeyCreate) SetNillableForceImageURLResponse(v *bool) *APIKeyCreate {
+	if v != nil {
+		_c.SetForceImageURLResponse(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *APIKeyCreate) SetStatus(v string) *APIKeyCreate {
 	_c.mutation.SetStatus(v)
@@ -433,6 +447,10 @@ func (_c *APIKeyCreate) defaults() error {
 		v := apikey.DefaultMultiGroupRouting
 		_c.mutation.SetMultiGroupRouting(v)
 	}
+	if _, ok := _c.mutation.ForceImageURLResponse(); !ok {
+		v := apikey.DefaultForceImageURLResponse
+		_c.mutation.SetForceImageURLResponse(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := apikey.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -501,6 +519,9 @@ func (_c *APIKeyCreate) check() error {
 	}
 	if _, ok := _c.mutation.MultiGroupRouting(); !ok {
 		return &ValidationError{Name: "multi_group_routing", err: errors.New(`ent: missing required field "APIKey.multi_group_routing"`)}
+	}
+	if _, ok := _c.mutation.ForceImageURLResponse(); !ok {
+		return &ValidationError{Name: "force_image_url_response", err: errors.New(`ent: missing required field "APIKey.force_image_url_response"`)}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "APIKey.status"`)}
@@ -587,6 +608,10 @@ func (_c *APIKeyCreate) createSpec() (*APIKey, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.MultiGroupRouting(); ok {
 		_spec.SetField(apikey.FieldMultiGroupRouting, field.TypeBool, value)
 		_node.MultiGroupRouting = value
+	}
+	if value, ok := _c.mutation.ForceImageURLResponse(); ok {
+		_spec.SetField(apikey.FieldForceImageURLResponse, field.TypeBool, value)
+		_node.ForceImageURLResponse = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(apikey.FieldStatus, field.TypeString, value)
@@ -879,6 +904,18 @@ func (u *APIKeyUpsert) SetMultiGroupRouting(v bool) *APIKeyUpsert {
 // UpdateMultiGroupRouting sets the "multi_group_routing" field to the value that was provided on create.
 func (u *APIKeyUpsert) UpdateMultiGroupRouting() *APIKeyUpsert {
 	u.SetExcluded(apikey.FieldMultiGroupRouting)
+	return u
+}
+
+// SetForceImageURLResponse sets the "force_image_url_response" field.
+func (u *APIKeyUpsert) SetForceImageURLResponse(v bool) *APIKeyUpsert {
+	u.Set(apikey.FieldForceImageURLResponse, v)
+	return u
+}
+
+// UpdateForceImageURLResponse sets the "force_image_url_response" field to the value that was provided on create.
+func (u *APIKeyUpsert) UpdateForceImageURLResponse() *APIKeyUpsert {
+	u.SetExcluded(apikey.FieldForceImageURLResponse)
 	return u
 }
 
@@ -1318,6 +1355,20 @@ func (u *APIKeyUpsertOne) SetMultiGroupRouting(v bool) *APIKeyUpsertOne {
 func (u *APIKeyUpsertOne) UpdateMultiGroupRouting() *APIKeyUpsertOne {
 	return u.Update(func(s *APIKeyUpsert) {
 		s.UpdateMultiGroupRouting()
+	})
+}
+
+// SetForceImageURLResponse sets the "force_image_url_response" field.
+func (u *APIKeyUpsertOne) SetForceImageURLResponse(v bool) *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetForceImageURLResponse(v)
+	})
+}
+
+// UpdateForceImageURLResponse sets the "force_image_url_response" field to the value that was provided on create.
+func (u *APIKeyUpsertOne) UpdateForceImageURLResponse() *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdateForceImageURLResponse()
 	})
 }
 
@@ -1970,6 +2021,20 @@ func (u *APIKeyUpsertBulk) SetMultiGroupRouting(v bool) *APIKeyUpsertBulk {
 func (u *APIKeyUpsertBulk) UpdateMultiGroupRouting() *APIKeyUpsertBulk {
 	return u.Update(func(s *APIKeyUpsert) {
 		s.UpdateMultiGroupRouting()
+	})
+}
+
+// SetForceImageURLResponse sets the "force_image_url_response" field.
+func (u *APIKeyUpsertBulk) SetForceImageURLResponse(v bool) *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetForceImageURLResponse(v)
+	})
+}
+
+// UpdateForceImageURLResponse sets the "force_image_url_response" field to the value that was provided on create.
+func (u *APIKeyUpsertBulk) UpdateForceImageURLResponse() *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdateForceImageURLResponse()
 	})
 }
 

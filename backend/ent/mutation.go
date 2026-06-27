@@ -117,6 +117,7 @@ type APIKeyMutation struct {
 	key                           *string
 	name                          *string
 	multi_group_routing           *bool
+	force_image_url_response      *bool
 	status                        *string
 	last_used_at                  *time.Time
 	ip_whitelist                  *[]string
@@ -572,6 +573,42 @@ func (m *APIKeyMutation) OldMultiGroupRouting(ctx context.Context) (v bool, err 
 // ResetMultiGroupRouting resets all changes to the "multi_group_routing" field.
 func (m *APIKeyMutation) ResetMultiGroupRouting() {
 	m.multi_group_routing = nil
+}
+
+// SetForceImageURLResponse sets the "force_image_url_response" field.
+func (m *APIKeyMutation) SetForceImageURLResponse(b bool) {
+	m.force_image_url_response = &b
+}
+
+// ForceImageURLResponse returns the value of the "force_image_url_response" field in the mutation.
+func (m *APIKeyMutation) ForceImageURLResponse() (r bool, exists bool) {
+	v := m.force_image_url_response
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldForceImageURLResponse returns the old "force_image_url_response" field's value of the APIKey entity.
+// If the APIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIKeyMutation) OldForceImageURLResponse(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldForceImageURLResponse is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldForceImageURLResponse requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldForceImageURLResponse: %w", err)
+	}
+	return oldValue.ForceImageURLResponse, nil
+}
+
+// ResetForceImageURLResponse resets all changes to the "force_image_url_response" field.
+func (m *APIKeyMutation) ResetForceImageURLResponse() {
+	m.force_image_url_response = nil
 }
 
 // SetStatus sets the "status" field.
@@ -1683,7 +1720,7 @@ func (m *APIKeyMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APIKeyMutation) Fields() []string {
-	fields := make([]string, 0, 24)
+	fields := make([]string, 0, 25)
 	if m.created_at != nil {
 		fields = append(fields, apikey.FieldCreatedAt)
 	}
@@ -1707,6 +1744,9 @@ func (m *APIKeyMutation) Fields() []string {
 	}
 	if m.multi_group_routing != nil {
 		fields = append(fields, apikey.FieldMultiGroupRouting)
+	}
+	if m.force_image_url_response != nil {
+		fields = append(fields, apikey.FieldForceImageURLResponse)
 	}
 	if m.status != nil {
 		fields = append(fields, apikey.FieldStatus)
@@ -1780,6 +1820,8 @@ func (m *APIKeyMutation) Field(name string) (ent.Value, bool) {
 		return m.GroupID()
 	case apikey.FieldMultiGroupRouting:
 		return m.MultiGroupRouting()
+	case apikey.FieldForceImageURLResponse:
+		return m.ForceImageURLResponse()
 	case apikey.FieldStatus:
 		return m.Status()
 	case apikey.FieldLastUsedAt:
@@ -1837,6 +1879,8 @@ func (m *APIKeyMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldGroupID(ctx)
 	case apikey.FieldMultiGroupRouting:
 		return m.OldMultiGroupRouting(ctx)
+	case apikey.FieldForceImageURLResponse:
+		return m.OldForceImageURLResponse(ctx)
 	case apikey.FieldStatus:
 		return m.OldStatus(ctx)
 	case apikey.FieldLastUsedAt:
@@ -1933,6 +1977,13 @@ func (m *APIKeyMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMultiGroupRouting(v)
+		return nil
+	case apikey.FieldForceImageURLResponse:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetForceImageURLResponse(v)
 		return nil
 	case apikey.FieldStatus:
 		v, ok := value.(string)
@@ -2274,6 +2325,9 @@ func (m *APIKeyMutation) ResetField(name string) error {
 		return nil
 	case apikey.FieldMultiGroupRouting:
 		m.ResetMultiGroupRouting()
+		return nil
+	case apikey.FieldForceImageURLResponse:
+		m.ResetForceImageURLResponse()
 		return nil
 	case apikey.FieldStatus:
 		m.ResetStatus()
