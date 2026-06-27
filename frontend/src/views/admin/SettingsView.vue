@@ -9935,6 +9935,7 @@ const allPaymentTypes = computed(() => [
   { value: "wxpay", label: t("payment.methods.wxpay") },
   { value: "stripe", label: t("payment.methods.stripe") },
   { value: "airwallex", label: t("payment.methods.airwallex") },
+  { value: "tianque", label: t("payment.methods.tianque") },
 ]);
 
 function isPaymentTypeEnabled(type: string): boolean {
@@ -9992,6 +9993,7 @@ const providerKeyOptions = computed(() => [
   { value: "wxpay", label: t("admin.settings.payment.providerWxpay") },
   { value: "stripe", label: t("admin.settings.payment.providerStripe") },
   { value: "airwallex", label: t("admin.settings.payment.providerAirwallex") },
+  { value: "tianque", label: t("admin.settings.payment.providerTianque") },
 ]);
 
 const enabledProviderKeyOptions = computed(() => {
@@ -10073,7 +10075,7 @@ function getProviderVisibleMethods(
         }
       });
     }
-  } else if (provider.provider_key === "easypay") {
+  } else if (provider.provider_key === "easypay" || provider.provider_key === "tianque") {
     supportedTypes.forEach(addMethod);
   }
 

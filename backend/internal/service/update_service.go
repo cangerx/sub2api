@@ -26,9 +26,10 @@ var (
 )
 
 const (
-	updateCacheKey = "update_check_cache"
-	updateCacheTTL = 1200 // 20 minutes
-	githubRepo     = "Wei-Shaw/ccapi"
+	updateCacheKey      = "update_check_cache"
+	updateCacheTTL      = 1200 // 20 minutes
+	defaultGitHubRepo   = "cangerx/sub2api"
+	updateGitHubRepoEnv = "UPDATE_GITHUB_REPO"
 
 	// Security: allowed download domains for updates
 	allowedDownloadHost = "github.com"
@@ -280,7 +281,7 @@ func (s *UpdateService) Rollback() error {
 }
 
 func (s *UpdateService) fetchLatestRelease(ctx context.Context) (*UpdateInfo, error) {
-	release, err := s.githubClient.FetchLatestRelease(ctx, githubRepo)
+	release, err := s.githubClient.FetchLatestRelease(ctx, resolveUpdateGitHubRepo())
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +346,21 @@ func validateDownloadURL(rawURL string) error {
 		return fmt.Errorf("download from untrusted host: %s", host)
 	}
 
+	if host == allowedDownloadHost {
+		releasePathPrefix := "/" + strings.Trim(resolveUpdateGitHubRepo(), "/") + "/releases/download/"
+		if !strings.HasPrefix(strings.ToLower(parsedURL.Path), strings.ToLower(releasePathPrefix)) {
+			return fmt.Errorf("download path is outside configured update repository")
+		}
+	}
+
 	return nil
+}
+
+func resolveUpdateGitHubRepo() string {
+	if repo := strings.TrimSpace(os.Getenv(updateGitHubRepoEnv)); repo != "" {
+		return strings.Trim(repo, "/")
+	}
+	return defaultGitHubRepo
 }
 
 func (s *UpdateService) verifyChecksum(ctx context.Context, filePath, checksumURL string) error {

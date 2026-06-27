@@ -29,9 +29,11 @@ func (s *updateServiceCacheStub) SetUpdateInfo(_ context.Context, data string, _
 
 type updateServiceGitHubClientStub struct {
 	release *GitHubRelease
+	repo    string
 }
 
-func (s *updateServiceGitHubClientStub) FetchLatestRelease(context.Context, string) (*GitHubRelease, error) {
+func (s *updateServiceGitHubClientStub) FetchLatestRelease(_ context.Context, repo string) (*GitHubRelease, error) {
+	s.repo = repo
 	return s.release, nil
 }
 
@@ -61,4 +63,44 @@ func TestUpdateServicePerformUpdateNoUpdateReturnsSentinel(t *testing.T) {
 	require.Error(t, err)
 	require.True(t, errors.Is(err, ErrNoUpdateAvailable))
 	require.ErrorIs(t, err, ErrNoUpdateAvailable)
+}
+
+func TestUpdateServiceUsesCCAPIRepositoryByDefault(t *testing.T) {
+	t.Setenv("UPDATE_GITHUB_REPO", "")
+	client := &updateServiceGitHubClientStub{
+		release: &GitHubRelease{
+			TagName: "v0.1.133",
+			Name:    "v0.1.133",
+		},
+	}
+	svc := NewUpdateService(&updateServiceCacheStub{}, client, "0.1.132", "release")
+
+	_, err := svc.CheckUpdate(context.Background(), true)
+
+	require.NoError(t, err)
+	require.Equal(t, "cangerx/sub2api", client.repo)
+}
+
+func TestUpdateServiceRepositoryCanBeOverridden(t *testing.T) {
+	t.Setenv("UPDATE_GITHUB_REPO", "example/custom")
+	client := &updateServiceGitHubClientStub{
+		release: &GitHubRelease{
+			TagName: "v0.1.133",
+			Name:    "v0.1.133",
+		},
+	}
+	svc := NewUpdateService(&updateServiceCacheStub{}, client, "0.1.132", "release")
+
+	_, err := svc.CheckUpdate(context.Background(), true)
+
+	require.NoError(t, err)
+	require.Equal(t, "example/custom", client.repo)
+}
+
+func TestValidateDownloadURLRejectsOtherGitHubRepositories(t *testing.T) {
+	t.Setenv("UPDATE_GITHUB_REPO", "")
+	err := validateDownloadURL("https://github.com/Wei-Shaw/ccapi/releases/download/v0.1.133/ccapi_linux_amd64.tar.gz")
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "outside configured update repository")
 }

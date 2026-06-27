@@ -2,7 +2,7 @@
 #
 # CCAPI Installation Script
 # CCAPI 安装脚本
-# Usage: curl -sSL https://raw.githubusercontent.com/Wei-Shaw/ccapi/main/deploy/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/cangerx/sub2api/main/deploy/install.sh | bash
 #
 
 set -e
@@ -31,7 +31,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-GITHUB_REPO="Wei-Shaw/ccapi"
+GITHUB_REPO="${GITHUB_REPO:-cangerx/sub2api}"
 INSTALL_DIR="/opt/ccapi"
 SERVICE_NAME="ccapi"
 SERVICE_USER="ccapi"
@@ -670,7 +670,7 @@ install_service() {
     cat > /etc/systemd/system/ccapi.service << EOF
 [Unit]
 Description=CCAPI - AI API Gateway Platform
-Documentation=https://github.com/Wei-Shaw/ccapi
+Documentation=https://github.com/cangerx/sub2api
 After=network.target postgresql.service redis.service
 Wants=postgresql.service redis.service
 

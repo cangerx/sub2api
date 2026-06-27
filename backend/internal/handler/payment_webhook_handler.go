@@ -67,6 +67,12 @@ func (h *PaymentWebhookHandler) AirwallexWebhook(c *gin.Context) {
 	h.handleNotify(c, payment.TypeAirwallex)
 }
 
+// TianqueNotify handles 随行付 payment notifications.
+// POST /api/v1/payment/webhook/tianque
+func (h *PaymentWebhookHandler) TianqueNotify(c *gin.Context) {
+	h.handleNotify(c, payment.TypeTianque)
+}
+
 // handleNotify is the shared logic for all provider webhook handlers.
 func (h *PaymentWebhookHandler) handleNotify(c *gin.Context, providerKey string) {
 	var rawBody string
@@ -164,6 +170,15 @@ func extractOutTradeNo(rawBody, providerKey string) string {
 		if err := json.Unmarshal([]byte(rawBody), &payload); err == nil {
 			return strings.TrimSpace(payload.Data.Object.MerchantOrderID)
 		}
+	case payment.TypeTianque:
+		var payload struct {
+			RespData struct {
+				OrdNo string `json:"ordNo"`
+			} `json:"respData"`
+		}
+		if err := json.Unmarshal([]byte(rawBody), &payload); err == nil {
+			return strings.TrimSpace(payload.RespData.OrdNo)
+		}
 	}
 	// For other providers (Stripe, Alipay direct, WxPay direct), the registry
 	// typically has only one instance, so no instance lookup is needed.
@@ -210,6 +225,8 @@ func writeSuccessResponse(c *gin.Context, providerKey string) {
 		c.JSON(http.StatusOK, wxpaySuccessResponse{Code: wxpaySuccessCode, Message: wxpaySuccessMessage})
 	case payment.TypeStripe, payment.TypeAirwallex:
 		c.String(http.StatusOK, "")
+	case payment.TypeTianque:
+		c.JSON(http.StatusOK, gin.H{"code": "0000", "msg": "success"})
 	default:
 		c.String(http.StatusOK, "success")
 	}

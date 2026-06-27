@@ -17,6 +17,7 @@ type paymentOrderProviderSnapshot struct {
 	PaymentMode        string
 	MerchantAppID      string
 	MerchantID         string
+	OrgID              string
 	Currency           string
 }
 
@@ -32,6 +33,7 @@ func psOrderProviderSnapshot(order *dbent.PaymentOrder) *paymentOrderProviderSna
 		PaymentMode:        psSnapshotStringValue(order.ProviderSnapshot["payment_mode"]),
 		MerchantAppID:      psSnapshotStringValue(order.ProviderSnapshot["merchant_app_id"]),
 		MerchantID:         psSnapshotStringValue(order.ProviderSnapshot["merchant_id"]),
+		OrgID:              psSnapshotStringValue(order.ProviderSnapshot["org_id"]),
 		Currency:           psSnapshotStringValue(order.ProviderSnapshot["currency"]),
 	}
 	if snapshot.SchemaVersion == 0 &&
@@ -40,6 +42,7 @@ func psOrderProviderSnapshot(order *dbent.PaymentOrder) *paymentOrderProviderSna
 		snapshot.PaymentMode == "" &&
 		snapshot.MerchantAppID == "" &&
 		snapshot.MerchantID == "" &&
+		snapshot.OrgID == "" &&
 		snapshot.Currency == "" {
 		return nil
 	}
@@ -187,6 +190,28 @@ func validateProviderSnapshotMetadata(order *dbent.PaymentOrder, providerKey str
 			if !strings.EqualFold(expected, actual) {
 				return fmt.Errorf("easypay pid mismatch: expected %s, got %s", expected, actual)
 			}
+		}
+	case payment.TypeTianque:
+		if expected := strings.TrimSpace(snapshot.MerchantID); expected != "" {
+			actual := strings.TrimSpace(metadata["mno"])
+			if actual == "" {
+				return fmt.Errorf("tianque mno missing")
+			}
+			if !strings.EqualFold(expected, actual) {
+				return fmt.Errorf("tianque mno mismatch: expected %s, got %s", expected, actual)
+			}
+		}
+		if expected := strings.TrimSpace(snapshot.OrgID); expected != "" {
+			actual := strings.TrimSpace(metadata["org_id"])
+			if actual == "" {
+				return fmt.Errorf("tianque org_id missing")
+			}
+			if !strings.EqualFold(expected, actual) {
+				return fmt.Errorf("tianque org_id mismatch: expected %s, got %s", expected, actual)
+			}
+		}
+		if actual := strings.TrimSpace(metadata["tran_status"]); actual != "" && !strings.EqualFold(actual, "SUCCESS") {
+			return fmt.Errorf("tianque tran_status mismatch: expected SUCCESS, got %s", actual)
 		}
 	case payment.TypeStripe:
 		if expected := strings.TrimSpace(snapshot.Currency); expected != "" {

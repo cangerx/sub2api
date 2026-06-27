@@ -72,5 +72,5 @@ volumes:
 
 ## Links
 
-- [GitHub Repository](https://github.com/weishaw/ccapi)
-- [Documentation](https://github.com/weishaw/ccapi#readme)
+- [GitHub Repository](https://github.com/cangerx/sub2api)
+- [Documentation](https://github.com/cangerx/sub2api#readme)

@@ -31,8 +31,10 @@ const (
 
 	VisibleMethodSourceOfficialAlipay = "official_alipay"
 	VisibleMethodSourceEasyPayAlipay  = "easypay_alipay"
+	VisibleMethodSourceTianqueAlipay  = "tianque_alipay"
 	VisibleMethodSourceOfficialWechat = "official_wxpay"
 	VisibleMethodSourceEasyPayWechat  = "easypay_wxpay"
+	VisibleMethodSourceTianqueWechat  = "tianque_wxpay"
 
 	wechatPaymentResumeTokenType = "wechat_payment_resume"
 
@@ -156,6 +158,8 @@ func NormalizeVisibleMethodSource(method, source string) string {
 			return VisibleMethodSourceOfficialAlipay
 		case VisibleMethodSourceEasyPayAlipay, payment.TypeEasyPay:
 			return VisibleMethodSourceEasyPayAlipay
+		case VisibleMethodSourceTianqueAlipay, payment.TypeTianque, "suixingpay":
+			return VisibleMethodSourceTianqueAlipay
 		}
 	case payment.TypeWxpay:
 		switch strings.TrimSpace(strings.ToLower(source)) {
@@ -163,6 +167,8 @@ func NormalizeVisibleMethodSource(method, source string) string {
 			return VisibleMethodSourceOfficialWechat
 		case VisibleMethodSourceEasyPayWechat, payment.TypeEasyPay:
 			return VisibleMethodSourceEasyPayWechat
+		case VisibleMethodSourceTianqueWechat, payment.TypeTianque, "suixingpay":
+			return VisibleMethodSourceTianqueWechat
 		}
 	}
 	return ""
@@ -174,10 +180,14 @@ func VisibleMethodProviderKeyForSource(method, source string) (string, bool) {
 		return payment.TypeAlipay, NormalizeVisibleMethod(method) == payment.TypeAlipay
 	case VisibleMethodSourceEasyPayAlipay:
 		return payment.TypeEasyPay, NormalizeVisibleMethod(method) == payment.TypeAlipay
+	case VisibleMethodSourceTianqueAlipay:
+		return payment.TypeTianque, NormalizeVisibleMethod(method) == payment.TypeAlipay
 	case VisibleMethodSourceOfficialWechat:
 		return payment.TypeWxpay, NormalizeVisibleMethod(method) == payment.TypeWxpay
 	case VisibleMethodSourceEasyPayWechat:
 		return payment.TypeEasyPay, NormalizeVisibleMethod(method) == payment.TypeWxpay
+	case VisibleMethodSourceTianqueWechat:
+		return payment.TypeTianque, NormalizeVisibleMethod(method) == payment.TypeWxpay
 	default:
 		return "", false
 	}

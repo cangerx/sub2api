@@ -11,6 +11,9 @@ const messages: Record<string, string> = {
   'admin.settings.payment.alipayGuideSummary': 'Desktop prefers QR precreate and falls back to cashier; mobile prefers WAP checkout.',
   'admin.settings.payment.wxpayGuideSummary': 'Desktop prefers Native QR; mobile routes to JSAPI or H5 based on browser context.',
   'admin.settings.payment.airwallexGuideSummary': 'Use Payment Acceptance read/write only.',
+  'admin.settings.payment.tianqueGuideSummary': 'SuixingPay aggregate channel.',
+  'admin.settings.payment.tianqueNotifyHint': 'Configure the generated callback URL in SuixingPay.',
+  'admin.settings.payment.providerTianque': 'SuixingPay',
   'admin.settings.payment.stripeWebhookHint': 'Configure Stripe webhook.',
   'admin.settings.payment.stripeWebhookApiVersionHint': 'Use Stripe API version {version}.',
   'admin.settings.payment.airwallexWebhookHint': 'Select payment_intent.succeeded and use the latest stable API version.',
@@ -57,11 +60,13 @@ function mountDialog(options: { editing?: ProviderInstance | null } = {}) {
         { value: 'wxpay', label: 'WeChat Pay' },
         { value: 'stripe', label: 'Stripe' },
         { value: 'airwallex', label: 'Airwallex' },
+        { value: 'tianque', label: 'SuixingPay' },
       ],
       enabledKeyOptions: [
         { value: 'alipay', label: 'Alipay' },
         { value: 'wxpay', label: 'WeChat Pay' },
         { value: 'airwallex', label: 'Airwallex' },
+        { value: 'tianque', label: 'SuixingPay' },
       ],
       allPaymentTypes: [
         { value: 'alipay', label: 'Alipay' },
@@ -99,6 +104,7 @@ describe('PaymentProviderDialog payment guide', () => {
     ['alipay', 'admin.settings.payment.alipayGuideSummary'],
     ['wxpay', 'admin.settings.payment.wxpayGuideSummary'],
     ['airwallex', 'admin.settings.payment.airwallexGuideSummary'],
+    ['tianque', 'admin.settings.payment.tianqueGuideSummary'],
   ])('shows the payment guide summary for %s', async (providerKey, summaryKey) => {
     const wrapper = mountDialog()
 
@@ -128,6 +134,18 @@ describe('PaymentProviderDialog payment guide', () => {
     expect(wrapper.text()).toContain(messages['admin.settings.payment.stripeWebhookHint'])
     expect(wrapper.text()).toContain(`Use Stripe API version ${STRIPE_SDK_API_VERSION}.`)
     expect(wrapper.text()).toContain('/api/v1/payment/webhook/stripe')
+  })
+
+  it('pre-fills the provider name and explains the SuixingPay callback URL', async () => {
+    const wrapper = mountDialog()
+
+    ;(wrapper.vm as unknown as { reset: (key: string) => void }).reset('tianque')
+    await nextTick()
+
+    const nameInput = wrapper.find('input[type="text"]')
+    expect((nameInput.element as HTMLInputElement).value).toBe('SuixingPay')
+    expect(wrapper.text()).toContain(messages['admin.settings.payment.tianqueNotifyHint'])
+    expect(wrapper.text()).toContain('/api/v1/payment/webhook/tianque')
   })
 
   it('emits an empty Airwallex accountId when the admin clears it', async () => {
