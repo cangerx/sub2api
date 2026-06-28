@@ -248,7 +248,6 @@
                 <span class="text-gray-400">({{ formatImageBillingSize(row, t) }})</span>
               </div>
               <button
-                v-if="hasImageDetails(row)"
                 type="button"
                 class="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-dark-600 dark:text-gray-300 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
                 @click.stop="openMediaDetail(row)"
@@ -911,10 +910,6 @@ const formatUsageEndpoints = (log: UsageLog): string => {
 const sanitizeStringArray = (value: string[] | null | undefined): string[] => {
   if (!Array.isArray(value)) return []
   return value.map((item) => item?.trim()).filter((item): item is string => Boolean(item))
-}
-
-const hasImageDetails = (row: UsageLog): boolean => {
-  return Boolean(row.image_prompt?.trim()) || sanitizeStringArray(row.image_urls).length > 0 || sanitizeStringArray(row.image_revised_prompts).length > 0
 }
 
 const isVideoUsage = (row: UsageLog): boolean => {
