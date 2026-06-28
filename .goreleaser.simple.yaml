@@ -1,17 +1,17 @@
 # 简化版 GoReleaser 配置 - 仅发布 x86_64 GHCR 镜像
 version: 2
 
-project_name: sub2api
+project_name: ccapi
 
 before:
   hooks:
     - go mod tidy -C backend
 
 builds:
-  - id: sub2api
+  - id: ccapi
     dir: backend
     main: ./cmd/server
-    binary: sub2api
+    binary: ccapi
     flags:
       - -tags=embed
     env:
@@ -64,7 +64,7 @@ release:
     name: "{{ .Env.GITHUB_REPO_NAME }}"
   draft: false
   prerelease: auto
-  name_template: "Sub2API {{.Version}} (Simple)"
+  name_template: "CCAPI {{.Version}} (Simple)"
   # 跳过上传二进制包
   skip_upload: true
   header: |

@@ -12,7 +12,7 @@
 
 services:
   ccapi:
-    image: weishaw/ccapi:latest
+    image: ghcr.io/cangerx/ccapi:latest
     container_name: ccapi
     restart: unless-stopped
     ulimits:

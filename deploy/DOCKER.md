@@ -20,7 +20,7 @@ version: '3.8'
 
 services:
   ccapi:
-    image: weishaw/ccapi:latest
+    image: ghcr.io/cangerx/ccapi:latest
     ports:
       - "8080:8080"
     environment:

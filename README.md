@@ -1,6 +1,8 @@
-# CCAPI
-
 <div align="center">
+
+<img src="frontend/public/logo-transparent.png" alt="CCAPI" width="96" />
+
+# CCAPI
 
 [![Go](https://img.shields.io/badge/Go-1.25.7-00ADD8.svg)](https://golang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.4+-4FC08D.svg)](https://vuejs.org/)
@@ -8,37 +10,40 @@
 [![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
-<a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Wei-Shaw%2Fccapi | Trendshift" width="250" height="55"/></a>
+**Commercial AI Gateway Platform**
 
-**AI API Gateway Platform for Subscription Quota Distribution**
+Built for teams shipping stable API products on top of multiple AI providers.
 
 English | [中文](README_CN.md) | [日本語](README_JA.md)
 
 </div>
 
-## ⚠️ Important Notice
+## Important Notice
 
 Please read the following carefully before using this project:
 
-- **🚨 Terms of Service Risk**: Using this project may violate the terms of service of Anthropic and other upstream providers. Please review the relevant providers' user agreements before use; all risks arising from such use are borne solely by the user.
-- **⚖️ Compliant Use**: Use this project only in compliance with the laws and regulations of your country or region. Any unlawful use is strictly prohibited.
-- **📖 Disclaimer**: This project is provided for technical learning and research purposes only. The authors assume no liability for account bans, service interruptions, data loss, or any other direct or indirect damages resulting from the use of this project.
+- **Terms of service risk**: Using this project may violate the terms of service of Anthropic and other upstream providers. Review each provider's agreement before use.
+- **Compliant use**: Use this project only in compliance with the laws and regulations of your country or region.
+- **Disclaimer**: This project is provided for technical learning and research purposes. The authors assume no liability for account bans, service interruptions, data loss, or other damages.
 
 ## Overview
 
-CCAPI is an AI API gateway platform designed to distribute and manage API quotas from AI product subscriptions. Users can access upstream AI services through platform-generated API Keys, while the platform handles authentication, billing, load balancing, and request forwarding.
+CCAPI is a commercial-grade AI gateway for teams that need a stable, OpenAI-compatible control plane across multiple accounts, subscriptions, and upstream providers.
+
+It centralizes account pooling, key distribution, model routing, billing, payments, quota visibility, media tracking, and operational monitoring. Rather than exposing upstream credentials directly, CCAPI issues platform API keys and handles authentication, scheduling, failover, usage recording, and request forwarding in one place.
 
 ## Features
 
-- **Multi-Account Management** - Support multiple upstream account types (OAuth, API Key)
-- **API Key Distribution** - Generate and manage API Keys for users
-- **Precise Billing** - Token-level usage tracking and cost calculation
-- **Smart Scheduling** - Intelligent account selection with sticky sessions
-- **Concurrency Control** - Per-user and per-account concurrency limits
-- **Rate Limiting** - Configurable request and token rate limits
-- **Built-in Payment System** - Supports EasyPay, Alipay, WeChat Pay, and Stripe for user self-service top-up, no separate payment service needed ([Configuration Guide](docs/PAYMENT.md))
-- **Admin Dashboard** - Web interface for monitoring and management
-- **External System Integration** - Embed external systems (e.g. ticketing) via iframe to extend the admin dashboard
+| Area | Capability |
+|------|------------|
+| Gateway | OpenAI-compatible routing, streaming, sticky sessions, failover, model-level policies |
+| Accounts | OAuth and API-key account pools for multiple upstream platforms |
+| Models | Text, coding, image, video, Grok/xAI, Antigravity, Claude, Gemini, OpenAI-compatible channels |
+| Billing | Token-level usage records, cost calculation, balance control, overdraw protection |
+| Payments | Built-in EasyPay, Alipay, WeChat Pay, Stripe, subscription orders, recharge conversion |
+| Operations | Admin dashboard, monitoring cards, usage details, media preview, account health checks |
+| Security | Rate limits, concurrency limits, URL allowlists, response header filtering, compliance gate |
+| Extensibility | External admin iframe integration, configurable groups, model aliases, custom tools |
 
 ## ❤️ Sponsors
 
@@ -58,7 +63,7 @@ CCAPI is an AI API gateway platform designed to distribute and manage API quotas
 
 <tr>
 <td width="180"><a href="https://aigocode.com/invite/SUB2API"><img src="assets/partners/logos/aigocode.png" alt="AIGoCode" width="150"></a></td>
-<td>Thanks to AIGoCode for sponsoring this project! AIGoCode is an all-in-one platform that integrates Claude Code, Codex, and the latest Gemini models, providing you with stable, efficient, and highly cost-effective AI coding services. The platform offers flexible subscription plans, zero risk of account suspension, direct access with no VPN required, and lightning-fast responses. AIGoCode has prepared a special benefit for ccapi users: if you register via <a href="https://aigocode.com/invite/SUB2API">this link</a>, you'll receive an extra 10% bonus credit on your first top-up!</td>
+<td>Thanks to AIGoCode for sponsoring this project! AIGoCode is an all-in-one platform that integrates Claude Code, Codex, and the latest Gemini models, providing you with stable, efficient, and highly cost-effective AI coding services. The platform offers flexible subscription plans, zero risk of account suspension, direct access with no VPN required, and lightning-fast responses. AIGoCode has prepared a special benefit for CCAPI users: if you register via <a href="https://aigocode.com/invite/SUB2API">this link</a>, you'll receive an extra 10% bonus credit on your first top-up!</td>
 </tr>
 
 <tr>
@@ -68,7 +73,7 @@ CCAPI is an AI API gateway platform designed to distribute and manage API quotas
 
 <tr>
 <td width="180"><a href="https://www.aicodemirror.com/register?invitecode=KMVZQM"><img src="assets/partners/logos/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
-<td>Thanks to AICodeMirror for sponsoring this project! AICodeMirror provides official high-stability relay services for Claude Code / Codex / Gemini CLI, with enterprise-grade concurrency, fast invoicing, and 24/7 dedicated technical support. Claude Code / Codex / Gemini official channels at 38% / 2% / 9% of original price, with extra discounts on top-ups! AICodeMirror offers special benefits for ccapi users: register via <a href="https://www.aicodemirror.com/register?invitecode=KMVZQM">this link</a> to enjoy 20% off your first top-up, and enterprise customers can get up to 25% off!</td>
+<td>Thanks to AICodeMirror for sponsoring this project! AICodeMirror provides official high-stability relay services for Claude Code / Codex / Gemini CLI, with enterprise-grade concurrency, fast invoicing, and 24/7 dedicated technical support. Claude Code / Codex / Gemini official channels at 38% / 2% / 9% of original price, with extra discounts on top-ups! AICodeMirror offers special benefits for CCAPI users: register via <a href="https://www.aicodemirror.com/register?invitecode=KMVZQM">this link</a> to enjoy 20% off your first top-up, and enterprise customers can get up to 25% off!</td>
 </tr>
 
 <tr>
@@ -177,96 +182,25 @@ Nginx drops headers containing underscores by default (e.g. `session_id`), which
 
 ---
 
-## Deployment
+## Install & Deploy
 
-### Method 1: Script Installation (Recommended)
+Pick the path that matches your environment.
 
-One-click installation script that downloads pre-built binaries from GitHub Releases.
-
-#### Prerequisites
-
-- Linux server (amd64 or arm64)
-- PostgreSQL 15+ (installed and running)
-- Redis 7+ (installed and running)
-- Root privileges
-
-#### Installation Steps
-
-```bash
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/ccapi/main/deploy/install.sh | sudo bash
-```
-
-The script will:
-1. Detect your system architecture
-2. Download the latest release
-3. Install binary to `/opt/ccapi`
-4. Create systemd service
-5. Configure system user and permissions
-
-#### Post-Installation
-
-```bash
-# 1. Start the service
-sudo systemctl start ccapi
-
-# 2. Enable auto-start on boot
-sudo systemctl enable ccapi
-
-# 3. Open Setup Wizard in browser
-# http://YOUR_SERVER_IP:8080
-```
-
-The Setup Wizard will guide you through:
-- Database configuration
-- Redis configuration
-- Admin account creation
-
-#### Upgrade
-
-You can upgrade directly from the **Admin Dashboard** by clicking the **Check for Updates** button in the top-left corner.
-
-The web interface will:
-- Check for new versions automatically
-- Download and apply updates with one click
-- Support rollback if needed
-
-#### Useful Commands
-
-```bash
-# Check status
-sudo systemctl status ccapi
-
-# View logs
-sudo journalctl -u ccapi -f
-
-# Restart service
-sudo systemctl restart ccapi
-
-# Uninstall
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/ccapi/main/deploy/install.sh | sudo bash -s -- uninstall -y
-```
-
----
-
-### Method 2: Docker Compose (Recommended)
-
-Deploy with Docker Compose, including PostgreSQL and Redis containers.
+### Method 1: Docker Compose
 
 #### Prerequisites
 
 - Docker 20.10+
 - Docker Compose v2+
 
-#### Quick Start (One-Click Deployment)
-
-Use the automated deployment script for easy setup:
+#### Quick Start
 
 ```bash
 # Create deployment directory
 mkdir -p ccapi-deploy && cd ccapi-deploy
 
 # Download and run deployment preparation script
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/ccapi/main/deploy/docker-deploy.sh | bash
+curl -sSL https://raw.githubusercontent.com/cangerx/sub2api/main/deploy/docker-deploy.sh | bash
 
 # Start services
 docker compose up -d
@@ -275,7 +209,21 @@ docker compose up -d
 docker compose logs -f ccapi
 ```
 
-**What the script does:**
+The script downloads the production Compose template, generates secure secrets, creates local data directories, and prepares a `.env` file.
+
+Default image:
+
+```bash
+ghcr.io/cangerx/ccapi:latest
+```
+
+Version-pinned image:
+
+```bash
+ghcr.io/cangerx/ccapi:0.1.142
+```
+
+**What the deployment script does:**
 - Downloads `docker-compose.local.yml` (saved as `docker-compose.yml`) and `.env.example`
 - Generates secure credentials (JWT_SECRET, TOTP_ENCRYPTION_KEY, POSTGRES_PASSWORD)
 - Creates `.env` file with auto-generated secrets
@@ -288,8 +236,8 @@ If you prefer manual setup:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Wei-Shaw/ccapi.git
-cd ccapi/deploy
+git clone https://github.com/cangerx/sub2api.git
+cd sub2api/deploy
 
 # 2. Copy environment configuration
 cp .env.example .env
@@ -412,7 +360,51 @@ rm -rf data/ postgres_data/ redis_data/
 
 ---
 
-### Method 3: Build from Source
+### Method 2: One-Line Binary Installation
+
+Use this mode when PostgreSQL and Redis are already available on the host or in your private network.
+
+```bash
+curl -sSL https://raw.githubusercontent.com/cangerx/sub2api/main/deploy/install.sh | sudo bash
+```
+
+The installer downloads the latest GitHub Release, installs CCAPI to `/opt/ccapi`, creates a `ccapi` systemd service, and opens the first-run setup wizard on port `8080`.
+
+Useful commands:
+
+```bash
+sudo systemctl status ccapi
+sudo journalctl -u ccapi -f
+sudo systemctl restart ccapi
+```
+
+Uninstall:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/cangerx/sub2api/main/deploy/install.sh | sudo bash -s -- uninstall -y
+```
+
+---
+
+### Method 3: Pull The Image Directly
+
+Use this if you already maintain your own PostgreSQL and Redis services.
+
+```bash
+docker pull ghcr.io/cangerx/ccapi:latest
+docker pull ghcr.io/cangerx/ccapi:0.1.142
+```
+
+Supported platforms:
+
+| Image | Architectures |
+|-------|---------------|
+| `ghcr.io/cangerx/ccapi:latest` | `linux/amd64`, `linux/arm64` |
+| `ghcr.io/cangerx/ccapi:0.1.142` | `linux/amd64`, `linux/arm64` |
+
+---
+
+### Method 4: Build from Source
 
 Build and run from source code for development or customization.
 
@@ -427,8 +419,8 @@ Build and run from source code for development or customization.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Wei-Shaw/ccapi.git
-cd ccapi
+git clone https://github.com/cangerx/sub2api.git
+cd sub2api
 
 # 2. Install pnpm (if not already installed)
 npm install -g pnpm
@@ -583,7 +575,7 @@ Simple Mode is designed for individual developers or internal teams who want qui
 
 ## Grok / xAI OAuth Support
 
-Sub2API supports Grok subscription accounts through xAI OAuth and forwards OpenAI-compatible Responses traffic to xAI.
+CCAPI supports Grok subscription accounts through xAI OAuth and forwards OpenAI-compatible Responses traffic to xAI.
 
 ### Supported Scope
 
@@ -619,7 +611,7 @@ Credential storage reuses the existing account JSON fields: `access_token`, `ref
 
 ### Usage And Quota Display
 
-xAI quota is passive. Sub2API does not invent subscription quota values; it records whitelisted xAI rate-limit headers from successful or rate-limited upstream responses when xAI sends them. Before the first usable upstream response, the dashboard shows quota as unknown and still displays local Sub2API usage stats.
+xAI quota is passive. CCAPI does not invent subscription quota values; it records whitelisted xAI rate-limit headers from successful or rate-limited upstream responses when xAI sends them. Before the first usable upstream response, the dashboard shows quota as unknown and still displays local CCAPI usage stats.
 
 `401` responses mark the account as needing reauthorization. `403` responses are treated as entitlement or subscription-tier failures instead of token-refresh loops. `429` responses use `Retry-After` or a short cooldown to temporarily remove the account from scheduling.
 
@@ -697,11 +689,11 @@ ccapi/
 
 ## Star History
 
-<a href="https://star-history.com/#Wei-Shaw/ccapi&Date">
+<a href="https://star-history.com/#cangerx/sub2api&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Wei-Shaw/ccapi&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Wei-Shaw/ccapi&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Wei-Shaw/ccapi&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=cangerx/sub2api&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=cangerx/sub2api&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=cangerx/sub2api&type=Date" />
  </picture>
 </a>
 
