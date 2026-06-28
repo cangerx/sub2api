@@ -500,6 +500,9 @@ type UsageLog struct {
 	VideoSeconds      *int    `json:"video_seconds,omitempty"`
 	VideoSize         *string `json:"video_size,omitempty"`
 	VideoBillingUnits *int    `json:"video_billing_units,omitempty"`
+	VideoContentURL   *string `json:"video_content_url,omitempty"`
+	VideoUpstreamURL  *string `json:"video_upstream_url,omitempty"`
+	VideoLocalURL     *string `json:"video_local_url,omitempty"`
 
 	// User-Agent
 	UserAgent *string `json:"user_agent"`

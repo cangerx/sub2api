@@ -183,6 +183,9 @@ type UsageLog struct {
 	VideoSeconds      *int
 	VideoSize         *string
 	VideoBillingUnits *int
+	VideoContentURL   *string
+	VideoUpstreamURL  *string
+	VideoLocalURL     *string
 
 	CreatedAt time.Time
 

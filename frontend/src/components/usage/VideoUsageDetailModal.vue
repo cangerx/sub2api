@@ -158,6 +158,9 @@ type VideoDetailRow = Pick<
   | 'video_seconds'
   | 'video_size'
   | 'video_billing_units'
+  | 'video_content_url'
+  | 'video_upstream_url'
+  | 'video_local_url'
 >
 
 const props = defineProps<{
@@ -172,7 +175,27 @@ const { t } = useI18n()
 const copiedTask = ref(false)
 let copyTimer: number | null = null
 
-const videoURL = computed(() => '')
+const isAllowedVideoURL = (url: string): boolean => {
+  if (url.startsWith('blob:')) return true
+  if (url.startsWith('/') && !url.startsWith('//')) return true
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+const sanitizeVideoURL = (url: string | null | undefined): string => {
+  const trimmed = url?.trim() || ''
+  return trimmed && isAllowedVideoURL(trimmed) ? trimmed : ''
+}
+
+const videoURL = computed(() => {
+  const row = props.row
+  if (!row) return ''
+  return sanitizeVideoURL(row.video_local_url) || sanitizeVideoURL(row.video_content_url) || sanitizeVideoURL(row.video_upstream_url)
+})
 
 const billingModeLabel = computed(() => getBillingModeLabel(props.row?.billing_mode, t))
 

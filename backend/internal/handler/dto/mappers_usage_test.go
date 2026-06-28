@@ -183,6 +183,38 @@ func TestUsageLogFromService_IncludesImageBillingMetadataForUserAndAdmin(t *test
 	}
 }
 
+func TestUsageLogFromService_IncludesVideoContentURLsForUserAndAdmin(t *testing.T) {
+	t.Parallel()
+
+	taskID := "video_123"
+	contentURL := "https://cdn.example.com/videos/video_123.mp4"
+	upstreamURL := "https://upstream.example.com/video_123.mp4"
+	localURL := "/storage/videos/video_123.mp4"
+	log := &service.UsageLog{
+		RequestID:         "videolog:video_123",
+		Model:             "video-model",
+		VideoTaskID:       &taskID,
+		VideoContentURL:   &contentURL,
+		VideoUpstreamURL:  &upstreamURL,
+		VideoLocalURL:     &localURL,
+		VideoBillingUnits: intPtr(1),
+	}
+
+	userDTO := UsageLogFromService(log)
+	adminDTO := UsageLogFromServiceAdmin(log)
+
+	for _, got := range []*UsageLog{userDTO, &adminDTO.UsageLog} {
+		require.NotNil(t, got.VideoTaskID)
+		require.Equal(t, taskID, *got.VideoTaskID)
+		require.NotNil(t, got.VideoContentURL)
+		require.Equal(t, contentURL, *got.VideoContentURL)
+		require.NotNil(t, got.VideoUpstreamURL)
+		require.Equal(t, upstreamURL, *got.VideoUpstreamURL)
+		require.NotNil(t, got.VideoLocalURL)
+		require.Equal(t, localURL, *got.VideoLocalURL)
+	}
+}
+
 func TestUsageLogFromService_PreservesHistoricalMissingImageSize(t *testing.T) {
 	t.Parallel()
 
@@ -208,5 +240,9 @@ func TestUsageLogFromService_PreservesHistoricalMissingImageSize(t *testing.T) {
 }
 
 func f64Ptr(value float64) *float64 {
+	return &value
+}
+
+func intPtr(value int) *int {
 	return &value
 }

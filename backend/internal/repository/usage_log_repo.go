@@ -4181,6 +4181,10 @@ func (r *usageLogRepository) hydrateUsageLogAssociations(ctx context.Context, lo
 	if err != nil {
 		return err
 	}
+	videoURLs, err := r.loadVideoContentURLs(ctx, collectUsageLogVideoTaskIDs(logs))
+	if err != nil {
+		return err
+	}
 	groups, err := r.loadGroups(ctx, ids.groupIDs)
 	if err != nil {
 		return err
@@ -4199,6 +4203,13 @@ func (r *usageLogRepository) hydrateUsageLogAssociations(ctx context.Context, lo
 		}
 		if acc, ok := accounts[logs[i].AccountID]; ok {
 			logs[i].Account = acc
+		}
+		if logs[i].VideoTaskID != nil {
+			if urls, ok := videoURLs[*logs[i].VideoTaskID]; ok {
+				logs[i].VideoContentURL = urls.contentURL
+				logs[i].VideoUpstreamURL = urls.upstreamURL
+				logs[i].VideoLocalURL = urls.localURL
+			}
 		}
 		if logs[i].GroupID != nil {
 			if group, ok := groups[*logs[i].GroupID]; ok {
@@ -4220,6 +4231,12 @@ type usageLogIDs struct {
 	accountIDs      []int64
 	groupIDs        []int64
 	subscriptionIDs []int64
+}
+
+type usageLogVideoURLs struct {
+	contentURL  *string
+	upstreamURL *string
+	localURL    *string
 }
 
 func collectUsageLogIDs(logs []service.UsageLog) usageLogIDs {
@@ -4250,6 +4267,24 @@ func collectUsageLogIDs(logs []service.UsageLog) usageLogIDs {
 		groupIDs:        setToSlice(groupIDs),
 		subscriptionIDs: setToSlice(subscriptionIDs),
 	}
+}
+
+func collectUsageLogVideoTaskIDs(logs []service.UsageLog) []string {
+	taskIDs := make(map[string]struct{})
+	for i := range logs {
+		if logs[i].VideoTaskID == nil {
+			continue
+		}
+		taskID := strings.TrimSpace(*logs[i].VideoTaskID)
+		if taskID != "" {
+			taskIDs[taskID] = struct{}{}
+		}
+	}
+	out := make([]string, 0, len(taskIDs))
+	for id := range taskIDs {
+		out = append(out, id)
+	}
+	return out
 }
 
 func (r *usageLogRepository) loadUsers(ctx context.Context, ids []int64) (map[int64]*service.User, error) {
@@ -4294,6 +4329,43 @@ func (r *usageLogRepository) loadAccounts(ctx context.Context, ids []int64) (map
 	}
 	for _, m := range models {
 		out[m.ID] = accountEntityToService(m)
+	}
+	return out, nil
+}
+
+func (r *usageLogRepository) loadVideoContentURLs(ctx context.Context, publicIDs []string) (map[string]usageLogVideoURLs, error) {
+	out := make(map[string]usageLogVideoURLs)
+	if len(publicIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.sql.QueryContext(ctx, `
+		SELECT public_id, content_url, upstream_content_url, local_content_url
+		FROM video_generation_tasks
+		WHERE public_id = ANY($1)
+	`, pq.Array(publicIDs))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			publicID    string
+			contentURL  sql.NullString
+			upstreamURL sql.NullString
+			localURL    sql.NullString
+		)
+		if err := rows.Scan(&publicID, &contentURL, &upstreamURL, &localURL); err != nil {
+			return nil, err
+		}
+		out[publicID] = usageLogVideoURLs{
+			contentURL:  stringPtrFromNull(contentURL),
+			upstreamURL: stringPtrFromNull(upstreamURL),
+			localURL:    stringPtrFromNull(localURL),
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
@@ -4709,6 +4781,17 @@ func nullString(v *string) sql.NullString {
 		return sql.NullString{}
 	}
 	return sql.NullString{String: *v, Valid: true}
+}
+
+func stringPtrFromNull(v sql.NullString) *string {
+	if !v.Valid {
+		return nil
+	}
+	out := strings.TrimSpace(v.String)
+	if out == "" {
+		return nil
+	}
+	return &out
 }
 
 func nullStringIntMapJSON(v map[string]int) any {

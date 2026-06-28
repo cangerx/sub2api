@@ -1324,6 +1324,9 @@ export interface UsageLog {
   video_seconds?: number | null
   video_size?: string | null
   video_billing_units?: number | null
+  video_content_url?: string | null
+  video_upstream_url?: string | null
+  video_local_url?: string | null
 
   // User-Agent
   user_agent: string | null

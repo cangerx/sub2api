@@ -238,9 +238,23 @@ const activeIndex = ref(0)
 const copiedURL = ref<string | null>(null)
 const failedURLs = ref<string[]>([])
 
+const isAllowedImageURL = (url: string): boolean => {
+  if (url.startsWith('data:')) return /^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(url)
+  if (url.startsWith('blob:')) return true
+  if (url.startsWith('/') && !url.startsWith('//')) return true
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 const sanitizeStringArray = (value: string[] | null | undefined): string[] => {
   if (!Array.isArray(value)) return []
-  return value.map((item) => item?.trim()).filter((item): item is string => Boolean(item))
+  return value
+    .map((item) => item?.trim())
+    .filter((item): item is string => Boolean(item) && isAllowedImageURL(item))
 }
 
 const imageURLs = computed(() => sanitizeStringArray(props.row?.image_urls))
