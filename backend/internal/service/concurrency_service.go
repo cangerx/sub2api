@@ -14,7 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/logger"
 	"golang.org/x/sync/singleflight"
 )
 

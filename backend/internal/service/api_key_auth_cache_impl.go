@@ -10,11 +10,11 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/ccapi/internal/config"
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 13 // v13: include multi-group routing bindings
+const apiKeyAuthSnapshotVersion = 14 // v14: include force image URL response flag
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -250,6 +250,7 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 		snapshot.Group = groupToAuthGroupSnapshot(apiKey.Group)
 	}
 	snapshot.MultiGroupRouting = apiKey.MultiGroupRouting
+	snapshot.ForceImageURLResponse = apiKey.ForceImageURLResponse
 	if len(apiKey.GroupBindings) > 0 {
 		snapshot.GroupBindings = make([]APIKeyAuthGroupBindingSnapshot, 0, len(apiKey.GroupBindings))
 		for _, b := range apiKey.GroupBindings {
@@ -381,6 +382,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 		},
 	}
 	apiKey.MultiGroupRouting = snapshot.MultiGroupRouting
+	apiKey.ForceImageURLResponse = snapshot.ForceImageURLResponse
 	if snapshot.Group != nil {
 		apiKey.Group = authGroupSnapshotToGroup(snapshot.Group)
 	}

@@ -176,6 +176,9 @@
               <input v-model="notifyBaseUrl" type="text" class="input min-w-0 flex-1 !rounded-r-none !border-r-0" :placeholder="defaultBaseUrl" />
               <span class="inline-flex items-center whitespace-nowrap rounded-r-lg border border-gray-300 bg-gray-50 px-3 text-xs text-gray-500 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-400">{{ callbackPaths.notifyUrl }}</span>
             </div>
+            <p v-if="form.provider_key === 'tianque'" class="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.payment.tianqueNotifyHint') }}
+            </p>
           </div>
           <div v-if="callbackPaths.returnUrl">
             <label class="input-label">{{ t('admin.settings.payment.field_returnUrl') }} <span class="text-red-500">*</span></label>
@@ -374,6 +377,19 @@ const providerWebhookHintMap: Record<string, string> = {
   airwallex: 'admin.settings.payment.airwallexWebhookHint',
 }
 
+function providerDefaultName(providerKey: string): string {
+  const keyMap: Record<string, string> = {
+    easypay: 'admin.settings.payment.providerEasypay',
+    alipay: 'admin.settings.payment.providerAlipay',
+    wxpay: 'admin.settings.payment.providerWxpay',
+    stripe: 'admin.settings.payment.providerStripe',
+    airwallex: 'admin.settings.payment.providerAirwallex',
+    tianque: 'admin.settings.payment.providerTianque',
+  }
+  const key = keyMap[providerKey]
+  return key ? t(key) : providerKey
+}
+
 const providerWebhookUrl = computed(() => {
   const path = WEBHOOK_PATHS[form.provider_key]
   return providerWebhookHintMap[form.provider_key] && path ? defaultBaseUrl + path : ''
@@ -482,6 +498,27 @@ const paymentGuide = computed<PaymentGuide | null>(() => {
     }
   }
 
+  if (form.provider_key === 'tianque') {
+    return {
+      summary: t('admin.settings.payment.tianqueGuideSummary'),
+      note: t('admin.settings.payment.tianqueGuideNote'),
+      items: [
+        {
+          title: t('admin.settings.payment.tianqueGuideMerchantTitle'),
+          open: t('admin.settings.payment.tianqueGuideMerchantOpen'),
+          call: t('admin.settings.payment.tianqueGuideMerchantCall'),
+          fallback: t('admin.settings.payment.tianqueGuideMerchantFallback'),
+        },
+        {
+          title: t('admin.settings.payment.tianqueGuideCallbackTitle'),
+          open: t('admin.settings.payment.tianqueGuideCallbackOpen'),
+          call: t('admin.settings.payment.tianqueGuideCallbackCall'),
+          fallback: t('admin.settings.payment.tianqueGuideCallbackFallback'),
+        },
+      ],
+    }
+  }
+
   return null
 })
 
@@ -513,6 +550,7 @@ function toggleType(type: string) {
 function onKeyChange() {
   form.supported_types = [...(PROVIDER_SUPPORTED_TYPES[form.provider_key] || [])]
   form.payment_mode = defaultPaymentMode(form.provider_key)
+  if (!props.editing) form.name = providerDefaultName(form.provider_key)
   clearConfig()
   applyDefaults()
 }
@@ -644,7 +682,7 @@ function emitValidationError(msg: string) {
 
 // --- Public API for parent to call ---
 function reset(defaultKey: string) {
-  form.name = ''
+  form.name = providerDefaultName(defaultKey)
   form.provider_key = defaultKey
   form.supported_types = [...(PROVIDER_SUPPORTED_TYPES[defaultKey] || [])]
   form.enabled = true
@@ -658,7 +696,9 @@ function reset(defaultKey: string) {
 function loadProvider(provider: ProviderInstance) {
   form.name = provider.name
   form.provider_key = provider.provider_key
-  form.supported_types = provider.supported_types
+  form.supported_types = Array.isArray(provider.supported_types)
+    ? [...provider.supported_types]
+    : []
   form.enabled = provider.enabled
   // Coerce to a valid value for this provider. Guards against stale data
   // (e.g. "popup" written by an older client) showing up as an unselected

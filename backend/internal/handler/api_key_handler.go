@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/handler/dto"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/pagination"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/response"
+	middleware2 "github.com/Wei-Shaw/ccapi/internal/server/middleware"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -44,8 +44,9 @@ type CreateAPIKeyRequest struct {
 	RateLimit7d *float64 `json:"rate_limit_7d"`
 
 	// Multi-group routing
-	MultiGroupRouting bool                      `json:"multi_group_routing"`
-	GroupBindings     []APIKeyGroupBindingInput `json:"group_bindings"`
+	MultiGroupRouting     bool                      `json:"multi_group_routing"`
+	ForceImageURLResponse bool                      `json:"force_image_url_response"`
+	GroupBindings         []APIKeyGroupBindingInput `json:"group_bindings"`
 }
 
 // APIKeyGroupBindingInput is a multi-group-routing binding in API requests.
@@ -96,8 +97,9 @@ type UpdateAPIKeyRequest struct {
 	ResetRateLimitUsage *bool    `json:"reset_rate_limit_usage"` // 重置限速用量
 
 	// Multi-group routing (nil GroupBindings = no change)
-	MultiGroupRouting *bool                     `json:"multi_group_routing"`
-	GroupBindings     []APIKeyGroupBindingInput `json:"group_bindings"`
+	MultiGroupRouting     *bool                     `json:"multi_group_routing"`
+	ForceImageURLResponse *bool                     `json:"force_image_url_response"`
+	GroupBindings         []APIKeyGroupBindingInput `json:"group_bindings"`
 }
 
 // List handles listing user's API keys with pagination
@@ -192,14 +194,15 @@ func (h *APIKeyHandler) Create(c *gin.Context) {
 	}
 
 	svcReq := service.CreateAPIKeyRequest{
-		Name:              req.Name,
-		GroupID:           req.GroupID,
-		CustomKey:         req.CustomKey,
-		IPWhitelist:       req.IPWhitelist,
-		IPBlacklist:       req.IPBlacklist,
-		ExpiresInDays:     req.ExpiresInDays,
-		MultiGroupRouting: req.MultiGroupRouting,
-		GroupBindings:     toServiceGroupBindings(req.GroupBindings),
+		Name:                  req.Name,
+		GroupID:               req.GroupID,
+		CustomKey:             req.CustomKey,
+		IPWhitelist:           req.IPWhitelist,
+		IPBlacklist:           req.IPBlacklist,
+		ExpiresInDays:         req.ExpiresInDays,
+		MultiGroupRouting:     req.MultiGroupRouting,
+		ForceImageURLResponse: req.ForceImageURLResponse,
+		GroupBindings:         toServiceGroupBindings(req.GroupBindings),
 	}
 	if req.Quota != nil {
 		svcReq.Quota = *req.Quota
@@ -245,16 +248,17 @@ func (h *APIKeyHandler) Update(c *gin.Context) {
 	}
 
 	svcReq := service.UpdateAPIKeyRequest{
-		IPWhitelist:         req.IPWhitelist,
-		IPBlacklist:         req.IPBlacklist,
-		Quota:               req.Quota,
-		ResetQuota:          req.ResetQuota,
-		RateLimit5h:         req.RateLimit5h,
-		RateLimit1d:         req.RateLimit1d,
-		RateLimit7d:         req.RateLimit7d,
-		ResetRateLimitUsage: req.ResetRateLimitUsage,
-		MultiGroupRouting:   req.MultiGroupRouting,
-		GroupBindings:       toServiceGroupBindings(req.GroupBindings),
+		IPWhitelist:           req.IPWhitelist,
+		IPBlacklist:           req.IPBlacklist,
+		Quota:                 req.Quota,
+		ResetQuota:            req.ResetQuota,
+		RateLimit5h:           req.RateLimit5h,
+		RateLimit1d:           req.RateLimit1d,
+		RateLimit7d:           req.RateLimit7d,
+		ResetRateLimitUsage:   req.ResetRateLimitUsage,
+		MultiGroupRouting:     req.MultiGroupRouting,
+		ForceImageURLResponse: req.ForceImageURLResponse,
+		GroupBindings:         toServiceGroupBindings(req.GroupBindings),
 	}
 	if req.Name != "" {
 		svcReq.Name = &req.Name

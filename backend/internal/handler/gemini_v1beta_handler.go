@@ -12,15 +12,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Wei-Shaw/sub2api/internal/domain"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/gemini"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/googleapi"
-	pkghttputil "github.com/Wei-Shaw/sub2api/internal/pkg/httputil"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
-	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/domain"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/antigravity"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/gemini"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/googleapi"
+	pkghttputil "github.com/Wei-Shaw/ccapi/internal/pkg/httputil"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/ip"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/logger"
+	"github.com/Wei-Shaw/ccapi/internal/server/middleware"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 	"github.com/google/uuid"
 
 	"github.com/gin-gonic/gin"
@@ -350,8 +350,15 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 		selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), apiKey.GroupID, sessionKey, modelName, fs.FailedAccountIDs, "", int64(0)) // Gemini 不使用会话限制
 		if err != nil {
 			if len(fs.FailedAccountIDs) == 0 {
-				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
-				googleError(c, http.StatusServiceUnavailable, "No available Gemini accounts: "+err.Error())
+				cls := classifyNoAccountErrorFromGin(c, h.gatewayService, apiKey, modelName, modelName, service.PlatformGemini)
+				if !cls.ModelNotFound {
+					markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
+				}
+				message := cls.Message
+				if !cls.ModelNotFound {
+					message = "No available Gemini accounts: " + err.Error()
+				}
+				googleError(c, cls.Status, message)
 				return
 			}
 			action := fs.HandleSelectionExhausted(c.Request.Context())

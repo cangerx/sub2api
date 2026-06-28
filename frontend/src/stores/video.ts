@@ -11,7 +11,7 @@ import {
   type VideoObject
 } from '@/api/video'
 
-const STORAGE_KEY = 'sub2api_video_gateway_key'
+const STORAGE_KEY = 'ccapi_video_gateway_key'
 const ACTIVE_STATUSES = new Set(['queued', 'in_progress'])
 
 export const useVideoStore = defineStore('video', () => {

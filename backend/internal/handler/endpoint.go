@@ -3,7 +3,7 @@ package handler
 import (
 	"strings"
 
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -77,7 +77,7 @@ func DeriveUpstreamEndpoint(inbound, rawRequestPath, platform string) string {
 	inbound = strings.TrimSpace(inbound)
 
 	switch platform {
-	case service.PlatformOpenAI:
+	case service.PlatformOpenAI, service.PlatformGrok:
 		if inbound == EndpointEmbeddings || inbound == EndpointImagesGenerations || inbound == EndpointImagesEdits {
 			return inbound
 		}

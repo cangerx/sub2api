@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	infraerrors "github.com/Wei-Shaw/ccapi/internal/pkg/errors"
 )
 
 var (
@@ -26,9 +26,10 @@ var (
 )
 
 const (
-	updateCacheKey = "update_check_cache"
-	updateCacheTTL = 1200 // 20 minutes
-	githubRepo     = "Wei-Shaw/sub2api"
+	updateCacheKey      = "update_check_cache"
+	updateCacheTTL      = 1200 // 20 minutes
+	defaultGitHubRepo   = "cangerx/sub2api"
+	updateGitHubRepoEnv = "UPDATE_GITHUB_REPO"
 
 	// Security: allowed download domains for updates
 	allowedDownloadHost = "github.com"
@@ -78,6 +79,7 @@ type UpdateInfo struct {
 	Cached         bool         `json:"cached"`
 	Warning        string       `json:"warning,omitempty"`
 	BuildType      string       `json:"build_type"` // "source" or "release"
+	Repository     string       `json:"repository"`
 }
 
 // ReleaseInfo contains GitHub release details
@@ -135,6 +137,7 @@ func (s *UpdateService) CheckUpdate(ctx context.Context, force bool) (*UpdateInf
 			HasUpdate:      false,
 			Warning:        err.Error(),
 			BuildType:      s.buildType,
+			Repository:     resolveUpdateGitHubRepo(),
 		}, nil
 	}
 
@@ -197,7 +200,7 @@ func (s *UpdateService) PerformUpdate(ctx context.Context) error {
 
 	// Create temp directory in the SAME directory as executable
 	// This ensures os.Rename is atomic (same filesystem)
-	tempDir, err := os.MkdirTemp(exeDir, ".sub2api-update-*")
+	tempDir, err := os.MkdirTemp(exeDir, ".ccapi-update-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp dir: %w", err)
 	}
@@ -217,7 +220,7 @@ func (s *UpdateService) PerformUpdate(ctx context.Context) error {
 	}
 
 	// Extract binary from archive
-	newBinaryPath := filepath.Join(tempDir, "sub2api")
+	newBinaryPath := filepath.Join(tempDir, "ccapi")
 	if err := s.extractBinary(archivePath, newBinaryPath); err != nil {
 		return fmt.Errorf("extraction failed: %w", err)
 	}
@@ -280,7 +283,8 @@ func (s *UpdateService) Rollback() error {
 }
 
 func (s *UpdateService) fetchLatestRelease(ctx context.Context) (*UpdateInfo, error) {
-	release, err := s.githubClient.FetchLatestRelease(ctx, githubRepo)
+	repo := resolveUpdateGitHubRepo()
+	release, err := s.githubClient.FetchLatestRelease(ctx, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -309,6 +313,7 @@ func (s *UpdateService) fetchLatestRelease(ctx context.Context) (*UpdateInfo, er
 		},
 		Cached:    false,
 		BuildType: s.buildType,
+		Repository: repo,
 	}, nil
 }
 
@@ -345,7 +350,21 @@ func validateDownloadURL(rawURL string) error {
 		return fmt.Errorf("download from untrusted host: %s", host)
 	}
 
+	if host == allowedDownloadHost {
+		releasePathPrefix := "/" + strings.Trim(resolveUpdateGitHubRepo(), "/") + "/releases/download/"
+		if !strings.HasPrefix(strings.ToLower(parsedURL.Path), strings.ToLower(releasePathPrefix)) {
+			return fmt.Errorf("download path is outside configured update repository")
+		}
+	}
+
 	return nil
+}
+
+func resolveUpdateGitHubRepo() string {
+	if repo := strings.TrimSpace(os.Getenv(updateGitHubRepoEnv)); repo != "" {
+		return strings.Trim(repo, "/")
+	}
+	return defaultGitHubRepo
 }
 
 func (s *UpdateService) verifyChecksum(ctx context.Context, filePath, checksumURL string) error {
@@ -431,7 +450,7 @@ func (s *UpdateService) extractBinary(archivePath, destPath string) error {
 			}
 
 			// Only extract the specific binary we need
-			if baseName == "sub2api" || baseName == "sub2api.exe" {
+			if baseName == "ccapi" || baseName == "ccapi.exe" {
 				// Additional security: limit file size (max 500MB)
 				const maxBinarySize = 500 * 1024 * 1024
 				if hdr.Size > maxBinarySize {
@@ -483,9 +502,15 @@ func (s *UpdateService) getFromCache(ctx context.Context) (*UpdateInfo, error) {
 		Latest      string       `json:"latest"`
 		ReleaseInfo *ReleaseInfo `json:"release_info"`
 		Timestamp   int64        `json:"timestamp"`
+		Repository  string       `json:"repository"`
 	}
 	if err := json.Unmarshal([]byte(data), &cached); err != nil {
 		return nil, err
+	}
+
+	repo := resolveUpdateGitHubRepo()
+	if cached.Repository != repo {
+		return nil, fmt.Errorf("cache repository mismatch")
 	}
 
 	if time.Now().Unix()-cached.Timestamp > updateCacheTTL {
@@ -499,6 +524,7 @@ func (s *UpdateService) getFromCache(ctx context.Context) (*UpdateInfo, error) {
 		ReleaseInfo:    cached.ReleaseInfo,
 		Cached:         true,
 		BuildType:      s.buildType,
+		Repository:     repo,
 	}, nil
 }
 
@@ -507,10 +533,12 @@ func (s *UpdateService) saveToCache(ctx context.Context, info *UpdateInfo) {
 		Latest      string       `json:"latest"`
 		ReleaseInfo *ReleaseInfo `json:"release_info"`
 		Timestamp   int64        `json:"timestamp"`
+		Repository  string       `json:"repository"`
 	}{
 		Latest:      info.LatestVersion,
 		ReleaseInfo: info.ReleaseInfo,
 		Timestamp:   time.Now().Unix(),
+		Repository:  info.Repository,
 	}
 
 	data, _ := json.Marshal(cacheData)

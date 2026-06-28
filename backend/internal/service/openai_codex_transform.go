@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/openai"
 )
 
 var codexModelMap = map[string]string{
@@ -80,10 +80,10 @@ type codexOAuthTransformOptions struct {
 }
 
 const (
-	codexImageGenerationBridgeMarker = "<sub2api-codex-image-generation>"
-	codexImageGenerationBridgeText   = codexImageGenerationBridgeMarker + "\nWhen the user asks for raster image generation or editing, use the OpenAI Responses native `image_generation` tool attached to this request. The local Codex client may not expose an `image_gen` namespace, but that does not mean image generation is unavailable. Do not ask the user to switch to CLI fallback solely because `image_gen` is absent.\n</sub2api-codex-image-generation>"
-	codexSparkImageUnsupportedMarker = "<sub2api-codex-spark-image-unsupported>"
-	codexSparkImageUnsupportedText   = codexSparkImageUnsupportedMarker + "\nThe current model is gpt-5.3-codex-spark, which does not support image generation, image editing, image input, the `image_generation` tool, or Codex `image_gen`/`$imagegen` workflows. If the user asks for image generation or image editing, clearly explain this model limitation and ask them to switch to a non-Spark Codex model such as gpt-5.3-codex or gpt-5.4. Do not claim that the local environment merely lacks image_gen tooling, and do not suggest CLI fallback as the primary fix while the model remains Spark.\n</sub2api-codex-spark-image-unsupported>"
+	codexImageGenerationBridgeMarker = "<ccapi-codex-image-generation>"
+	codexImageGenerationBridgeText   = codexImageGenerationBridgeMarker + "\nWhen the user asks for raster image generation or editing, use the OpenAI Responses native `image_generation` tool attached to this request. The local Codex client may not expose an `image_gen` namespace, but that does not mean image generation is unavailable. Do not ask the user to switch to CLI fallback solely because `image_gen` is absent.\n</ccapi-codex-image-generation>"
+	codexSparkImageUnsupportedMarker = "<ccapi-codex-spark-image-unsupported>"
+	codexSparkImageUnsupportedText   = codexSparkImageUnsupportedMarker + "\nThe current model is gpt-5.3-codex-spark, which does not support image generation, image editing, image input, the `image_generation` tool, or Codex `image_gen`/`$imagegen` workflows. If the user asks for image generation or image editing, clearly explain this model limitation and ask them to switch to a non-Spark Codex model such as gpt-5.3-codex or gpt-5.4. Do not claim that the local environment merely lacks image_gen tooling, and do not suggest CLI fallback as the primary fix while the model remains Spark.\n</ccapi-codex-spark-image-unsupported>"
 )
 
 var openAIChatGPTInternalUnsupportedFields = []string{
@@ -222,6 +222,11 @@ func applyCodexOAuthTransformWithOptions(reqBody map[string]any, opts codexOAuth
 		result.Modified = true
 	}
 	if isCodexSparkModel(normalizedModel) && applyCodexSparkImageUnsupportedInstructions(reqBody) {
+		result.Modified = true
+	}
+	// gpt-5.3-codex-spark rejects the image_generation tool upstream (HTTP 400,
+	// param=tools); Codex CLI advertises it by default, so strip it for spark.
+	if isCodexSparkModel(normalizedModel) && stripCodexSparkImageGenerationTools(reqBody) {
 		result.Modified = true
 	}
 
@@ -600,6 +605,41 @@ func hasOpenAIImageGenerationTool(reqBody map[string]any) bool {
 		}
 	}
 	return false
+}
+
+// stripCodexSparkImageGenerationTools removes image_generation tool entries from
+// reqBody["tools"]. gpt-5.3-codex-spark rejects that tool upstream with HTTP 400
+// (invalid_request_error, param=tools), and Codex CLI advertises it by default, so
+// it must be dropped for spark. When the tools list becomes empty the key is removed.
+// Returns true when the body was modified.
+func stripCodexSparkImageGenerationTools(reqBody map[string]any) bool {
+	rawTools, ok := reqBody["tools"]
+	if !ok || rawTools == nil {
+		return false
+	}
+	tools, ok := rawTools.([]any)
+	if !ok {
+		return false
+	}
+	filtered := make([]any, 0, len(tools))
+	removed := false
+	for _, rawTool := range tools {
+		if toolMap, ok := rawTool.(map[string]any); ok &&
+			strings.TrimSpace(firstNonEmptyString(toolMap["type"])) == "image_generation" {
+			removed = true
+			continue
+		}
+		filtered = append(filtered, rawTool)
+	}
+	if !removed {
+		return false
+	}
+	if len(filtered) == 0 {
+		delete(reqBody, "tools")
+	} else {
+		reqBody["tools"] = filtered
+	}
+	return true
 }
 
 func hasOpenAIInputImage(reqBody map[string]any) bool {

@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/sub2api/ent/apikey"
-	"github.com/Wei-Shaw/sub2api/ent/apikeygroupbinding"
-	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/ccapi/ent/apikey"
+	"github.com/Wei-Shaw/ccapi/ent/apikeygroupbinding"
+	"github.com/Wei-Shaw/ccapi/ent/group"
 )
 
 // APIKeyGroupBindingCreate is the builder for creating a APIKeyGroupBinding entity.

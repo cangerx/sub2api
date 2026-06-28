@@ -25,14 +25,14 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
-	"github.com/Wei-Shaw/sub2api/internal/util/responseheaders"
-	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
+	"github.com/Wei-Shaw/ccapi/internal/config"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/claude"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/ctxkey"
+	infraerrors "github.com/Wei-Shaw/ccapi/internal/pkg/errors"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/logger"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/usagestats"
+	"github.com/Wei-Shaw/ccapi/internal/util/responseheaders"
+	"github.com/Wei-Shaw/ccapi/internal/util/urlvalidator"
 	"github.com/cespare/xxhash/v2"
 	"github.com/google/uuid"
 	gocache "github.com/patrickmn/go-cache"
@@ -1617,8 +1617,8 @@ func (s *GatewayService) SelectAccountForModelWithExclusions(ctx context.Context
 
 // SelectAccountWithLoadAwareness selects account with load-awareness and wait plan.
 // metadataUserID: 用于客户端亲和调度，从中提取客户端 ID
-// sub2apiUserID: 系统用户 ID，用于二维亲和调度
-func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, groupID *int64, sessionHash string, requestedModel string, excludedIDs map[int64]struct{}, metadataUserID string, sub2apiUserID int64) (*AccountSelectionResult, error) {
+// ccapiUserID: 系统用户 ID，用于二维亲和调度
+func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, groupID *int64, sessionHash string, requestedModel string, excludedIDs map[int64]struct{}, metadataUserID string, ccapiUserID int64) (*AccountSelectionResult, error) {
 	// 调试日志：记录调度入口参数
 	excludedIDsList := make([]int64, 0, len(excludedIDs))
 	for id := range excludedIDs {
@@ -8913,6 +8913,10 @@ func postUsageBilling(ctx context.Context, p *postUsageBillingParams, deps *bill
 		if cost.ActualCost > 0 {
 			if err := deps.userRepo.DeductBalance(billingCtx, p.User.ID, cost.ActualCost); err != nil {
 				slog.Error("deduct balance failed", "user_id", p.User.ID, "error", err)
+			} else if deps.billingCacheService != nil {
+				if err := deps.billingCacheService.InvalidateUserBalance(billingCtx, p.User.ID); err != nil {
+					slog.Warn("invalidate balance cache after legacy deduction failed", "user_id", p.User.ID, "error", err)
+				}
 			}
 		}
 	}
@@ -9093,7 +9097,7 @@ func finalizePostUsageBilling(ctx context.Context, p *postUsageBillingParams, de
 			deps.billingCacheService.QueueUpdateSubscriptionUsage(p.User.ID, *p.APIKey.GroupID, p.Cost.ActualCost)
 		}
 	} else if p.Cost.ActualCost > 0 && p.User != nil {
-		deps.billingCacheService.QueueDeductBalance(p.User.ID, p.Cost.ActualCost)
+		syncBalanceCacheAfterDeduction(ctx, p, deps, result)
 	}
 
 	if p.Cost.ActualCost > 0 && p.APIKey != nil && p.APIKey.HasRateLimits() {
@@ -9140,6 +9144,24 @@ func finalizePostUsageBilling(ctx context.Context, p *postUsageBillingParams, de
 	// no dependency on the request context or upstream connection.
 	go notifyBalanceLow(p, deps, result)
 	go notifyAccountQuota(p, deps, result)
+}
+
+func syncBalanceCacheAfterDeduction(ctx context.Context, p *postUsageBillingParams, deps *billingDeps, result *UsageBillingApplyResult) {
+	if p == nil || p.Cost == nil || p.User == nil || deps == nil || deps.billingCacheService == nil {
+		return
+	}
+	if result != nil && result.NewBalance != nil && deps.billingCacheService.balanceBelowEligibilityThreshold(*result.NewBalance) {
+		if err := deps.billingCacheService.InvalidateUserBalance(ctx, p.User.ID); err != nil {
+			slog.Warn("invalidate balance cache after exhausted deduction failed",
+				"user_id", p.User.ID,
+				"new_balance", *result.NewBalance,
+				"balance_overdrafted", result.BalanceOverdrafted,
+				"error", err,
+			)
+		}
+		return
+	}
+	deps.billingCacheService.QueueDeductBalance(p.User.ID, p.Cost.ActualCost)
 }
 
 // notifyBalanceLow sends balance low notification after deduction.

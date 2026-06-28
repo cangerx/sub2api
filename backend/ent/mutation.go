@@ -12,47 +12,47 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/sub2api/ent/account"
-	"github.com/Wei-Shaw/sub2api/ent/accountgroup"
-	"github.com/Wei-Shaw/sub2api/ent/announcement"
-	"github.com/Wei-Shaw/sub2api/ent/announcementread"
-	"github.com/Wei-Shaw/sub2api/ent/apikey"
-	"github.com/Wei-Shaw/sub2api/ent/apikeygroupbinding"
-	"github.com/Wei-Shaw/sub2api/ent/authidentity"
-	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
-	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
-	"github.com/Wei-Shaw/sub2api/ent/channelmonitordailyrollup"
-	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
-	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
-	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
-	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
-	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
-	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
-	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
-	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
-	"github.com/Wei-Shaw/sub2api/ent/predicate"
-	"github.com/Wei-Shaw/sub2api/ent/promocode"
-	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
-	"github.com/Wei-Shaw/sub2api/ent/proxy"
-	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
-	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
-	"github.com/Wei-Shaw/sub2api/ent/setting"
-	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
-	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
-	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
-	"github.com/Wei-Shaw/sub2api/ent/usagelog"
-	"github.com/Wei-Shaw/sub2api/ent/user"
-	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
-	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
-	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
-	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
-	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
-	"github.com/Wei-Shaw/sub2api/ent/videocalltemplate"
-	"github.com/Wei-Shaw/sub2api/ent/videogenerationtask"
-	"github.com/Wei-Shaw/sub2api/ent/videomodel"
-	"github.com/Wei-Shaw/sub2api/internal/domain"
+	"github.com/Wei-Shaw/ccapi/ent/account"
+	"github.com/Wei-Shaw/ccapi/ent/accountgroup"
+	"github.com/Wei-Shaw/ccapi/ent/announcement"
+	"github.com/Wei-Shaw/ccapi/ent/announcementread"
+	"github.com/Wei-Shaw/ccapi/ent/apikey"
+	"github.com/Wei-Shaw/ccapi/ent/apikeygroupbinding"
+	"github.com/Wei-Shaw/ccapi/ent/authidentity"
+	"github.com/Wei-Shaw/ccapi/ent/authidentitychannel"
+	"github.com/Wei-Shaw/ccapi/ent/channelmonitor"
+	"github.com/Wei-Shaw/ccapi/ent/channelmonitordailyrollup"
+	"github.com/Wei-Shaw/ccapi/ent/channelmonitorhistory"
+	"github.com/Wei-Shaw/ccapi/ent/channelmonitorrequesttemplate"
+	"github.com/Wei-Shaw/ccapi/ent/errorpassthroughrule"
+	"github.com/Wei-Shaw/ccapi/ent/group"
+	"github.com/Wei-Shaw/ccapi/ent/idempotencyrecord"
+	"github.com/Wei-Shaw/ccapi/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/ccapi/ent/paymentauditlog"
+	"github.com/Wei-Shaw/ccapi/ent/paymentorder"
+	"github.com/Wei-Shaw/ccapi/ent/paymentproviderinstance"
+	"github.com/Wei-Shaw/ccapi/ent/pendingauthsession"
+	"github.com/Wei-Shaw/ccapi/ent/predicate"
+	"github.com/Wei-Shaw/ccapi/ent/promocode"
+	"github.com/Wei-Shaw/ccapi/ent/promocodeusage"
+	"github.com/Wei-Shaw/ccapi/ent/proxy"
+	"github.com/Wei-Shaw/ccapi/ent/redeemcode"
+	"github.com/Wei-Shaw/ccapi/ent/securitysecret"
+	"github.com/Wei-Shaw/ccapi/ent/setting"
+	"github.com/Wei-Shaw/ccapi/ent/subscriptionplan"
+	"github.com/Wei-Shaw/ccapi/ent/tlsfingerprintprofile"
+	"github.com/Wei-Shaw/ccapi/ent/usagecleanuptask"
+	"github.com/Wei-Shaw/ccapi/ent/usagelog"
+	"github.com/Wei-Shaw/ccapi/ent/user"
+	"github.com/Wei-Shaw/ccapi/ent/userallowedgroup"
+	"github.com/Wei-Shaw/ccapi/ent/userattributedefinition"
+	"github.com/Wei-Shaw/ccapi/ent/userattributevalue"
+	"github.com/Wei-Shaw/ccapi/ent/userplatformquota"
+	"github.com/Wei-Shaw/ccapi/ent/usersubscription"
+	"github.com/Wei-Shaw/ccapi/ent/videocalltemplate"
+	"github.com/Wei-Shaw/ccapi/ent/videogenerationtask"
+	"github.com/Wei-Shaw/ccapi/ent/videomodel"
+	"github.com/Wei-Shaw/ccapi/internal/domain"
 )
 
 const (
@@ -117,6 +117,7 @@ type APIKeyMutation struct {
 	key                           *string
 	name                          *string
 	multi_group_routing           *bool
+	force_image_url_response      *bool
 	status                        *string
 	last_used_at                  *time.Time
 	ip_whitelist                  *[]string
@@ -572,6 +573,42 @@ func (m *APIKeyMutation) OldMultiGroupRouting(ctx context.Context) (v bool, err 
 // ResetMultiGroupRouting resets all changes to the "multi_group_routing" field.
 func (m *APIKeyMutation) ResetMultiGroupRouting() {
 	m.multi_group_routing = nil
+}
+
+// SetForceImageURLResponse sets the "force_image_url_response" field.
+func (m *APIKeyMutation) SetForceImageURLResponse(b bool) {
+	m.force_image_url_response = &b
+}
+
+// ForceImageURLResponse returns the value of the "force_image_url_response" field in the mutation.
+func (m *APIKeyMutation) ForceImageURLResponse() (r bool, exists bool) {
+	v := m.force_image_url_response
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldForceImageURLResponse returns the old "force_image_url_response" field's value of the APIKey entity.
+// If the APIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIKeyMutation) OldForceImageURLResponse(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldForceImageURLResponse is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldForceImageURLResponse requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldForceImageURLResponse: %w", err)
+	}
+	return oldValue.ForceImageURLResponse, nil
+}
+
+// ResetForceImageURLResponse resets all changes to the "force_image_url_response" field.
+func (m *APIKeyMutation) ResetForceImageURLResponse() {
+	m.force_image_url_response = nil
 }
 
 // SetStatus sets the "status" field.
@@ -1683,7 +1720,7 @@ func (m *APIKeyMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APIKeyMutation) Fields() []string {
-	fields := make([]string, 0, 24)
+	fields := make([]string, 0, 25)
 	if m.created_at != nil {
 		fields = append(fields, apikey.FieldCreatedAt)
 	}
@@ -1707,6 +1744,9 @@ func (m *APIKeyMutation) Fields() []string {
 	}
 	if m.multi_group_routing != nil {
 		fields = append(fields, apikey.FieldMultiGroupRouting)
+	}
+	if m.force_image_url_response != nil {
+		fields = append(fields, apikey.FieldForceImageURLResponse)
 	}
 	if m.status != nil {
 		fields = append(fields, apikey.FieldStatus)
@@ -1780,6 +1820,8 @@ func (m *APIKeyMutation) Field(name string) (ent.Value, bool) {
 		return m.GroupID()
 	case apikey.FieldMultiGroupRouting:
 		return m.MultiGroupRouting()
+	case apikey.FieldForceImageURLResponse:
+		return m.ForceImageURLResponse()
 	case apikey.FieldStatus:
 		return m.Status()
 	case apikey.FieldLastUsedAt:
@@ -1837,6 +1879,8 @@ func (m *APIKeyMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldGroupID(ctx)
 	case apikey.FieldMultiGroupRouting:
 		return m.OldMultiGroupRouting(ctx)
+	case apikey.FieldForceImageURLResponse:
+		return m.OldForceImageURLResponse(ctx)
 	case apikey.FieldStatus:
 		return m.OldStatus(ctx)
 	case apikey.FieldLastUsedAt:
@@ -1933,6 +1977,13 @@ func (m *APIKeyMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMultiGroupRouting(v)
+		return nil
+	case apikey.FieldForceImageURLResponse:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetForceImageURLResponse(v)
 		return nil
 	case apikey.FieldStatus:
 		v, ok := value.(string)
@@ -2274,6 +2325,9 @@ func (m *APIKeyMutation) ResetField(name string) error {
 		return nil
 	case apikey.FieldMultiGroupRouting:
 		m.ResetMultiGroupRouting()
+		return nil
+	case apikey.FieldForceImageURLResponse:
+		m.ResetForceImageURLResponse()
 		return nil
 	case apikey.FieldStatus:
 		m.ResetStatus()
@@ -36324,6 +36378,11 @@ type UsageLogMutation struct {
 	image_output_size           *string
 	image_size_source           *string
 	image_size_breakdown        *map[string]int
+	image_prompt                *string
+	image_urls                  *[]string
+	appendimage_urls            []string
+	image_revised_prompts       *[]string
+	appendimage_revised_prompts []string
 	cache_ttl_overridden        *bool
 	created_at                  *time.Time
 	clearedFields               map[string]struct{}
@@ -38462,6 +38521,185 @@ func (m *UsageLogMutation) ResetImageSizeBreakdown() {
 	delete(m.clearedFields, usagelog.FieldImageSizeBreakdown)
 }
 
+// SetImagePrompt sets the "image_prompt" field.
+func (m *UsageLogMutation) SetImagePrompt(s string) {
+	m.image_prompt = &s
+}
+
+// ImagePrompt returns the value of the "image_prompt" field in the mutation.
+func (m *UsageLogMutation) ImagePrompt() (r string, exists bool) {
+	v := m.image_prompt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImagePrompt returns the old "image_prompt" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldImagePrompt(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImagePrompt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImagePrompt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImagePrompt: %w", err)
+	}
+	return oldValue.ImagePrompt, nil
+}
+
+// ClearImagePrompt clears the value of the "image_prompt" field.
+func (m *UsageLogMutation) ClearImagePrompt() {
+	m.image_prompt = nil
+	m.clearedFields[usagelog.FieldImagePrompt] = struct{}{}
+}
+
+// ImagePromptCleared returns if the "image_prompt" field was cleared in this mutation.
+func (m *UsageLogMutation) ImagePromptCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldImagePrompt]
+	return ok
+}
+
+// ResetImagePrompt resets all changes to the "image_prompt" field.
+func (m *UsageLogMutation) ResetImagePrompt() {
+	m.image_prompt = nil
+	delete(m.clearedFields, usagelog.FieldImagePrompt)
+}
+
+// SetImageUrls sets the "image_urls" field.
+func (m *UsageLogMutation) SetImageUrls(s []string) {
+	m.image_urls = &s
+	m.appendimage_urls = nil
+}
+
+// ImageUrls returns the value of the "image_urls" field in the mutation.
+func (m *UsageLogMutation) ImageUrls() (r []string, exists bool) {
+	v := m.image_urls
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImageUrls returns the old "image_urls" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldImageUrls(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImageUrls is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImageUrls requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImageUrls: %w", err)
+	}
+	return oldValue.ImageUrls, nil
+}
+
+// AppendImageUrls adds s to the "image_urls" field.
+func (m *UsageLogMutation) AppendImageUrls(s []string) {
+	m.appendimage_urls = append(m.appendimage_urls, s...)
+}
+
+// AppendedImageUrls returns the list of values that were appended to the "image_urls" field in this mutation.
+func (m *UsageLogMutation) AppendedImageUrls() ([]string, bool) {
+	if len(m.appendimage_urls) == 0 {
+		return nil, false
+	}
+	return m.appendimage_urls, true
+}
+
+// ClearImageUrls clears the value of the "image_urls" field.
+func (m *UsageLogMutation) ClearImageUrls() {
+	m.image_urls = nil
+	m.appendimage_urls = nil
+	m.clearedFields[usagelog.FieldImageUrls] = struct{}{}
+}
+
+// ImageUrlsCleared returns if the "image_urls" field was cleared in this mutation.
+func (m *UsageLogMutation) ImageUrlsCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldImageUrls]
+	return ok
+}
+
+// ResetImageUrls resets all changes to the "image_urls" field.
+func (m *UsageLogMutation) ResetImageUrls() {
+	m.image_urls = nil
+	m.appendimage_urls = nil
+	delete(m.clearedFields, usagelog.FieldImageUrls)
+}
+
+// SetImageRevisedPrompts sets the "image_revised_prompts" field.
+func (m *UsageLogMutation) SetImageRevisedPrompts(s []string) {
+	m.image_revised_prompts = &s
+	m.appendimage_revised_prompts = nil
+}
+
+// ImageRevisedPrompts returns the value of the "image_revised_prompts" field in the mutation.
+func (m *UsageLogMutation) ImageRevisedPrompts() (r []string, exists bool) {
+	v := m.image_revised_prompts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImageRevisedPrompts returns the old "image_revised_prompts" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldImageRevisedPrompts(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImageRevisedPrompts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImageRevisedPrompts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImageRevisedPrompts: %w", err)
+	}
+	return oldValue.ImageRevisedPrompts, nil
+}
+
+// AppendImageRevisedPrompts adds s to the "image_revised_prompts" field.
+func (m *UsageLogMutation) AppendImageRevisedPrompts(s []string) {
+	m.appendimage_revised_prompts = append(m.appendimage_revised_prompts, s...)
+}
+
+// AppendedImageRevisedPrompts returns the list of values that were appended to the "image_revised_prompts" field in this mutation.
+func (m *UsageLogMutation) AppendedImageRevisedPrompts() ([]string, bool) {
+	if len(m.appendimage_revised_prompts) == 0 {
+		return nil, false
+	}
+	return m.appendimage_revised_prompts, true
+}
+
+// ClearImageRevisedPrompts clears the value of the "image_revised_prompts" field.
+func (m *UsageLogMutation) ClearImageRevisedPrompts() {
+	m.image_revised_prompts = nil
+	m.appendimage_revised_prompts = nil
+	m.clearedFields[usagelog.FieldImageRevisedPrompts] = struct{}{}
+}
+
+// ImageRevisedPromptsCleared returns if the "image_revised_prompts" field was cleared in this mutation.
+func (m *UsageLogMutation) ImageRevisedPromptsCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldImageRevisedPrompts]
+	return ok
+}
+
+// ResetImageRevisedPrompts resets all changes to the "image_revised_prompts" field.
+func (m *UsageLogMutation) ResetImageRevisedPrompts() {
+	m.image_revised_prompts = nil
+	m.appendimage_revised_prompts = nil
+	delete(m.clearedFields, usagelog.FieldImageRevisedPrompts)
+}
+
 // SetCacheTTLOverridden sets the "cache_ttl_overridden" field.
 func (m *UsageLogMutation) SetCacheTTLOverridden(b bool) {
 	m.cache_ttl_overridden = &b
@@ -38703,7 +38941,7 @@ func (m *UsageLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UsageLogMutation) Fields() []string {
-	fields := make([]string, 0, 41)
+	fields := make([]string, 0, 44)
 	if m.user != nil {
 		fields = append(fields, usagelog.FieldUserID)
 	}
@@ -38821,6 +39059,15 @@ func (m *UsageLogMutation) Fields() []string {
 	if m.image_size_breakdown != nil {
 		fields = append(fields, usagelog.FieldImageSizeBreakdown)
 	}
+	if m.image_prompt != nil {
+		fields = append(fields, usagelog.FieldImagePrompt)
+	}
+	if m.image_urls != nil {
+		fields = append(fields, usagelog.FieldImageUrls)
+	}
+	if m.image_revised_prompts != nil {
+		fields = append(fields, usagelog.FieldImageRevisedPrompts)
+	}
 	if m.cache_ttl_overridden != nil {
 		fields = append(fields, usagelog.FieldCacheTTLOverridden)
 	}
@@ -38913,6 +39160,12 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.ImageSizeSource()
 	case usagelog.FieldImageSizeBreakdown:
 		return m.ImageSizeBreakdown()
+	case usagelog.FieldImagePrompt:
+		return m.ImagePrompt()
+	case usagelog.FieldImageUrls:
+		return m.ImageUrls()
+	case usagelog.FieldImageRevisedPrompts:
+		return m.ImageRevisedPrompts()
 	case usagelog.FieldCacheTTLOverridden:
 		return m.CacheTTLOverridden()
 	case usagelog.FieldCreatedAt:
@@ -39004,6 +39257,12 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldImageSizeSource(ctx)
 	case usagelog.FieldImageSizeBreakdown:
 		return m.OldImageSizeBreakdown(ctx)
+	case usagelog.FieldImagePrompt:
+		return m.OldImagePrompt(ctx)
+	case usagelog.FieldImageUrls:
+		return m.OldImageUrls(ctx)
+	case usagelog.FieldImageRevisedPrompts:
+		return m.OldImageRevisedPrompts(ctx)
 	case usagelog.FieldCacheTTLOverridden:
 		return m.OldCacheTTLOverridden(ctx)
 	case usagelog.FieldCreatedAt:
@@ -39289,6 +39548,27 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetImageSizeBreakdown(v)
+		return nil
+	case usagelog.FieldImagePrompt:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImagePrompt(v)
+		return nil
+	case usagelog.FieldImageUrls:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImageUrls(v)
+		return nil
+	case usagelog.FieldImageRevisedPrompts:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImageRevisedPrompts(v)
 		return nil
 	case usagelog.FieldCacheTTLOverridden:
 		v, ok := value.(bool)
@@ -39619,6 +39899,15 @@ func (m *UsageLogMutation) ClearedFields() []string {
 	if m.FieldCleared(usagelog.FieldImageSizeBreakdown) {
 		fields = append(fields, usagelog.FieldImageSizeBreakdown)
 	}
+	if m.FieldCleared(usagelog.FieldImagePrompt) {
+		fields = append(fields, usagelog.FieldImagePrompt)
+	}
+	if m.FieldCleared(usagelog.FieldImageUrls) {
+		fields = append(fields, usagelog.FieldImageUrls)
+	}
+	if m.FieldCleared(usagelog.FieldImageRevisedPrompts) {
+		fields = append(fields, usagelog.FieldImageRevisedPrompts)
+	}
 	return fields
 }
 
@@ -39686,6 +39975,15 @@ func (m *UsageLogMutation) ClearField(name string) error {
 		return nil
 	case usagelog.FieldImageSizeBreakdown:
 		m.ClearImageSizeBreakdown()
+		return nil
+	case usagelog.FieldImagePrompt:
+		m.ClearImagePrompt()
+		return nil
+	case usagelog.FieldImageUrls:
+		m.ClearImageUrls()
+		return nil
+	case usagelog.FieldImageRevisedPrompts:
+		m.ClearImageRevisedPrompts()
 		return nil
 	}
 	return fmt.Errorf("unknown UsageLog nullable field %s", name)
@@ -39811,6 +40109,15 @@ func (m *UsageLogMutation) ResetField(name string) error {
 		return nil
 	case usagelog.FieldImageSizeBreakdown:
 		m.ResetImageSizeBreakdown()
+		return nil
+	case usagelog.FieldImagePrompt:
+		m.ResetImagePrompt()
+		return nil
+	case usagelog.FieldImageUrls:
+		m.ResetImageUrls()
+		return nil
+	case usagelog.FieldImageRevisedPrompts:
+		m.ResetImageRevisedPrompts()
 		return nil
 	case usagelog.FieldCacheTTLOverridden:
 		m.ResetCacheTTLOverridden()

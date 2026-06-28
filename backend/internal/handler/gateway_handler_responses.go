@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	pkghttputil "github.com/Wei-Shaw/sub2api/internal/pkg/httputil"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
-	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	pkghttputil "github.com/Wei-Shaw/ccapi/internal/pkg/httputil"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/ip"
+	middleware2 "github.com/Wei-Shaw/ccapi/internal/server/middleware"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
@@ -175,8 +175,15 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 				continue
 			}
 			if len(fs.FailedAccountIDs) == 0 {
-				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
-				h.responsesErrorResponse(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error())
+				cls := classifyNoAccountErrorFromGin(c, h.gatewayService, apiKey, reqModel, reqModel, service.PlatformAnthropic)
+				if !cls.ModelNotFound {
+					markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
+				}
+				message := cls.Message
+				if !cls.ModelNotFound {
+					message = "No available accounts: " + err.Error()
+				}
+				h.responsesErrorResponse(c, cls.Status, cls.ErrType, message)
 				return
 			}
 			action := fs.HandleSelectionExhausted(requestCtx)

@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	pkghttputil "github.com/Wei-Shaw/sub2api/internal/pkg/httputil"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
-	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	pkghttputil "github.com/Wei-Shaw/ccapi/internal/pkg/httputil"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/ip"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/logger"
+	middleware2 "github.com/Wei-Shaw/ccapi/internal/server/middleware"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -72,6 +72,18 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 	if err != nil {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", err.Error())
 		return
+	}
+	if apiKey.ForceImageURLResponse {
+		var contentType string
+		body, contentType, err = service.ForceOpenAIImagesURLResponse(body, parsed.ContentType, parsed)
+		if err != nil {
+			h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", err.Error())
+			return
+		}
+		parsed.Body = body
+		if strings.TrimSpace(contentType) != "" {
+			parsed.ContentType = contentType
+		}
 	}
 	requestModel := parsed.Model
 
@@ -159,8 +171,15 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 				zap.Int("excluded_account_count", len(failedAccountIDs)),
 			)
 			if len(failedAccountIDs) == 0 {
-				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
-				h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available compatible accounts", streamStarted)
+				cls := classifyNoAccountErrorFromGin(c, h.gatewayService, apiKey, requestModel, requestModel, service.PlatformOpenAI)
+				if !cls.ModelNotFound {
+					markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
+				}
+				message := cls.Message
+				if !cls.ModelNotFound {
+					message = "No available compatible accounts"
+				}
+				h.handleStreamingAwareError(c, cls.Status, cls.ErrType, message, streamStarted)
 				return
 			}
 			if lastFailoverErr != nil {
@@ -171,8 +190,15 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 			return
 		}
 		if selection == nil || selection.Account == nil {
-			markOpsRoutingCapacityLimited(c)
-			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available compatible accounts", streamStarted)
+			cls := classifyNoAccountErrorFromGin(c, h.gatewayService, apiKey, requestModel, requestModel, service.PlatformOpenAI)
+			if !cls.ModelNotFound {
+				markOpsRoutingCapacityLimited(c)
+			}
+			message := cls.Message
+			if !cls.ModelNotFound {
+				message = "No available compatible accounts"
+			}
+			h.handleStreamingAwareError(c, cls.Status, cls.ErrType, message, streamStarted)
 			return
 		}
 

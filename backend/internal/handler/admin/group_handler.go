@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/handler/dto"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/response"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/timezone"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -84,7 +84,7 @@ func NewGroupHandler(adminService service.AdminService, dashboardService *servic
 type CreateGroupRequest struct {
 	Name             string             `json:"name" binding:"required"`
 	Description      string             `json:"description"`
-	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity video"`
+	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity video grok"`
 	RateMultiplier   float64            `json:"rate_multiplier"`
 	IsExclusive      bool               `json:"is_exclusive"`
 	SubscriptionType string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription"`
@@ -124,7 +124,7 @@ type CreateGroupRequest struct {
 type UpdateGroupRequest struct {
 	Name             string             `json:"name"`
 	Description      *string            `json:"description"`
-	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity video"`
+	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity video grok"`
 	RateMultiplier   *float64           `json:"rate_multiplier"`
 	IsExclusive      *bool              `json:"is_exclusive"`
 	Status           string             `json:"status" binding:"omitempty,oneof=active inactive"`

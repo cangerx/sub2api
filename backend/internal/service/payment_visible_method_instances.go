@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/sub2api/internal/payment"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	dbent "github.com/Wei-Shaw/ccapi/ent"
+	"github.com/Wei-Shaw/ccapi/ent/paymentproviderinstance"
+	"github.com/Wei-Shaw/ccapi/internal/payment"
+	infraerrors "github.com/Wei-Shaw/ccapi/internal/pkg/errors"
 )
 
 func enabledVisibleMethodsForProvider(providerKey, supportedTypes string) []string {
@@ -45,7 +45,7 @@ func enabledVisibleMethodsForProvider(providerKey, supportedTypes string) []stri
 				break
 			}
 		}
-	case payment.TypeEasyPay:
+	case payment.TypeEasyPay, payment.TypeTianque:
 		for _, supportedType := range splitTypes(supportedTypes) {
 			addMethod(supportedType)
 		}

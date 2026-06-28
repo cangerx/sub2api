@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/handler"
-	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/config"
+	"github.com/Wei-Shaw/ccapi/internal/handler"
+	"github.com/Wei-Shaw/ccapi/internal/server/middleware"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,6 +34,27 @@ func RegisterGatewayRoutes(
 	requireGroupOpenAI := middleware.RequireGroupAssignment(settingService, middleware.OpenAIErrorWriter)
 	requireGroupVideo := requireVideoScope()
 
+	isOpenAIResponsesCompatibleGatewayPlatform := func(c *gin.Context) bool {
+		switch getGroupPlatform(c) {
+		case service.PlatformOpenAI, service.PlatformGrok:
+			return true
+		default:
+			return false
+		}
+	}
+	isOpenAIGatewayPlatform := func(c *gin.Context) bool {
+		return getGroupPlatform(c) == service.PlatformOpenAI
+	}
+	rejectGrokUnsupportedEndpoint := func(c *gin.Context, endpoint string) {
+		service.MarkOpsClientBusinessLimited(c, service.OpsClientBusinessLimitedReasonLocalFeatureGate)
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": gin.H{
+				"type":    "not_found_error",
+				"message": endpoint + " is not supported for Grok groups",
+			},
+		})
+	}
+
 	// OpenAI 风格视频异步网关
 	videos := r.Group("/v1")
 	videos.Use(bodyLimit)
@@ -53,7 +74,7 @@ func RegisterGatewayRoutes(
 		videos.GET("/videos/:id/content.mp4", h.Video.Content)
 	}
 
-	// API网关（Claude/OpenAI API兼容）
+	// API网关（Claude/OpenAI/Grok API兼容）
 	gateway := r.Group("/v1")
 	gateway.Use(bodyLimit)
 	gateway.Use(clientRequestID)
@@ -64,7 +85,11 @@ func RegisterGatewayRoutes(
 	{
 		// /v1/messages: auto-route based on group platform
 		gateway.POST("/messages", func(c *gin.Context) {
-			if getGroupPlatform(c) == service.PlatformOpenAI {
+			if getGroupPlatform(c) == service.PlatformGrok {
+				rejectGrokUnsupportedEndpoint(c, "Messages API")
+				return
+			}
+			if isOpenAIGatewayPlatform(c) {
 				h.OpenAIGateway.Messages(c)
 				return
 			}
@@ -72,7 +97,7 @@ func RegisterGatewayRoutes(
 		})
 		// /v1/messages/count_tokens: OpenAI groups get 404
 		gateway.POST("/messages/count_tokens", func(c *gin.Context) {
-			if getGroupPlatform(c) == service.PlatformOpenAI {
+			if isOpenAIResponsesCompatibleGatewayPlatform(c) {
 				service.MarkOpsClientBusinessLimited(c, service.OpsClientBusinessLimitedReasonLocalFeatureGate)
 				c.JSON(http.StatusNotFound, gin.H{
 					"type": "error",
@@ -89,23 +114,33 @@ func RegisterGatewayRoutes(
 		gateway.GET("/usage", h.Gateway.Usage)
 		// OpenAI Responses API: auto-route based on group platform
 		gateway.POST("/responses", func(c *gin.Context) {
-			if getGroupPlatform(c) == service.PlatformOpenAI {
+			if isOpenAIResponsesCompatibleGatewayPlatform(c) {
 				h.OpenAIGateway.Responses(c)
 				return
 			}
 			h.Gateway.Responses(c)
 		})
 		gateway.POST("/responses/*subpath", func(c *gin.Context) {
-			if getGroupPlatform(c) == service.PlatformOpenAI {
+			if isOpenAIResponsesCompatibleGatewayPlatform(c) {
 				h.OpenAIGateway.Responses(c)
 				return
 			}
 			h.Gateway.Responses(c)
 		})
-		gateway.GET("/responses", h.OpenAIGateway.ResponsesWebSocket)
+		gateway.GET("/responses", func(c *gin.Context) {
+			if getGroupPlatform(c) == service.PlatformGrok {
+				rejectGrokUnsupportedEndpoint(c, "Responses WebSocket API")
+				return
+			}
+			h.OpenAIGateway.ResponsesWebSocket(c)
+		})
 		// OpenAI Chat Completions API: auto-route based on group platform
 		gateway.POST("/chat/completions", func(c *gin.Context) {
-			if getGroupPlatform(c) == service.PlatformOpenAI {
+			if getGroupPlatform(c) == service.PlatformGrok {
+				rejectGrokUnsupportedEndpoint(c, "Chat Completions API")
+				return
+			}
+			if isOpenAIGatewayPlatform(c) {
 				h.OpenAIGateway.ChatCompletions(c)
 				return
 			}
@@ -169,7 +204,7 @@ func RegisterGatewayRoutes(
 
 	// OpenAI Responses API（不带v1前缀的别名）— auto-route based on group platform
 	responsesHandler := func(c *gin.Context) {
-		if getGroupPlatform(c) == service.PlatformOpenAI {
+		if isOpenAIResponsesCompatibleGatewayPlatform(c) {
 			h.OpenAIGateway.Responses(c)
 			return
 		}
@@ -177,17 +212,33 @@ func RegisterGatewayRoutes(
 	}
 	r.POST("/responses", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, responsesHandler)
 	r.POST("/responses/*subpath", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, responsesHandler)
-	r.GET("/responses", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, h.OpenAIGateway.ResponsesWebSocket)
+	r.GET("/responses", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, func(c *gin.Context) {
+		if getGroupPlatform(c) == service.PlatformGrok {
+			rejectGrokUnsupportedEndpoint(c, "Responses WebSocket API")
+			return
+		}
+		h.OpenAIGateway.ResponsesWebSocket(c)
+	})
 	codexDirect := r.Group("/backend-api/codex")
 	codexDirect.Use(bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic)
 	{
 		codexDirect.POST("/responses", responsesHandler)
 		codexDirect.POST("/responses/*subpath", responsesHandler)
-		codexDirect.GET("/responses", h.OpenAIGateway.ResponsesWebSocket)
+		codexDirect.GET("/responses", func(c *gin.Context) {
+			if getGroupPlatform(c) == service.PlatformGrok {
+				rejectGrokUnsupportedEndpoint(c, "Responses WebSocket API")
+				return
+			}
+			h.OpenAIGateway.ResponsesWebSocket(c)
+		})
 	}
 	// OpenAI Chat Completions API（不带v1前缀的别名）— auto-route based on group platform
 	r.POST("/chat/completions", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, func(c *gin.Context) {
-		if getGroupPlatform(c) == service.PlatformOpenAI {
+		if getGroupPlatform(c) == service.PlatformGrok {
+			rejectGrokUnsupportedEndpoint(c, "Chat Completions API")
+			return
+		}
+		if isOpenAIGatewayPlatform(c) {
 			h.OpenAIGateway.ChatCompletions(c)
 			return
 		}

@@ -149,6 +149,16 @@ func (UsageLog) Fields() []ent.Field {
 		field.JSON("image_size_breakdown", map[string]int{}).
 			Optional().
 			SchemaType(map[string]string{dialect.Postgres: "jsonb"}),
+		field.String("image_prompt").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "text"}),
+		field.JSON("image_urls", []string{}).
+			Optional().
+			SchemaType(map[string]string{dialect.Postgres: "jsonb"}),
+		field.JSON("image_revised_prompts", []string{}).
+			Optional().
+			SchemaType(map[string]string{dialect.Postgres: "jsonb"}),
 		// Cache TTL Override 标记（管理员强制替换了缓存 TTL 计费）
 		field.Bool("cache_ttl_overridden").
 			Default(false),

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 )
 
 func UserFromServiceShallow(u *service.User) *User {
@@ -118,6 +118,7 @@ func APIKeyFromService(k *service.APIKey) *APIKey {
 		out.Reset7dAt = &t
 	}
 	out.MultiGroupRouting = k.MultiGroupRouting
+	out.ForceImageURLResponse = k.ForceImageURLResponse
 	if len(k.GroupBindings) > 0 {
 		out.GroupBindings = make([]APIKeyGroupBinding, 0, len(k.GroupBindings))
 		for i := range k.GroupBindings {
@@ -634,7 +635,17 @@ func usageLogFromServiceUser(l *service.UsageLog) UsageLog {
 		ImageOutputCost:       l.ImageOutputCost,
 		ImageSizeSource:       l.ImageSizeSource,
 		ImageSizeBreakdown:    l.ImageSizeBreakdown,
+		ImagePrompt:           l.ImagePrompt,
+		ImageURLs:             append([]string(nil), l.ImageURLs...),
+		ImageRevisedPrompts:   append([]string(nil), l.ImageRevisedPrompts...),
 		MediaType:             l.MediaType,
+		VideoTaskID:           l.VideoTaskID,
+		VideoSeconds:          l.VideoSeconds,
+		VideoSize:             l.VideoSize,
+		VideoBillingUnits:     l.VideoBillingUnits,
+		VideoContentURL:       l.VideoContentURL,
+		VideoUpstreamURL:      l.VideoUpstreamURL,
+		VideoLocalURL:         l.VideoLocalURL,
 		UserAgent:             l.UserAgent,
 		CacheTTLOverridden:    l.CacheTTLOverridden,
 		BillingMode:           l.BillingMode,

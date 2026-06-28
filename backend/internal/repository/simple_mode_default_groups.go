@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Wei-Shaw/ccapi/ent"
+	"github.com/Wei-Shaw/ccapi/ent/group"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 )
 
 func ensureSimpleModeDefaultGroups(ctx context.Context, client *dbent.Client) error {
@@ -19,6 +19,7 @@ func ensureSimpleModeDefaultGroups(ctx context.Context, client *dbent.Client) er
 		service.PlatformOpenAI:      1,
 		service.PlatformGemini:      1,
 		service.PlatformAntigravity: 2,
+		service.PlatformGrok:        1,
 	}
 
 	for platform, minCount := range requiredByPlatform {

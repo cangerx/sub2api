@@ -6,7 +6,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 )
 
 // groupCooldownRedis adapts *redis.Client to service.GroupCooldownRedis for

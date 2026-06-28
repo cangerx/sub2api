@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
+	"github.com/Wei-Shaw/ccapi/internal/config"
+	infraerrors "github.com/Wei-Shaw/ccapi/internal/pkg/errors"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/ip"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/pagination"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/timezone"
 	"github.com/dgraph-io/ristretto"
 	"golang.org/x/sync/singleflight"
 )
@@ -168,8 +168,9 @@ type CreateAPIKeyRequest struct {
 	RateLimit7d float64 `json:"rate_limit_7d"`
 
 	// Multi-group routing
-	MultiGroupRouting bool                      `json:"multi_group_routing"`
-	GroupBindings     []APIKeyGroupBindingInput `json:"group_bindings"`
+	MultiGroupRouting     bool                      `json:"multi_group_routing"`
+	ForceImageURLResponse bool                      `json:"force_image_url_response"`
+	GroupBindings         []APIKeyGroupBindingInput `json:"group_bindings"`
 }
 
 // APIKeyGroupBindingInput is a multi-group-routing binding from create/update.
@@ -201,8 +202,9 @@ type UpdateAPIKeyRequest struct {
 	ResetRateLimitUsage *bool    `json:"reset_rate_limit_usage"` // Reset all usage counters to 0
 
 	// Multi-group routing (MultiGroupRouting nil = no change; GroupBindings nil = no change)
-	MultiGroupRouting *bool                     `json:"multi_group_routing"`
-	GroupBindings     []APIKeyGroupBindingInput `json:"group_bindings"`
+	MultiGroupRouting     *bool                     `json:"multi_group_routing"`
+	ForceImageURLResponse *bool                     `json:"force_image_url_response"`
+	GroupBindings         []APIKeyGroupBindingInput `json:"group_bindings"`
 }
 
 // APIKeyService API Key服务
@@ -416,19 +418,20 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 
 	// 创建API Key记录
 	apiKey := &APIKey{
-		UserID:            userID,
-		Key:               key,
-		Name:              html.EscapeString(req.Name),
-		GroupID:           req.GroupID,
-		Status:            StatusActive,
-		MultiGroupRouting: req.MultiGroupRouting,
-		IPWhitelist:       req.IPWhitelist,
-		IPBlacklist:       req.IPBlacklist,
-		Quota:             req.Quota,
-		QuotaUsed:         0,
-		RateLimit5h:       req.RateLimit5h,
-		RateLimit1d:       req.RateLimit1d,
-		RateLimit7d:       req.RateLimit7d,
+		UserID:                userID,
+		Key:                   key,
+		Name:                  html.EscapeString(req.Name),
+		GroupID:               req.GroupID,
+		Status:                StatusActive,
+		MultiGroupRouting:     req.MultiGroupRouting,
+		ForceImageURLResponse: req.ForceImageURLResponse,
+		IPWhitelist:           req.IPWhitelist,
+		IPBlacklist:           req.IPBlacklist,
+		Quota:                 req.Quota,
+		QuotaUsed:             0,
+		RateLimit5h:           req.RateLimit5h,
+		RateLimit1d:           req.RateLimit1d,
+		RateLimit7d:           req.RateLimit7d,
 	}
 
 	// Multi-group routing bindings (validated against the user's allowed groups
@@ -697,6 +700,9 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 	// Multi-group routing: toggle and/or rewrite bindings.
 	if req.MultiGroupRouting != nil {
 		apiKey.MultiGroupRouting = *req.MultiGroupRouting
+	}
+	if req.ForceImageURLResponse != nil {
+		apiKey.ForceImageURLResponse = *req.ForceImageURLResponse
 	}
 	if req.GroupBindings != nil {
 		user, err := s.userRepo.GetByID(ctx, userID)

@@ -1,12 +1,12 @@
 <template>
   <AuthLayout>
-    <div class="space-y-6">
+    <div class="auth-form-flow space-y-5">
       <!-- Title -->
-      <div class="text-center">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+      <div class="auth-step mb-6 text-center">
+        <h2 class="text-[1.45rem] font-semibold tracking-tight text-gray-950 dark:text-white">
           {{ t('auth.createAccount') }}
         </h2>
-        <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
+        <p class="mt-2 text-sm text-gray-500 dark:text-zinc-400">
           {{ t('auth.signUpToStart', { siteName }) }}
         </p>
       </div>
@@ -14,7 +14,7 @@
       <!-- Registration Disabled Message -->
       <div
         v-if="!registrationEnabled && settingsLoaded"
-        class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-900/20"
+        class="auth-step rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-900/20"
       >
         <div class="flex items-start gap-3">
           <div class="flex-shrink-0">
@@ -29,8 +29,8 @@
       <!-- Registration Form -->
       <form v-else @submit.prevent="handleRegister" class="space-y-5">
         <!-- Email Input -->
-        <div>
-          <label for="email" class="input-label">
+        <div class="auth-step">
+          <label for="email" class="auth-label">
             {{ t('auth.emailLabel') }}
           </label>
           <div class="relative">
@@ -45,7 +45,7 @@
               autofocus
               autocomplete="email"
               :disabled="registrationActionDisabled"
-              class="input pl-11"
+              class="input auth-input pl-11"
               :class="{ 'input-error': errors.email }"
               :placeholder="t('auth.emailPlaceholder')"
             />
@@ -53,8 +53,8 @@
         </div>
 
         <!-- Password Input -->
-        <div>
-          <label for="password" class="input-label">
+        <div class="auth-step">
+          <label for="password" class="auth-label">
             {{ t('auth.passwordLabel') }}
           </label>
           <div class="relative">
@@ -68,7 +68,7 @@
               required
               autocomplete="new-password"
               :disabled="registrationActionDisabled"
-              class="input pl-11 pr-11"
+              class="input auth-input pl-11 pr-11"
               :class="{ 'input-error': errors.password }"
               :placeholder="t('auth.createPasswordPlaceholder')"
             />
@@ -82,14 +82,14 @@
               <Icon v-else name="eye" size="md" />
             </button>
           </div>
-          <p class="input-hint">
+          <p class="mt-2 text-xs text-gray-400 dark:text-zinc-500">
             {{ t('auth.passwordHint') }}
           </p>
         </div>
 
         <!-- Invitation Code Input (Required when enabled) -->
-        <div v-if="invitationCodeEnabled">
-          <label for="invitation_code" class="input-label">
+        <div v-if="invitationCodeEnabled" class="auth-step">
+          <label for="invitation_code" class="auth-label">
             {{ t('auth.invitationCodeLabel') }}
           </label>
           <div class="relative">
@@ -101,7 +101,7 @@
               v-model="formData.invitation_code"
               type="text"
               :disabled="registrationActionDisabled"
-              class="input pl-11 pr-10"
+              class="input auth-input pl-11 pr-10"
               :class="{
                 'border-green-500 focus:border-green-500 focus:ring-green-500': invitationValidation.valid,
                 'border-red-500 focus:border-red-500 focus:ring-red-500': invitationValidation.invalid || errors.invitation_code
@@ -135,8 +135,8 @@
         </div>
 
         <!-- Promo Code Input (Optional) -->
-        <div v-if="promoCodeEnabled">
-          <label for="promo_code" class="input-label">
+        <div v-if="promoCodeEnabled" class="auth-step">
+          <label for="promo_code" class="auth-label">
             {{ t('auth.promoCodeLabel') }}
             <span class="ml-1 text-xs font-normal text-gray-400 dark:text-dark-500">({{ t('common.optional') }})</span>
           </label>
@@ -149,7 +149,7 @@
               v-model="formData.promo_code"
               type="text"
               :disabled="registrationActionDisabled"
-              class="input pl-11 pr-10"
+              class="input auth-input pl-11 pr-10"
               :class="{
                 'border-green-500 focus:border-green-500 focus:ring-green-500': promoValidation.valid,
                 'border-red-500 focus:border-red-500 focus:ring-red-500': promoValidation.invalid
@@ -183,7 +183,7 @@
         </div>
 
         <!-- Turnstile Widget -->
-        <div v-if="turnstileEnabled && turnstileSiteKey">
+        <div v-if="turnstileEnabled && turnstileSiteKey" class="auth-step">
           <TurnstileWidget
             ref="turnstileRef"
             :site-key="turnstileSiteKey"
@@ -209,7 +209,7 @@
         <button
           type="submit"
           :disabled="registrationActionDisabled || (turnstileEnabled && !turnstileToken)"
-          class="btn btn-primary w-full"
+          class="auth-submit auth-step w-full rounded-xl bg-[#4f63f6] px-4 py-3 font-medium text-white hover:bg-[#4355df] focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center"
         >
           <svg
             v-if="isLoading"
@@ -243,7 +243,7 @@
 
       </form>
 
-      <div v-if="showOAuthLogin" class="space-y-3 pt-1">
+      <div v-if="showOAuthLogin" class="auth-step space-y-3 pt-1">
         <div class="flex items-center gap-3">
           <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
           <span class="text-xs text-gray-500 dark:text-dark-400">
@@ -330,7 +330,7 @@ import {
 import type { LoginAgreementDocument } from '@/types'
 
 const { t, locale } = useI18n()
-const LOGIN_AGREEMENT_STORAGE_KEY = 'sub2api_login_agreement_consent'
+const LOGIN_AGREEMENT_STORAGE_KEY = 'ccapi_login_agreement_consent'
 
 // ==================== Router & Stores ====================
 
@@ -353,7 +353,7 @@ const promoCodeEnabled = ref<boolean>(true)
 const invitationCodeEnabled = ref<boolean>(false)
 const turnstileEnabled = ref<boolean>(false)
 const turnstileSiteKey = ref<string>('')
-const siteName = ref<string>('Sub2API')
+const siteName = ref<string>('CCAPI')
 const linuxdoOAuthEnabled = ref<boolean>(false)
 const wechatOAuthEnabled = ref<boolean>(false)
 const oidcOAuthEnabled = ref<boolean>(false)
@@ -461,7 +461,7 @@ onMounted(async () => {
     invitationCodeEnabled.value = settings.invitation_code_enabled
     turnstileEnabled.value = settings.turnstile_enabled
     turnstileSiteKey.value = settings.turnstile_site_key || ''
-    siteName.value = settings.site_name || 'Sub2API'
+    siteName.value = settings.site_name || 'CCAPI'
     linuxdoOAuthEnabled.value = settings.linuxdo_oauth_enabled
     wechatOAuthEnabled.value = isWeChatWebOAuthEnabled(settings)
     oidcOAuthEnabled.value = settings.oidc_oauth_enabled
@@ -918,6 +918,111 @@ async function handleRegister(): Promise<void> {
 </script>
 
 <style scoped>
+.auth-step {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  animation: authStepEnter 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.auth-step:nth-child(1) { animation-delay: 80ms; }
+.auth-step:nth-child(2) { animation-delay: 145ms; }
+.auth-step:nth-child(3) { animation-delay: 210ms; }
+.auth-step:nth-child(4) { animation-delay: 275ms; }
+.auth-step:nth-child(5) { animation-delay: 340ms; }
+.auth-step:nth-child(6) { animation-delay: 405ms; }
+.auth-step:nth-child(7) { animation-delay: 470ms; }
+
+.auth-label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgb(31 41 55);
+}
+
+.dark .auth-label {
+  color: rgb(228 228 231);
+}
+
+.auth-input {
+  height: 2.9rem;
+  border-radius: 0.8rem;
+  border-color: rgb(229 231 235);
+  background: rgba(249, 250, 251, 0.72);
+  color: rgb(17 24 39);
+}
+
+.auth-input:focus {
+  border-color: rgba(79, 99, 246, 0.58);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.dark .auth-input {
+  border-color: rgba(63, 63, 70, 0.9);
+  background: rgba(24, 24, 27, 0.68);
+  color: rgb(244 244 245);
+}
+
+.dark .auth-input:focus {
+  border-color: rgba(129, 140, 248, 0.72);
+  background: rgba(24, 24, 27, 0.9);
+}
+
+.auth-form-flow :deep(.input) {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.auth-form-flow :deep(.input:focus) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.12),
+    0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.auth-submit {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 14px 30px rgba(79, 99, 246, 0.28);
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.auth-submit::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.24) 42%, transparent 66%);
+  transform: translateX(-120%);
+  transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-submit:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 18px 38px rgba(79, 99, 246, 0.34);
+}
+
+.auth-submit:hover::after {
+  transform: translateX(120%);
+}
+
+.auth-submit:active {
+  transform: scale(0.985);
+}
+
+@keyframes authStepEnter {
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: all 0.3s ease;
@@ -927,5 +1032,43 @@ async function handleRegister(): Promise<void> {
 .fade-leave-to {
   opacity: 0;
   transform: translateY(-8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-step {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-form-flow {
+    gap: 1rem;
+  }
+
+  .auth-form-flow h2 {
+    font-size: 1.28rem;
+  }
+
+  .auth-form-flow h2 + p {
+    font-size: 0.8rem;
+    line-height: 1.55;
+  }
+
+  .auth-input {
+    height: 2.75rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .auth-submit {
+    min-height: 2.75rem;
+    border-radius: 0.85rem;
+  }
+
+  form.space-y-5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1rem;
+  }
 }
 </style>

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/enttest"
-	"github.com/Wei-Shaw/sub2api/internal/payment"
+	dbent "github.com/Wei-Shaw/ccapi/ent"
+	"github.com/Wei-Shaw/ccapi/ent/enttest"
+	"github.com/Wei-Shaw/ccapi/internal/payment"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
@@ -286,6 +286,7 @@ func TestBuildVisibleMethodSourceAvailability(t *testing.T) {
 	instances := []*dbent.PaymentProviderInstance{
 		{ProviderKey: payment.TypeAlipay, SupportedTypes: "alipay"},
 		{ProviderKey: payment.TypeEasyPay, SupportedTypes: "wxpay_direct, alipay"},
+		{ProviderKey: payment.TypeTianque, SupportedTypes: "wxpay, alipay"},
 		{ProviderKey: payment.TypeWxpay, SupportedTypes: "wxpay_direct"},
 	}
 
@@ -301,6 +302,12 @@ func TestBuildVisibleMethodSourceAvailability(t *testing.T) {
 	}
 	if !got[VisibleMethodSourceEasyPayWechat] {
 		t.Fatalf("expected %q to be available", VisibleMethodSourceEasyPayWechat)
+	}
+	if !got[VisibleMethodSourceTianqueAlipay] {
+		t.Fatalf("expected %q to be available", VisibleMethodSourceTianqueAlipay)
+	}
+	if !got[VisibleMethodSourceTianqueWechat] {
+		t.Fatalf("expected %q to be available", VisibleMethodSourceTianqueWechat)
 	}
 }
 

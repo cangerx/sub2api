@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	infraerrors "github.com/Wei-Shaw/ccapi/internal/pkg/errors"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/pagination"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/response"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -513,6 +513,7 @@ var platformToLiteLLMProvider = map[string]string{
 	service.PlatformOpenAI:      "openai",
 	service.PlatformGemini:      "google",
 	service.PlatformAntigravity: "anthropic",
+	service.PlatformGrok:        "xai",
 }
 
 // SyncPricingModels 返回 LiteLLM 定价目录中指定平台的最新模型列表

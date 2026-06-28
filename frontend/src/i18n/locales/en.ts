@@ -187,8 +187,8 @@ export default {
 
   // Setup Wizard
   setup: {
-    title: 'Sub2API Setup',
-    description: 'Configure your Sub2API instance',
+    title: 'CCAPI Setup',
+    description: 'Configure your CCAPI instance',
     database: {
       title: 'Database Configuration',
       description: 'Connect to your PostgreSQL database',
@@ -795,6 +795,8 @@ export default {
     groupChangedSuccess: 'Group changed successfully',
     failedToChangeGroup: 'Failed to change group',
     groupRequired: 'Please select a group',
+    forceImageUrlResponse: 'Force image URL response',
+    forceImageUrlResponseHint: 'When enabled, image generation/edit requests using this key return accessible image URLs even if the client requests base64.',
     usage: 'Usage',
     today: 'Today',
     total: 'Last 30d',
@@ -998,6 +1000,35 @@ export default {
     imageSizeNotRecorded: 'not recorded',
     imageSizeLegacyUnstandardized: 'legacy unstandardized',
     imageSizeUnknown: 'unknown',
+    viewMedia: 'View',
+    mediaDetails: 'Image details',
+    generatedImage: 'Generated image',
+    openImage: 'Open image',
+    copyImageUrl: 'Copy link',
+    downloadImage: 'Download',
+    copied: 'Copied',
+    publicUrl: 'Public URL',
+    imageUrlCount: 'URL count',
+    imagePreviewFailed: 'Image preview failed',
+    noImageUrlRecorded: 'No image URL recorded',
+    prompt: 'Prompt',
+    revisedPrompts: 'Revised prompts',
+    noPromptRecorded: 'No prompt recorded',
+    noRevisedPromptRecorded: 'No revised prompt recorded',
+    dataUrl: 'Data URL image',
+    videoGeneration: 'Video generation',
+    videoDetails: 'Video details',
+    videoTaskId: 'Video task ID',
+    copyVideoTaskId: 'Copy task ID',
+    videoSeconds: 'Duration',
+    videoSize: 'Video size',
+    videoBillingUnitCount: 'Billing units',
+    videoPlaybackUrl: 'Playback URL',
+    noVideoUrlRecorded: 'No video URL recorded',
+    noVideoUrlRecordedHint: 'This usage record currently stores the video task ID, duration, size, and billing data, but not the video file URL.',
+    videoBillingUnits: '{count} billing units',
+    billingModeSecond: 'Video per second',
+    billingModeSegment: 'Video per segment',
     cacheRead: 'Read',
     cacheWrite: 'Write',
     serviceTier: 'Service tier',
@@ -1649,13 +1680,17 @@ export default {
 
     backup: {
       title: 'Database Backup',
-      description: 'Full database backup to S3-compatible storage with scheduled backup and restore',
+      description: 'Full database backup to object storage with local, R2, OSS, S3, scheduled backup and restore',
       s3: {
-        title: 'S3 Storage Configuration',
-        description: 'Configure S3-compatible storage (supports Cloudflare R2)',
-        descriptionPrefix: 'Configure S3-compatible storage (supports',
-        descriptionSuffix: ')',
-        enabled: 'Enable S3 Storage',
+        title: 'Object Storage Configuration',
+        description: 'Configure local, Cloudflare R2, Aliyun OSS, or S3-compatible storage',
+        descriptionPrefix: 'Configure object storage (supports',
+        descriptionSuffix: ', OSS, local)',
+        enabled: 'Enable Object Storage',
+        provider: 'Storage Type',
+        local: 'Local Storage',
+        localPath: 'Local Path',
+        publicBaseUrl: 'Public Base URL',
         endpoint: 'Endpoint',
         region: 'Region',
         bucket: 'Bucket',
@@ -1665,9 +1700,13 @@ export default {
         secretConfigured: 'Already configured, leave empty to keep',
         forcePathStyle: 'Force Path Style',
         testConnection: 'Test Connection',
-        testSuccess: 'S3 connection test successful',
-        testFailed: 'S3 connection test failed',
-        saved: 'S3 configuration saved'
+        testSuccess: 'Storage connection test successful',
+        testFailed: 'Storage connection test failed',
+        saved: 'Storage configuration saved',
+        errors: {
+          localPathRequired: 'Please enter a local storage path',
+          objectStorageRequired: 'Please enter bucket, Access Key ID, and Secret Access Key'
+        }
       },
       schedule: {
         title: 'Scheduled Backup',
@@ -1693,6 +1732,17 @@ export default {
         backupFailed: 'Backup failed',
         restoreRunning: 'Restore in progress...',
         restoreFailed: 'Restore failed',
+      },
+      errors: {
+        storageNotConfigured: 'Please configure object storage first',
+        notFound: 'Backup record not found',
+        notCompleted: 'Only completed backups can be restored',
+        recordsCorrupt: 'Backup records data is corrupted',
+        storageConfigCorrupt: 'Object storage configuration data is corrupted',
+        cronRequired: 'Please enter a cron expression when scheduled backup is enabled',
+        invalidCron: 'Invalid cron expression',
+        incorrectPassword: 'Incorrect admin password',
+        passwordRequired: 'Admin password is required to restore a backup'
       },
       columns: {
         status: 'Status',
@@ -1735,7 +1785,7 @@ export default {
         step1: {
           title: 'Create an R2 Bucket',
           line1: 'Log in to the Cloudflare Dashboard (dash.cloudflare.com), select "R2 Object Storage" from the sidebar',
-          line2: 'Click "Create bucket", enter a name (e.g. sub2api-backups), choose a region',
+          line2: 'Click "Create bucket", enter a name (e.g. ccapi-backups), choose a region',
           line3: 'Click create to finish'
         },
         step2: {
@@ -2384,6 +2434,7 @@ export default {
         gemini: 'Gemini',
         antigravity: 'Antigravity',
         video: 'Video',
+        grok: 'Grok',
       },
       deleteConfirm:
         "Are you sure you want to delete '{name}'? All associated API keys will no longer belong to any group.",
@@ -3312,10 +3363,15 @@ export default {
         googleOauth: 'Google OAuth',
         codeAssist: 'Code Assist',
         antigravityOauth: 'Antigravity OAuth',
+        grokOauth: 'Grok OAuth',
         antigravityApikey: 'Connect via Base URL + API Key',
         upstream: 'Upstream',
         upstreamDesc: 'Connect via Base URL + API Key'
       },
+      antigravityProjectIdLabel: 'GCP Project ID (optional)',
+      antigravityProjectIdPlaceholder: 'your-gcp-project-id',
+      antigravityProjectIdHint:
+        'Antigravity standard-tier accounts that do not receive an automatic project_id need a user-owned GCP project.',
       status: {
         active: 'Active',
         inactive: 'Inactive',
@@ -3359,7 +3415,7 @@ export default {
         expiresAt: 'Expires At',
         actions: 'Actions'
       },
-      usageWindowsHint: '"5h / 7d" are the upstream account\'s official rolling usage windows (e.g. OpenAI ChatGPT, Claude). They are imposed by the upstream provider on the account itself — not configured by sub2api, and unrelated to the models you map. Usage resets automatically once each window rolls over, and the limit cannot be lifted from within sub2api.',
+      usageWindowsHint: '"5h / 7d" are the upstream account\'s official rolling usage windows (e.g. OpenAI ChatGPT, Claude). They are imposed by the upstream provider on the account itself — not configured by ccapi, and unrelated to the models you map. Usage resets automatically once each window rolls over, and the limit cannot be lifted from within ccapi.',
       allPrivacyModes: 'All Privacy States',
       privacyUnset: 'Unset',
       privacyTrainingOff: 'Training data sharing disabled',
@@ -3632,9 +3688,9 @@ export default {
         codexCLIOnly: 'Codex official clients only',
         codexCLIOnlyDesc:
           'Only applies to OpenAI OAuth. When enabled, only Codex official client families are allowed; when disabled, the gateway bypasses this restriction and keeps existing behavior.',
-        codexCLIOnlyAllowClaudeCode: "Also allow Claude Code's Codex plugin",
-        codexCLIOnlyAllowClaudeCodeDesc:
-          'Only takes effect when the switch above is on. Additionally allows requests from the Claude Code Codex plugin (exact match on originator=Claude Code) without weakening blocking of other non-official clients.',
+        codexCLIOnlyAppServer: 'Allow Codex app-server clients',
+        codexCLIOnlyAppServerDesc:
+          "Effective only when the switch above is on. When enabled, this account also allows third-party clients that embed the Codex engine over the app-server protocol (e.g. Claude Code's codex plugin); they still pass the global engine-fingerprint gate. OR-combined with the global app-server toggle.",
         codexImageGenerationBridge: 'Codex image-generation bridge',
         codexImageGenerationBridgeDesc:
           'Account policy takes precedence over channel and global settings. Only controls whether Codex requests through the /responses text endpoint receive the image_generation tool; standalone image-generation endpoints are unaffected.',
@@ -3665,6 +3721,10 @@ export default {
         testModeDefault: 'Default request',
         testModeCompact: 'Compact probe',
         modelRestrictionDisabledByPassthrough: 'Automatic passthrough is enabled: model whitelist/mapping will not take effect.',
+      },
+      grok: {
+        baseUrlHint: 'Grok OAuth accounts forward to the official xAI API base URL.',
+        apiKeyHint: 'Grok subscription support uses OAuth refresh tokens; API keys are out of scope for this account type.'
       },
       anthropic: {
         apiKeyPassthrough: 'Auto passthrough (auth only)',
@@ -3710,7 +3770,7 @@ export default {
       poolMode: 'Pool Mode',
       poolModeHint: 'Enable when upstream is an account pool; errors won\'t mark local account status',
       poolModeInfo:
-        'When enabled, upstream 429/403/401 errors will auto-retry without marking the account as rate-limited or errored. Suitable for upstream pointing to another sub2api instance.',
+        'When enabled, upstream 429/403/401 errors will auto-retry without marking the account as rate-limited or errored. Suitable for upstream pointing to another ccapi instance.',
       poolModeRetryCount: 'Same-Account Retries',
       poolModeRetryCountHint:
         'Only applies in pool mode. Use 0 to disable in-place retry. Default {default}, maximum {max}.',
@@ -3979,6 +4039,14 @@ export default {
           codexSessionImportFailed: 'Failed to import Codex account',
           codexSessionImportSuccess: 'Import completed: created {created}, updated {updated}, skipped {skipped}',
           codexSessionImportPartial: 'Partial success: created {created}, updated {updated}, skipped {skipped}, failed {failed}',
+          codexPatAuth: 'Codex Personal Access Token',
+          codexPatDesc: 'Enter a Codex at- personal access token. The system validates it with OpenAI whoami before creating the account.',
+          codexPatInputLabel: 'Codex PAT',
+          codexPatPlaceholder: 'at-...',
+          codexPatHint: 'This is a separate auth mode. It does not save refresh_token or write an OAuth access_token expiration.',
+          codexPatImportAndCreate: 'Validate & Create Codex PAT Account',
+          codexPatEmpty: 'Please enter a Codex personal access token',
+          codexPatImportFailed: 'Failed to create Codex PAT account',
           sessionTokenAuth: 'Manual ST Input',
           sessionTokenDesc: 'Enter your existing Session Token(s). Supports batch input (one per line). The system will automatically validate and create accounts.',
           sessionTokenPlaceholder: 'Paste your Session Token...\nSupports multiple, one per line',
@@ -3995,6 +4063,31 @@ export default {
           validateAndCreate: 'Validate & Create Account',
           pleaseEnterRefreshToken: 'Please enter Refresh Token',
           pleaseEnterSessionToken: 'Please enter Session Token'
+        },
+        grok: {
+          title: 'Grok Account Authorization',
+          followSteps: 'Follow these steps to authorize your xAI/Grok account:',
+          step1GenerateUrl: 'Generate the xAI authorization URL',
+          generateAuthUrl: 'Generate Auth URL',
+          step2OpenUrl: 'Open the URL in your browser and complete authorization',
+          openUrlDesc: 'Open the authorization URL in a new tab, sign in to xAI, and authorize API access.',
+          importantNotice: 'When the browser reaches the local callback URL, copy the full URL or the code query parameter back here.',
+          step3EnterCode: 'Enter Authorization URL or Code',
+          authCodeDesc: 'After authorization, paste the callback URL, query string, or authorization code:',
+          authCode: 'Authorization URL or Code',
+          authCodePlaceholder: 'Paste the full callback URL, ?code=... query string, or code value',
+          authCodeHint: 'Full callback URLs, query strings, and bare codes are accepted.',
+          refreshTokenAuth: 'Manual RT Input',
+          refreshTokenDesc: 'Enter existing xAI refresh token(s). Supports batch input, one per line.',
+          refreshTokenPlaceholder: 'Paste your xAI refresh token...\nSupports multiple, one per line',
+          validating: 'Validating...',
+          validateAndCreate: 'Validate & Create Account',
+          pleaseEnterRefreshToken: 'Please enter Refresh Token',
+          failedToGenerateUrl: 'Failed to generate Grok auth URL',
+          missingExchangeParams: 'Missing authorization code, state, or OAuth session',
+          failedToExchangeCode: 'Failed to exchange Grok authorization code',
+          failedToValidateRT: 'Failed to validate Grok refresh token',
+          oauthOnlyHint: 'Initial Grok support is OAuth subscription-backed Responses API text and reasoning traffic only.'
         },
         // Gemini specific
 	        gemini: {
@@ -4217,6 +4310,7 @@ export default {
       openaiAccount: 'OpenAI Account',
       geminiAccount: 'Gemini Account',
       antigravityAccount: 'Antigravity Account',
+      grokAccount: 'Grok Account',
       inputMethod: 'Input Method',
       reAuthorizedSuccess: 'Account re-authorized successfully',
       // Test Modal
@@ -4291,6 +4385,18 @@ export default {
         gemini3Flash: 'G3F',
         gemini3Image: 'G31FI',
         claude: 'Claude',
+        grokRequests: 'Req',
+        grokTokens: 'Tok',
+        grokUnknown: 'Grok quota is unknown until the first upstream response includes xAI rate-limit headers.',
+        grokRetryAfter: 'Retry after {time}',
+        grokProbe: 'Probe',
+        grokProbeTooltip: 'Send a minimal xAI Responses probe and read quota headers',
+        grokResetUnsupported: 'Reset unsupported',
+        grokResetUnsupportedTooltip: 'xAI does not expose reset credits for Grok OAuth accounts',
+        grokNoHeaders: 'No quota headers observed',
+        grokLastStatus: 'Status {status}',
+        grokLastProbe: 'Probe {time}',
+        grokLastHeadersSeen: 'Headers {time}',
         passiveSampled: 'Passive',
         activeQuery: 'Query'
       },
@@ -4303,7 +4409,9 @@ export default {
         resetTooltipNeedQuery: 'Click Credits first to load the available count',
         resetTooltipNoCredits: 'No reset credits available',
         noCreditsAvailable: 'No reset credits available',
-        resetSuccess: 'Reset {windows} window(s)'
+        resetSuccess: 'Reset {windows} window(s)',
+        confirmTitle: 'Confirm Weekly Limit Reset',
+        confirmMessage: 'This will consume 1 reset credit to immediately restore the current window ({count} remaining). This action cannot be undone. Continue?'
       },
       tier: {
         free: 'Free',
@@ -5747,7 +5855,7 @@ export default {
       },
       linuxdo: {
         title: 'LinuxDo Connect Login',
-        description: 'Configure LinuxDo Connect OAuth for Sub2API end-user login',
+        description: 'Configure LinuxDo Connect OAuth for CCAPI end-user login',
         enable: 'Enable LinuxDo Login',
         enableHint: 'Show LinuxDo login on the login/register pages',
         clientId: 'Client ID',
@@ -5767,7 +5875,7 @@ export default {
       },
       dingtalk: {
         title: 'DingTalk Login',
-        description: 'Configure DingTalk OAuth for Sub2API end-user login',
+        description: 'Configure DingTalk OAuth for CCAPI end-user login',
         enable: 'Enable DingTalk Login (Internal Corporate App)',
         enableHint: 'Show DingTalk login on the login/register pages',
         clientId: 'Client ID (AppKey)',
@@ -5949,9 +6057,41 @@ export default {
         openaiCodexUserAgent: 'OpenAI Codex UA',
         openaiCodexUserAgentPlaceholder: 'codex-tui/0.125.0 (Ubuntu 22.4.0; x86_64) xterm-256color (codex-tui; 0.125.0)',
         openaiCodexUserAgentHint: 'Used to bypass Cloudflare browser-UA challenges on the OpenAI upstream. Only applies when the client User-Agent is detected as a browser (Mozilla/...). Leave empty to use the built-in default.',
-        openaiAllowClaudeCodeCodexPlugin: "Allow using the Codex plugin in Claude Code",
-        openaiAllowClaudeCodeCodexPluginDesc:
-          "Global switch; only affects OpenAI OAuth accounts that have 'Codex official clients only' enabled. When on, all such accounts additionally allow requests from the Claude Code Codex plugin (exact match on originator=Claude Code) without per-account config; upstream requests remain pass-through.",
+        codexHardeningTitle: "Codex Settings",
+        codexClientRestrictionTitle: "Codex client restriction",
+        codexHardeningDesc:
+          "Only affects OpenAI OAuth accounts with 'Codex official clients only' enabled (global). Beyond User-Agent/Originator, harden the decision with a version range, an engine-fingerprint gate, and black/whitelists.",
+        minCodexVersion: "Min Codex Version",
+        minCodexVersionPlaceholder: "e.g. 0.142.0",
+        maxCodexVersion: "Max Codex Version",
+        maxCodexVersionPlaceholder: "e.g. 0.200.0",
+        codexVersionHint:
+          "Official clients only: checks their version against the [min, max] range. Leave a side empty to not limit it.",
+        codexFingerprintSignals: "Codex engine fingerprint signals",
+        codexFingerprintSignalsDesc:
+          "Define engine-fingerprint signals: every Required signal must match (AND); within a row, '/'-separated variants are OR'd. None checked = not enforced. Default checks only the x-codex- prefix. Types: header exact / header prefix / body path.",
+        codexFpTypeHeaderExact: "Header exact",
+        codexFpTypeHeaderPrefix: "Header prefix",
+        codexFpTypeBodyPath: "Body path",
+        codexFpMatchPlaceholder: "match; '/'-separate variants (e.g. session-id / session_id or x-codex-)",
+        codexFpRequired: "Required",
+        codexFingerprintNoRequiredWarn: "No signal is marked Required — the engine-fingerprint gate is inactive, allowing every candidate that passes identity/version. Check at least one signal to enable it.",
+        codexAllowAppServer: "Codex app-server",
+        codexAllowAppServerDesc:
+          "Allow third-party clients that embed the Codex engine and connect over the app-server protocol (e.g. Claude Code's codex plugin). Off by default; when on, such clients are allowed once they pass the engine-fingerprint gate (the signal list below); off = only official clients and the whitelist are allowed.",
+        codexBlacklist: "User-Agent/Originator Blacklist",
+        codexBlacklistDesc:
+          "Deny if any field matches; takes precedence over any allow. originator is exact; User-Agent is a 'contains' match (comma-separated).",
+        codexWhitelist: "User-Agent/Originator Whitelist",
+        codexWhitelistDesc:
+          "Allow clients outside the official set: requires exact originator and every User-Agent marker present. Still subject to the fingerprint gate unless 'Skip engine fingerprint' is checked.",
+        codexWhitelistSkipFingerprint: "Skip engine fingerprint",
+        codexWhitelistSkipFingerprintTooltip:
+          "Risk: when checked this entry is allowed on originator + User-Agent alone (both forgeable), with no engine-fingerprint backstop. Use only for trusted third-party clients that genuinely do not send a codex engine fingerprint.",
+        codexOriginatorPlaceholder: "originator (exact, e.g. opencode)",
+        codexUaContainsPlaceholder: "User-Agent contains markers, comma-separated (e.g. opencode/)",
+        codexAddRow: "Add entry",
+        codexRemoveRow: "Remove",
       },
       webSearchEmulation: {
         title: 'Web Search Emulation',
@@ -5994,7 +6134,7 @@ export default {
         backendModeDescription:
           'Disables user registration, public site, and self-service features. Only admin can log in and manage the platform.',
         siteName: 'Site Name',
-        siteNamePlaceholder: 'Sub2API',
+        siteNamePlaceholder: 'CCAPI',
         siteNameHint: 'Displayed in emails and page titles',
         siteSubtitle: 'Site Subtitle',
         siteSubtitlePlaceholder: 'Subscription to API Conversion Platform',
@@ -6134,6 +6274,7 @@ export default {
         providerWxpay: 'WeChat Pay (Direct)',
         providerStripe: 'Stripe',
         providerAirwallex: 'Airwallex',
+        providerTianque: 'SuixingPay',
         typeDisabled: 'type disabled',
         enableTypesFirst: 'Enable at least one payment type above first',
         easypayRedirect: 'Redirect',
@@ -6148,6 +6289,9 @@ export default {
         field_notifyUrl: 'Notify URL',
         field_returnUrl: 'Return URL',
         callbackBaseUrl: 'Callback Base URL',
+        field_orgId: 'Organization ID',
+        field_mno: 'Merchant Number',
+        field_version: 'API Version',
         field_privateKey: 'Private Key',
         field_publicKey: 'Public Key',
         field_mpAppId: 'MP App ID',
@@ -6168,6 +6312,12 @@ export default {
         field_currency: 'Payment currency',
         field_accountId: 'Airwallex Account ID',
         field_airwallexApiBaseHint: 'Must match the API key environment: use https://api-demo.airwallex.com/api/v1 for sandbox/demo keys, and https://api.airwallex.com/api/v1 for production keys. Mixed environments return credentials_invalid / Access Denied.',
+        field_tianqueApiBaseHint: 'Default sandbox endpoint is https://openapi-test.tianquetech.com. Use the production openapi endpoint provided by SuixingPay for live payments.',
+        field_tianqueOrgIdHint: 'Organization ID assigned by SuixingPay Open Platform, usually an 8 or 10 digit number.',
+        field_tianqueMnoHint: 'SuixingPay merchant number used to identify the receiving merchant.',
+        field_tianquePrivateKeyHint: 'Paste the merchant RSA private key. Full PEM and base64 body formats are both accepted; it will not be returned in plaintext after saving.',
+        field_tianqueVersionHint: 'SuixingPay API version. Keep 1.2 unless your account manager requires a different version.',
+        tianqueNotifyHint: 'Configure the generated full callback URL as the async notify URL in SuixingPay. It must be reachable from the public internet.',
         field_paymentCurrencyHint: 'Default is CNY. Stripe and Airwallex can choose HKD, USD, or another listed currency supported by the account; WeChat Pay, Alipay, and EasyPay remain CNY.',
         field_accountIdHint: 'Leave this empty unless you use multiple accounts, an organization-level key, or connected-account payments. A single-account scoped API key uses the selected account by default.',
         field_cid: 'Channel ID',
@@ -6232,6 +6382,16 @@ export default {
         wxpayGuideH5Open: 'Enable H5 payment.',
         wxpayGuideH5Call: 'On mobile browsers outside WeChat, the app calls H5 payment when a client IP is available.',
         wxpayGuideH5Fallback: 'If H5 is unavailable or order creation fails, the flow falls back to QR payment.',
+        tianqueGuideSummary: 'SuixingPay acts as an aggregate channel for Alipay and WeChat Pay while the checkout page still shows the standard Alipay/WeChat entries.',
+        tianqueGuideNote: 'After saving, switch the Alipay or WeChat visible-method source to SuixingPay so frontend payments use this channel.',
+        tianqueGuideMerchantTitle: 'Merchant Credentials',
+        tianqueGuideMerchantOpen: 'Prepare the organization ID, merchant number, and RSA private key from SuixingPay Open Platform.',
+        tianqueGuideMerchantCall: 'Orders automatically send ALIPAY or WECHAT based on the selected payment method and are signed with the merchant private key.',
+        tianqueGuideMerchantFallback: 'Full PEM private keys are supported. If your console only provides the base64 body, paste it directly.',
+        tianqueGuideCallbackTitle: 'Async Notification',
+        tianqueGuideCallbackOpen: 'Copy the generated callback URL into SuixingPay as the async notify URL.',
+        tianqueGuideCallbackCall: 'Successful payment notifications resolve the original provider instance by order number and complete the recharge or subscription.',
+        tianqueGuideCallbackFallback: 'Use a public tunnel for local tests. Use an HTTPS domain in production.',
         noProviders: 'No provider instances configured',
         supportedTypes: 'Supported Payment Types',
         supportedTypesHint: 'Comma-separated, e.g. alipay,wxpay',
@@ -6284,7 +6444,7 @@ export default {
         fromEmail: 'From Email',
         fromEmailPlaceholder: "noreply{'@'}example.com",
         fromName: 'From Name',
-        fromNamePlaceholder: 'Sub2API',
+        fromNamePlaceholder: 'CCAPI',
         useTls: 'Use TLS',
         useTlsHint: 'Enable TLS encryption for SMTP connection'
       },
@@ -6933,14 +7093,14 @@ export default {
     // Admin tour steps
     admin: {
       welcome: {
-        title: '👋 Welcome to Sub2API',
-        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Sub2API is a powerful AI service gateway platform that helps you easily manage and distribute AI services.</p><p style="margin-bottom: 12px;"><b>🎯 Core Features:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>Group Management</b> - Create service tiers (VIP, Free Trial, etc.)</li><li>🔗 <b>Account Pool</b> - Connect multiple upstream AI service accounts</li><li>🔑 <b>Key Distribution</b> - Generate independent API Keys for users</li><li>💰 <b>Billing Control</b> - Flexible rate and quota management</li></ul><p style="color: #10b981; font-weight: 600;">Let\'s complete the initial setup in 3 minutes →</p></div>',
+        title: '👋 Welcome to CCAPI',
+        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">CCAPI is a powerful AI service gateway platform that helps you easily manage and distribute AI services.</p><p style="margin-bottom: 12px;"><b>🎯 Core Features:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>Group Management</b> - Create service tiers (VIP, Free Trial, etc.)</li><li>🔗 <b>Account Pool</b> - Connect multiple upstream AI service accounts</li><li>🔑 <b>Key Distribution</b> - Generate independent API Keys for users</li><li>💰 <b>Billing Control</b> - Flexible rate and quota management</li></ul><p style="color: #10b981; font-weight: 600;">Let\'s complete the initial setup in 3 minutes →</p></div>',
         nextBtn: 'Start Setup 🚀',
         prevBtn: 'Skip'
       },
       groupManage: {
         title: '📦 Step 1: Group Management',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;"><b>What is a Group?</b></p><p style="margin-bottom: 12px;">Groups are the core concept of Sub2API, like a "service package":</p><ul style="margin-left: 20px; margin-bottom: 12px; font-size: 13px;"><li>🎯 Each group can contain multiple upstream accounts</li><li>💰 Each group has independent billing multiplier</li><li>👥 Can be set as public or exclusive</li></ul><p style="margin-top: 12px; padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 Example:</b> You can create "VIP Premium" (high rate) and "Free Trial" (low rate) groups</p><p style="margin-top: 16px; color: #10b981; font-weight: 600;">👉 Click "Group Management" on the left sidebar</p></div>'
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;"><b>What is a Group?</b></p><p style="margin-bottom: 12px;">Groups are the core concept of CCAPI, like a "service package":</p><ul style="margin-left: 20px; margin-bottom: 12px; font-size: 13px;"><li>🎯 Each group can contain multiple upstream accounts</li><li>💰 Each group has independent billing multiplier</li><li>👥 Can be set as public or exclusive</li></ul><p style="margin-top: 12px; padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 Example:</b> You can create "VIP Premium" (high rate) and "Free Trial" (low rate) groups</p><p style="margin-top: 16px; color: #10b981; font-weight: 600;">👉 Click "Group Management" on the left sidebar</p></div>'
       },
       createGroup: {
         title: '➕ Create New Group',
@@ -7033,8 +7193,8 @@ export default {
     // User tour steps
     user: {
       welcome: {
-        title: '👋 Welcome to Sub2API',
-        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Hello! Welcome to the Sub2API AI service platform.</p><p style="margin-bottom: 12px;"><b>🎯 Quick Start:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 Create API Key</li><li>📋 Copy key to your application</li><li>🚀 Start using AI services</li></ul><p style="color: #10b981; font-weight: 600;">Just 1 minute, let\'s get started →</p></div>',
+        title: '👋 Welcome to CCAPI',
+        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Hello! Welcome to the CCAPI AI service platform.</p><p style="margin-bottom: 12px;"><b>🎯 Quick Start:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 Create API Key</li><li>📋 Copy key to your application</li><li>🚀 Start using AI services</li></ul><p style="color: #10b981; font-weight: 600;">Just 1 minute, let\'s get started →</p></div>',
         nextBtn: 'Start 🚀',
         prevBtn: 'Skip'
       },
@@ -7082,6 +7242,7 @@ export default {
       wxpay: 'WeChat Pay',
       stripe: 'Stripe',
       airwallex: 'Airwallex',
+      tianque: 'SuixingPay',
       card: 'Card',
       link: 'Link',
       alipay_direct: 'Alipay (Direct)',

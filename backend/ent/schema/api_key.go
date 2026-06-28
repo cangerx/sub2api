@@ -1,8 +1,8 @@
 package schema
 
 import (
-	"github.com/Wei-Shaw/sub2api/ent/schema/mixins"
-	"github.com/Wei-Shaw/sub2api/internal/domain"
+	"github.com/Wei-Shaw/ccapi/ent/schema/mixins"
+	"github.com/Wei-Shaw/ccapi/internal/domain"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
@@ -47,6 +47,9 @@ func (APIKey) Fields() []ent.Field {
 		field.Bool("multi_group_routing").
 			Default(false).
 			Comment("Enable multi-group routing: route across multiple groups by priority/weight"),
+		field.Bool("force_image_url_response").
+			Default(false).
+			Comment("Force OpenAI image APIs to return URL responses for this API key"),
 		field.String("status").
 			MaxLen(20).
 			Default(domain.StatusActive),

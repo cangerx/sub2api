@@ -50,3 +50,13 @@ describe('PROVIDER_CONFIG_FIELDS.stripe', () => {
     expect(currency?.options).toBe(PAYMENT_CURRENCY_OPTIONS)
   })
 })
+
+describe('PROVIDER_CONFIG_FIELDS.tianque', () => {
+  it('adds guided merchant credential fields for SuixingPay', () => {
+    expect(findField('tianque', 'orgId')?.hintKey).toBe('admin.settings.payment.field_tianqueOrgIdHint')
+    expect(findField('tianque', 'mno')?.hintKey).toBe('admin.settings.payment.field_tianqueMnoHint')
+    expect(findField('tianque', 'privateKey')?.hintKey).toBe('admin.settings.payment.field_tianquePrivateKeyHint')
+    expect(findField('tianque', 'apiBase')?.defaultValue).toBe('https://openapi-test.tianquetech.com')
+    expect(findField('tianque', 'version')?.defaultValue).toBe('1.2')
+  })
+})

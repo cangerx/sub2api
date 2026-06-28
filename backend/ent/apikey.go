@@ -10,9 +10,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/sub2api/ent/apikey"
-	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/user"
+	"github.com/Wei-Shaw/ccapi/ent/apikey"
+	"github.com/Wei-Shaw/ccapi/ent/group"
+	"github.com/Wei-Shaw/ccapi/ent/user"
 )
 
 // APIKey is the model entity for the APIKey schema.
@@ -36,6 +36,8 @@ type APIKey struct {
 	GroupID *int64 `json:"group_id,omitempty"`
 	// Enable multi-group routing: route across multiple groups by priority/weight
 	MultiGroupRouting bool `json:"multi_group_routing,omitempty"`
+	// Force OpenAI image APIs to return URL responses for this API key
+	ForceImageURLResponse bool `json:"force_image_url_response,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
 	// Last usage time of this API key
@@ -147,7 +149,7 @@ func (*APIKey) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case apikey.FieldIPWhitelist, apikey.FieldIPBlacklist:
 			values[i] = new([]byte)
-		case apikey.FieldMultiGroupRouting:
+		case apikey.FieldMultiGroupRouting, apikey.FieldForceImageURLResponse:
 			values[i] = new(sql.NullBool)
 		case apikey.FieldQuota, apikey.FieldQuotaUsed, apikey.FieldRateLimit5h, apikey.FieldRateLimit1d, apikey.FieldRateLimit7d, apikey.FieldUsage5h, apikey.FieldUsage1d, apikey.FieldUsage7d:
 			values[i] = new(sql.NullFloat64)
@@ -227,6 +229,12 @@ func (_m *APIKey) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field multi_group_routing", values[i])
 			} else if value.Valid {
 				_m.MultiGroupRouting = value.Bool
+			}
+		case apikey.FieldForceImageURLResponse:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field force_image_url_response", values[i])
+			} else if value.Valid {
+				_m.ForceImageURLResponse = value.Bool
 			}
 		case apikey.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -421,6 +429,9 @@ func (_m *APIKey) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("multi_group_routing=")
 	builder.WriteString(fmt.Sprintf("%v", _m.MultiGroupRouting))
+	builder.WriteString(", ")
+	builder.WriteString("force_image_url_response=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ForceImageURLResponse))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)

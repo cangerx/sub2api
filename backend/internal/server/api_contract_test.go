@@ -14,13 +14,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/handler"
-	adminhandler "github.com/Wei-Shaw/sub2api/internal/handler/admin"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
-	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/config"
+	"github.com/Wei-Shaw/ccapi/internal/handler"
+	adminhandler "github.com/Wei-Shaw/ccapi/internal/handler/admin"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/pagination"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/usagestats"
+	"github.com/Wei-Shaw/ccapi/internal/server/middleware"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -615,7 +615,7 @@ func TestAPIContracts(t *testing.T) {
 					service.SettingKeySMTPUsername: "user",
 					service.SettingKeySMTPPassword: "secret",
 					service.SettingKeySMTPFrom:     "no-reply@example.com",
-					service.SettingKeySMTPFromName: "Sub2API",
+					service.SettingKeySMTPFromName: "CCAPI",
 					service.SettingKeySMTPUseTLS:   "true",
 
 					service.SettingKeyTurnstileEnabled:   "true",
@@ -644,7 +644,7 @@ func TestAPIContracts(t *testing.T) {
 					service.SettingKeyOIDCConnectUserInfoIDPath:       "",
 					service.SettingKeyOIDCConnectUserInfoUsernamePath: "",
 
-					service.SettingKeySiteName:     "Sub2API",
+					service.SettingKeySiteName:     "CCAPI",
 					service.SettingKeySiteLogo:     "",
 					service.SettingKeySiteSubtitle: "Subtitle",
 					service.SettingKeyAPIBaseURL:   "https://api.example.com",
@@ -696,7 +696,7 @@ func TestAPIContracts(t *testing.T) {
 						"smtp_username": "user",
 					"smtp_password_configured": true,
 					"smtp_from_email": "no-reply@example.com",
-					"smtp_from_name": "Sub2API",
+					"smtp_from_name": "CCAPI",
 					"smtp_use_tls": true,
 					"turnstile_enabled": true,
 					"turnstile_site_key": "site-key",
@@ -757,7 +757,7 @@ func TestAPIContracts(t *testing.T) {
 						"ops_realtime_monitoring_enabled": true,
 						"ops_query_mode_default": "auto",
 						"ops_metrics_interval_seconds": 60,
-						"site_name": "Sub2API",
+						"site_name": "CCAPI",
 						"site_logo": "",
 						"site_subtitle": "Subtitle",
 						"api_base_url": "https://api.example.com",
@@ -832,6 +832,12 @@ func TestAPIContracts(t *testing.T) {
 						"table_page_size_options": [10, 20, 50, 100],
 					"min_claude_code_version": "",
 					"max_claude_code_version": "",
+					"min_codex_version": "",
+					"max_codex_version": "",
+					"codex_cli_only_blacklist": "",
+					"codex_cli_only_whitelist": "",
+					"codex_cli_only_allow_app_server_clients": false,
+					"codex_cli_only_engine_fingerprint_signals": "[{\"type\":\"header_prefix\",\"match\":[\"x-codex-\"],\"required\":true},{\"type\":\"header_exact\",\"match\":[\"session-id\",\"session_id\"],\"required\":false},{\"type\":\"header_exact\",\"match\":[\"thread-id\",\"thread_id\"],\"required\":false},{\"type\":\"body_path\",\"match\":[\"client_metadata.x-codex-window-id\",\"client_metadata.x-codex-installation-id\"],\"required\":false}]",
 					"allow_ungrouped_key_scheduling": false,
 					"backend_mode_enabled": false,
 					"enable_cch_signing": false,
@@ -850,7 +856,6 @@ func TestAPIContracts(t *testing.T) {
 					"payment_visible_method_wxpay_enabled": false,
 					"openai_advanced_scheduler_enabled": true,
 					"openai_codex_user_agent":           "",
-					"openai_allow_claude_code_codex_plugin": false,
 					"openai_fast_policy_settings": {
 						"rules": []
 					},
@@ -1031,7 +1036,7 @@ func TestAPIContracts(t *testing.T) {
 					"google_oauth_client_secret_configured": false,
 					"google_oauth_redirect_url": "",
 					"google_oauth_frontend_redirect_url": "/auth/oauth/callback",
-					"site_name": "Sub2API",
+					"site_name": "CCAPI",
 					"site_logo": "",
 					"site_subtitle": "Subscription to API Conversion Platform",
 					"api_base_url": "",
@@ -1086,6 +1091,12 @@ func TestAPIContracts(t *testing.T) {
 					"enable_anthropic_cache_ttl_1h_injection": false,
 					"rewrite_message_cache_control": false,
 					"antigravity_user_agent_version": "",
+					"min_codex_version": "",
+					"max_codex_version": "",
+					"codex_cli_only_blacklist": "",
+					"codex_cli_only_whitelist": "",
+					"codex_cli_only_allow_app_server_clients": false,
+					"codex_cli_only_engine_fingerprint_signals": "[{\"type\":\"header_prefix\",\"match\":[\"x-codex-\"],\"required\":true},{\"type\":\"header_exact\",\"match\":[\"session-id\",\"session_id\"],\"required\":false},{\"type\":\"header_exact\",\"match\":[\"thread-id\",\"thread_id\"],\"required\":false},{\"type\":\"body_path\",\"match\":[\"client_metadata.x-codex-window-id\",\"client_metadata.x-codex-installation-id\"],\"required\":false}]",
 					"web_search_emulation_enabled": false,
 					"payment_visible_method_alipay_source": "",
 					"payment_visible_method_wxpay_source": "",
@@ -1093,7 +1104,6 @@ func TestAPIContracts(t *testing.T) {
 					"payment_visible_method_wxpay_enabled": false,
 					"openai_advanced_scheduler_enabled": false,
 					"openai_codex_user_agent":           "",
-					"openai_allow_claude_code_codex_plugin": false,
 					"openai_fast_policy_settings": {
 						"rules": []
 					},

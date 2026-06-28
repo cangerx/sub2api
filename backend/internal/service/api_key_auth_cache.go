@@ -17,8 +17,9 @@ type APIKeyAuthSnapshot struct {
 
 	// Multi-group routing: when enabled, the gateway routes across GroupBindings
 	// by priority/weight instead of the single Group above.
-	MultiGroupRouting bool                             `json:"multi_group_routing,omitempty"`
-	GroupBindings     []APIKeyAuthGroupBindingSnapshot `json:"group_bindings,omitempty"`
+	MultiGroupRouting     bool                             `json:"multi_group_routing,omitempty"`
+	ForceImageURLResponse bool                             `json:"force_image_url_response,omitempty"`
+	GroupBindings         []APIKeyAuthGroupBindingSnapshot `json:"group_bindings,omitempty"`
 
 	// Quota fields for API Key independent quota feature
 	Quota     float64 `json:"quota"`      // Quota limit in USD (0 = unlimited)

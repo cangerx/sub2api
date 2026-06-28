@@ -19,7 +19,8 @@ export const ACCOUNT_PLATFORM_OPTIONS = [
   { value: 'openai', label: 'OpenAI' },
   { value: 'gemini', label: 'Gemini' },
   { value: 'antigravity', label: 'Antigravity' },
-  { value: 'video', label: 'Video' }
+  { value: 'video', label: 'Video' },
+  { value: 'grok', label: 'Grok' }
 ] as const
 
 export const GROUP_PLATFORM_OPTIONS = ACCOUNT_PLATFORM_OPTIONS
@@ -32,6 +33,8 @@ export function defaultBaseURLForPlatform(platform: string): string {
       return 'https://generativelanguage.googleapis.com'
     case 'antigravity':
       return 'https://cloudcode-pa.googleapis.com'
+    case 'grok':
+      return 'https://api.x.ai/v1'
     case 'video':
       return ''
     default:
@@ -45,6 +48,8 @@ export function apiKeyPlaceholderForPlatform(platform: string): string {
       return 'sk-proj-...'
     case 'gemini':
       return 'AIza...'
+    case 'grok':
+      return 'xai-...'
     case 'video':
       return '上游 API Key / Token'
     default:

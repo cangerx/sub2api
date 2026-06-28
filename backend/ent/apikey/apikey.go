@@ -31,6 +31,8 @@ const (
 	FieldGroupID = "group_id"
 	// FieldMultiGroupRouting holds the string denoting the multi_group_routing field in the database.
 	FieldMultiGroupRouting = "multi_group_routing"
+	// FieldForceImageURLResponse holds the string denoting the force_image_url_response field in the database.
+	FieldForceImageURLResponse = "force_image_url_response"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldLastUsedAt holds the string denoting the last_used_at field in the database.
@@ -123,6 +125,7 @@ var Columns = []string{
 	FieldName,
 	FieldGroupID,
 	FieldMultiGroupRouting,
+	FieldForceImageURLResponse,
 	FieldStatus,
 	FieldLastUsedAt,
 	FieldIPWhitelist,
@@ -155,7 +158,7 @@ func ValidColumn(column string) bool {
 // package on the initialization of the application. Therefore,
 // it should be imported in the main as follows:
 //
-//	import _ "github.com/Wei-Shaw/sub2api/ent/runtime"
+//	import _ "github.com/Wei-Shaw/ccapi/ent/runtime"
 var (
 	Hooks        [1]ent.Hook
 	Interceptors [1]ent.Interceptor
@@ -171,6 +174,8 @@ var (
 	NameValidator func(string) error
 	// DefaultMultiGroupRouting holds the default value on creation for the "multi_group_routing" field.
 	DefaultMultiGroupRouting bool
+	// DefaultForceImageURLResponse holds the default value on creation for the "force_image_url_response" field.
+	DefaultForceImageURLResponse bool
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -239,6 +244,11 @@ func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
 // ByMultiGroupRouting orders the results by the multi_group_routing field.
 func ByMultiGroupRouting(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMultiGroupRouting, opts...).ToFunc()
+}
+
+// ByForceImageURLResponse orders the results by the force_image_url_response field.
+func ByForceImageURLResponse(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldForceImageURLResponse, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

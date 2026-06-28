@@ -66,7 +66,11 @@ export async function create(
   quota?: number,
   expiresInDays?: number,
   rateLimitData?: { rate_limit_5h?: number; rate_limit_1d?: number; rate_limit_7d?: number },
-  multiGroup?: { multi_group_routing?: boolean; group_bindings?: import('@/types').ApiKeyGroupBindingInput[] }
+  multiGroup?: {
+    multi_group_routing?: boolean
+    force_image_url_response?: boolean
+    group_bindings?: import('@/types').ApiKeyGroupBindingInput[]
+  }
 ): Promise<ApiKey> {
   const payload: CreateApiKeyRequest = { name }
   if (groupId !== undefined) {
@@ -99,6 +103,9 @@ export async function create(
   if (multiGroup?.multi_group_routing) {
     payload.multi_group_routing = true
     payload.group_bindings = multiGroup.group_bindings ?? []
+  }
+  if (multiGroup?.force_image_url_response) {
+    payload.force_image_url_response = true
   }
 
   const { data } = await apiClient.post<ApiKey>('/keys', payload)

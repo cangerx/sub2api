@@ -5,47 +5,47 @@ package runtime
 import (
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/ent/account"
-	"github.com/Wei-Shaw/sub2api/ent/accountgroup"
-	"github.com/Wei-Shaw/sub2api/ent/announcement"
-	"github.com/Wei-Shaw/sub2api/ent/announcementread"
-	"github.com/Wei-Shaw/sub2api/ent/apikey"
-	"github.com/Wei-Shaw/sub2api/ent/apikeygroupbinding"
-	"github.com/Wei-Shaw/sub2api/ent/authidentity"
-	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
-	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
-	"github.com/Wei-Shaw/sub2api/ent/channelmonitordailyrollup"
-	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
-	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
-	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
-	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
-	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
-	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
-	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
-	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
-	"github.com/Wei-Shaw/sub2api/ent/promocode"
-	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
-	"github.com/Wei-Shaw/sub2api/ent/proxy"
-	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
-	"github.com/Wei-Shaw/sub2api/ent/schema"
-	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
-	"github.com/Wei-Shaw/sub2api/ent/setting"
-	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
-	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
-	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
-	"github.com/Wei-Shaw/sub2api/ent/usagelog"
-	"github.com/Wei-Shaw/sub2api/ent/user"
-	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
-	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
-	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
-	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
-	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
-	"github.com/Wei-Shaw/sub2api/ent/videocalltemplate"
-	"github.com/Wei-Shaw/sub2api/ent/videogenerationtask"
-	"github.com/Wei-Shaw/sub2api/ent/videomodel"
-	"github.com/Wei-Shaw/sub2api/internal/domain"
+	"github.com/Wei-Shaw/ccapi/ent/account"
+	"github.com/Wei-Shaw/ccapi/ent/accountgroup"
+	"github.com/Wei-Shaw/ccapi/ent/announcement"
+	"github.com/Wei-Shaw/ccapi/ent/announcementread"
+	"github.com/Wei-Shaw/ccapi/ent/apikey"
+	"github.com/Wei-Shaw/ccapi/ent/apikeygroupbinding"
+	"github.com/Wei-Shaw/ccapi/ent/authidentity"
+	"github.com/Wei-Shaw/ccapi/ent/authidentitychannel"
+	"github.com/Wei-Shaw/ccapi/ent/channelmonitor"
+	"github.com/Wei-Shaw/ccapi/ent/channelmonitordailyrollup"
+	"github.com/Wei-Shaw/ccapi/ent/channelmonitorhistory"
+	"github.com/Wei-Shaw/ccapi/ent/channelmonitorrequesttemplate"
+	"github.com/Wei-Shaw/ccapi/ent/errorpassthroughrule"
+	"github.com/Wei-Shaw/ccapi/ent/group"
+	"github.com/Wei-Shaw/ccapi/ent/idempotencyrecord"
+	"github.com/Wei-Shaw/ccapi/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/ccapi/ent/paymentauditlog"
+	"github.com/Wei-Shaw/ccapi/ent/paymentorder"
+	"github.com/Wei-Shaw/ccapi/ent/paymentproviderinstance"
+	"github.com/Wei-Shaw/ccapi/ent/pendingauthsession"
+	"github.com/Wei-Shaw/ccapi/ent/promocode"
+	"github.com/Wei-Shaw/ccapi/ent/promocodeusage"
+	"github.com/Wei-Shaw/ccapi/ent/proxy"
+	"github.com/Wei-Shaw/ccapi/ent/redeemcode"
+	"github.com/Wei-Shaw/ccapi/ent/schema"
+	"github.com/Wei-Shaw/ccapi/ent/securitysecret"
+	"github.com/Wei-Shaw/ccapi/ent/setting"
+	"github.com/Wei-Shaw/ccapi/ent/subscriptionplan"
+	"github.com/Wei-Shaw/ccapi/ent/tlsfingerprintprofile"
+	"github.com/Wei-Shaw/ccapi/ent/usagecleanuptask"
+	"github.com/Wei-Shaw/ccapi/ent/usagelog"
+	"github.com/Wei-Shaw/ccapi/ent/user"
+	"github.com/Wei-Shaw/ccapi/ent/userallowedgroup"
+	"github.com/Wei-Shaw/ccapi/ent/userattributedefinition"
+	"github.com/Wei-Shaw/ccapi/ent/userattributevalue"
+	"github.com/Wei-Shaw/ccapi/ent/userplatformquota"
+	"github.com/Wei-Shaw/ccapi/ent/usersubscription"
+	"github.com/Wei-Shaw/ccapi/ent/videocalltemplate"
+	"github.com/Wei-Shaw/ccapi/ent/videogenerationtask"
+	"github.com/Wei-Shaw/ccapi/ent/videomodel"
+	"github.com/Wei-Shaw/ccapi/internal/domain"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -111,42 +111,46 @@ func init() {
 	apikeyDescMultiGroupRouting := apikeyFields[4].Descriptor()
 	// apikey.DefaultMultiGroupRouting holds the default value on creation for the multi_group_routing field.
 	apikey.DefaultMultiGroupRouting = apikeyDescMultiGroupRouting.Default.(bool)
+	// apikeyDescForceImageURLResponse is the schema descriptor for force_image_url_response field.
+	apikeyDescForceImageURLResponse := apikeyFields[5].Descriptor()
+	// apikey.DefaultForceImageURLResponse holds the default value on creation for the force_image_url_response field.
+	apikey.DefaultForceImageURLResponse = apikeyDescForceImageURLResponse.Default.(bool)
 	// apikeyDescStatus is the schema descriptor for status field.
-	apikeyDescStatus := apikeyFields[5].Descriptor()
+	apikeyDescStatus := apikeyFields[6].Descriptor()
 	// apikey.DefaultStatus holds the default value on creation for the status field.
 	apikey.DefaultStatus = apikeyDescStatus.Default.(string)
 	// apikey.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	apikey.StatusValidator = apikeyDescStatus.Validators[0].(func(string) error)
 	// apikeyDescQuota is the schema descriptor for quota field.
-	apikeyDescQuota := apikeyFields[9].Descriptor()
+	apikeyDescQuota := apikeyFields[10].Descriptor()
 	// apikey.DefaultQuota holds the default value on creation for the quota field.
 	apikey.DefaultQuota = apikeyDescQuota.Default.(float64)
 	// apikeyDescQuotaUsed is the schema descriptor for quota_used field.
-	apikeyDescQuotaUsed := apikeyFields[10].Descriptor()
+	apikeyDescQuotaUsed := apikeyFields[11].Descriptor()
 	// apikey.DefaultQuotaUsed holds the default value on creation for the quota_used field.
 	apikey.DefaultQuotaUsed = apikeyDescQuotaUsed.Default.(float64)
 	// apikeyDescRateLimit5h is the schema descriptor for rate_limit_5h field.
-	apikeyDescRateLimit5h := apikeyFields[12].Descriptor()
+	apikeyDescRateLimit5h := apikeyFields[13].Descriptor()
 	// apikey.DefaultRateLimit5h holds the default value on creation for the rate_limit_5h field.
 	apikey.DefaultRateLimit5h = apikeyDescRateLimit5h.Default.(float64)
 	// apikeyDescRateLimit1d is the schema descriptor for rate_limit_1d field.
-	apikeyDescRateLimit1d := apikeyFields[13].Descriptor()
+	apikeyDescRateLimit1d := apikeyFields[14].Descriptor()
 	// apikey.DefaultRateLimit1d holds the default value on creation for the rate_limit_1d field.
 	apikey.DefaultRateLimit1d = apikeyDescRateLimit1d.Default.(float64)
 	// apikeyDescRateLimit7d is the schema descriptor for rate_limit_7d field.
-	apikeyDescRateLimit7d := apikeyFields[14].Descriptor()
+	apikeyDescRateLimit7d := apikeyFields[15].Descriptor()
 	// apikey.DefaultRateLimit7d holds the default value on creation for the rate_limit_7d field.
 	apikey.DefaultRateLimit7d = apikeyDescRateLimit7d.Default.(float64)
 	// apikeyDescUsage5h is the schema descriptor for usage_5h field.
-	apikeyDescUsage5h := apikeyFields[15].Descriptor()
+	apikeyDescUsage5h := apikeyFields[16].Descriptor()
 	// apikey.DefaultUsage5h holds the default value on creation for the usage_5h field.
 	apikey.DefaultUsage5h = apikeyDescUsage5h.Default.(float64)
 	// apikeyDescUsage1d is the schema descriptor for usage_1d field.
-	apikeyDescUsage1d := apikeyFields[16].Descriptor()
+	apikeyDescUsage1d := apikeyFields[17].Descriptor()
 	// apikey.DefaultUsage1d holds the default value on creation for the usage_1d field.
 	apikey.DefaultUsage1d = apikeyDescUsage1d.Default.(float64)
 	// apikeyDescUsage7d is the schema descriptor for usage_7d field.
-	apikeyDescUsage7d := apikeyFields[17].Descriptor()
+	apikeyDescUsage7d := apikeyFields[18].Descriptor()
 	// apikey.DefaultUsage7d holds the default value on creation for the usage_7d field.
 	apikey.DefaultUsage7d = apikeyDescUsage7d.Default.(float64)
 	apikeygroupbindingMixin := schema.APIKeyGroupBinding{}.Mixin()
@@ -1803,11 +1807,11 @@ func init() {
 	// usagelog.ImageSizeSourceValidator is a validator for the "image_size_source" field. It is called by the builders before save.
 	usagelog.ImageSizeSourceValidator = usagelogDescImageSizeSource.Validators[0].(func(string) error)
 	// usagelogDescCacheTTLOverridden is the schema descriptor for cache_ttl_overridden field.
-	usagelogDescCacheTTLOverridden := usagelogFields[39].Descriptor()
+	usagelogDescCacheTTLOverridden := usagelogFields[42].Descriptor()
 	// usagelog.DefaultCacheTTLOverridden holds the default value on creation for the cache_ttl_overridden field.
 	usagelog.DefaultCacheTTLOverridden = usagelogDescCacheTTLOverridden.Default.(bool)
 	// usagelogDescCreatedAt is the schema descriptor for created_at field.
-	usagelogDescCreatedAt := usagelogFields[40].Descriptor()
+	usagelogDescCreatedAt := usagelogFields[43].Descriptor()
 	// usagelog.DefaultCreatedAt holds the default value on creation for the created_at field.
 	usagelog.DefaultCreatedAt = usagelogDescCreatedAt.Default.(func() time.Time)
 	userMixin := schema.User{}.Mixin()

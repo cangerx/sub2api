@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/usagestats"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,6 +29,7 @@ func TestUsageLog_GetStatsWithFilters_AggregatesAndEndpoints(t *testing.T) {
 		_, err := repo.Create(ctx, &service.UsageLog{
 			UserID: user.ID, APIKeyID: apiKey.ID, AccountID: account.ID,
 			Model: "claude-3", InputTokens: 2, OutputTokens: 3,
+			CacheCreationTokens: 4, CacheReadTokens: 5,
 			TotalCost: 0.5, ActualCost: 0.4, CreatedAt: now,
 			InboundEndpoint: &inboundEndpoint, UpstreamEndpoint: &upstreamEndpoint,
 		})
@@ -44,6 +45,9 @@ func TestUsageLog_GetStatsWithFilters_AggregatesAndEndpoints(t *testing.T) {
 	require.Equal(t, int64(3), stats.TotalRequests)
 	require.Equal(t, int64(6), stats.TotalInputTokens)
 	require.Equal(t, int64(9), stats.TotalOutputTokens)
+	require.Equal(t, int64(27), stats.TotalCacheTokens)
+	require.Equal(t, int64(12), stats.TotalCacheCreationTokens)
+	require.Equal(t, int64(15), stats.TotalCacheReadTokens)
 	require.InDelta(t, 1.2, stats.TotalActualCost, 1e-9)
 	require.NotEmpty(t, stats.Endpoints)
 	require.NotEmpty(t, stats.UpstreamEndpoints)

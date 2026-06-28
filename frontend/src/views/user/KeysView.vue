@@ -579,6 +579,19 @@
           />
         </div>
 
+        <div class="rounded-lg border border-gray-200 p-3 dark:border-dark-600">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <label class="input-label mb-0">{{ t('keys.forceImageUrlResponse') }}</label>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('keys.forceImageUrlResponseHint') }}</p>
+            </div>
+            <label class="relative inline-flex cursor-pointer items-center">
+              <input type="checkbox" v-model="formData.force_image_url_response" class="peer sr-only" />
+              <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full dark:bg-dark-600"></div>
+            </label>
+          </div>
+        </div>
+
         <!-- IP Restriction Section -->
         <div class="space-y-3">
           <div class="flex items-center justify-between">
@@ -1288,6 +1301,7 @@ const formData = ref({
   expiration_date: '',
   // Multi-group routing
   multi_group_routing: false,
+  force_image_url_response: false,
   group_bindings: [] as { group_id: number | null; priority: number; weight: number; enabled: boolean }[]
 })
 
@@ -1544,6 +1558,7 @@ const editKey = (key: ApiKey) => {
     expiration_preset: 'custom',
     expiration_date: key.expires_at ? formatDateTimeLocal(key.expires_at) : '',
     multi_group_routing: key.multi_group_routing === true,
+    force_image_url_response: key.force_image_url_response === true,
     group_bindings: (key.group_bindings || []).map((b) => ({
       group_id: b.group_id,
       priority: b.priority,
@@ -1695,6 +1710,7 @@ const handleSubmit = async () => {
         rate_limit_1d: rateLimitData.rate_limit_1d,
         rate_limit_7d: rateLimitData.rate_limit_7d,
         multi_group_routing: formData.value.multi_group_routing,
+        force_image_url_response: formData.value.force_image_url_response,
         group_bindings: buildGroupBindingsPayload(),
       })
       appStore.showSuccess(t('keys.keyUpdatedSuccess'))
@@ -1711,6 +1727,7 @@ const handleSubmit = async () => {
         rateLimitData,
         {
           multi_group_routing: formData.value.multi_group_routing,
+          force_image_url_response: formData.value.force_image_url_response,
           group_bindings: buildGroupBindingsPayload(),
         }
       )
@@ -1774,6 +1791,7 @@ const closeModals = () => {
     expiration_preset: '30',
     expiration_date: '',
     multi_group_routing: false,
+    force_image_url_response: false,
     group_bindings: []
   }
 }
@@ -1873,7 +1891,7 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
       };
     }
   })`
-  const providerName = (publicSettings.value?.site_name || 'sub2api').trim() || 'sub2api'
+  const providerName = (publicSettings.value?.site_name || 'ccapi').trim() || 'ccapi'
   const deeplink = buildCcSwitchImportDeeplink({
     baseUrl,
     platform,

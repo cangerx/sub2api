@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/pagination"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/usagestats"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 	"github.com/stretchr/testify/require"
 )
 
@@ -80,6 +80,9 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			sqlmock.AnyArg(), // image_output_size
 			sqlmock.AnyArg(), // image_size_source
 			sqlmock.AnyArg(), // image_size_breakdown
+			sqlmock.AnyArg(), // image_prompt
+			sqlmock.AnyArg(), // image_urls
+			sqlmock.AnyArg(), // image_revised_prompts
 			sqlmock.AnyArg(), // service_tier
 			sqlmock.AnyArg(), // reasoning_effort
 			sqlmock.AnyArg(), // inbound_endpoint
@@ -167,6 +170,9 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			sqlmock.AnyArg(), // image_output_size
 			sqlmock.AnyArg(), // image_size_source
 			sqlmock.AnyArg(), // image_size_breakdown
+			sqlmock.AnyArg(), // image_prompt
+			sqlmock.AnyArg(), // image_urls
+			sqlmock.AnyArg(), // image_revised_prompts
 			serviceTier,
 			sqlmock.AnyArg(),
 			sqlmock.AnyArg(),
@@ -405,11 +411,13 @@ func TestUsageLogRepositoryGetStatsWithFiltersRequestTypePriority(t *testing.T) 
 			"total_input_tokens",
 			"total_output_tokens",
 			"total_cache_tokens",
+			"total_cache_creation_tokens",
+			"total_cache_read_tokens",
 			"total_cost",
 			"total_actual_cost",
 			"total_account_cost",
 			"avg_duration_ms",
-		}).AddRow(int64(1), int64(2), int64(3), int64(4), 1.2, 1.0, 1.2, 20.0))
+		}).AddRow(int64(1), int64(2), int64(3), int64(4), int64(1), int64(3), 1.2, 1.0, 1.2, 20.0))
 	mock.ExpectQuery("SELECT COALESCE\\(NULLIF\\(TRIM\\(inbound_endpoint\\), ''\\), 'unknown'\\) AS endpoint").
 		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), requestType).
 		WillReturnRows(sqlmock.NewRows([]string{"endpoint", "requests", "total_tokens", "cost", "actual_cost"}))
@@ -497,9 +505,10 @@ func TestUsageLogRepositoryGetStatsWithFiltersAlwaysReturnsAccountCost(t *testin
 	mock.ExpectQuery("FROM usage_logs").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"total_requests", "total_input_tokens", "total_output_tokens",
-			"total_cache_tokens", "total_cost", "total_actual_cost",
+			"total_cache_tokens", "total_cache_creation_tokens", "total_cache_read_tokens",
+			"total_cost", "total_actual_cost",
 			"total_account_cost", "avg_duration_ms",
-		}).AddRow(int64(50), int64(1000), int64(2000), int64(100), 15.0, 12.5, 11.0, 100.0))
+		}).AddRow(int64(50), int64(1000), int64(2000), int64(100), int64(60), int64(40), 15.0, 12.5, 11.0, 100.0))
 	mock.ExpectQuery("SELECT COALESCE\\(NULLIF\\(TRIM\\(inbound_endpoint\\)").
 		WillReturnRows(sqlmock.NewRows([]string{"endpoint", "requests", "total_tokens", "cost", "actual_cost"}))
 	mock.ExpectQuery("SELECT COALESCE\\(NULLIF\\(TRIM\\(upstream_endpoint\\)").
@@ -638,6 +647,9 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{Valid: true, String: "3840x2160"},
 			sql.NullString{Valid: true, String: "output"},
 			sql.NullString{Valid: true, String: `{"4K":2}`},
+			sql.NullString{Valid: true, String: "a neon city"},
+			sql.NullString{Valid: true, String: `["https://cdn.example.com/1.png"]`},
+			sql.NullString{Valid: true, String: `["a detailed neon city"]`},
 			sql.NullString{},
 			sql.NullString{},
 			sql.NullString{},
@@ -665,6 +677,10 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 		require.NotNil(t, log.ImageSizeSource)
 		require.Equal(t, "output", *log.ImageSizeSource)
 		require.Equal(t, map[string]int{"4K": 2}, log.ImageSizeBreakdown)
+		require.NotNil(t, log.ImagePrompt)
+		require.Equal(t, "a neon city", *log.ImagePrompt)
+		require.Equal(t, []string{"https://cdn.example.com/1.png"}, log.ImageURLs)
+		require.Equal(t, []string{"a detailed neon city"}, log.ImageRevisedPrompts)
 	})
 
 	t.Run("request_type_ws_v2_overrides_legacy", func(t *testing.T) {
@@ -710,6 +726,9 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{}, // image_output_size
 			sql.NullString{}, // image_size_source
 			sql.NullString{}, // image_size_breakdown
+			sql.NullString{}, // image_prompt
+			sql.NullString{}, // image_urls
+			sql.NullString{}, // image_revised_prompts
 			sql.NullString{Valid: true, String: "priority"},
 			sql.NullString{},
 			sql.NullString{},
@@ -766,6 +785,9 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{}, // image_output_size
 			sql.NullString{}, // image_size_source
 			sql.NullString{}, // image_size_breakdown
+			sql.NullString{}, // image_prompt
+			sql.NullString{}, // image_urls
+			sql.NullString{}, // image_revised_prompts
 			sql.NullString{Valid: true, String: "flex"},
 			sql.NullString{},
 			sql.NullString{},
@@ -822,6 +844,9 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{}, // image_output_size
 			sql.NullString{}, // image_size_source
 			sql.NullString{}, // image_size_breakdown
+			sql.NullString{}, // image_prompt
+			sql.NullString{}, // image_urls
+			sql.NullString{}, // image_revised_prompts
 			sql.NullString{Valid: true, String: "priority"},
 			sql.NullString{},
 			sql.NullString{},

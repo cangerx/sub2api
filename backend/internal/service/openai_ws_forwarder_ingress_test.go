@@ -8,7 +8,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/ccapi/internal/config"
 	coderws "github.com/coder/websocket"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
@@ -139,6 +139,33 @@ func TestDropPreviousResponseIDFromRawPayload(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, removed)
 		require.False(t, gjson.GetBytes(updated, "previous_response_id").Exists())
+	})
+}
+
+func TestStripCodexSparkImageGenerationToolFromRawPayload(t *testing.T) {
+	t.Run("strips_image_generation_for_spark", func(t *testing.T) {
+		payload := []byte(`{"type":"response.create","model":"gpt-5.3-codex-spark","tools":[{"type":"function","name":"shell"},{"type":"image_generation","output_format":"png"}]}`)
+		updated, changed, err := stripCodexSparkImageGenerationToolFromRawPayload(payload, "gpt-5.3-codex-spark")
+		require.NoError(t, err)
+		require.True(t, changed)
+		require.False(t, gjson.GetBytes(updated, `tools.#(type=="image_generation")`).Exists())
+		require.True(t, gjson.GetBytes(updated, `tools.#(type=="function")`).Exists())
+	})
+
+	t.Run("keeps_image_generation_for_non_spark", func(t *testing.T) {
+		payload := []byte(`{"type":"response.create","model":"gpt-5.3-codex","tools":[{"type":"image_generation","output_format":"png"}]}`)
+		updated, changed, err := stripCodexSparkImageGenerationToolFromRawPayload(payload, "gpt-5.3-codex")
+		require.NoError(t, err)
+		require.False(t, changed)
+		require.Equal(t, string(payload), string(updated))
+	})
+
+	t.Run("noop_when_no_image_tool", func(t *testing.T) {
+		payload := []byte(`{"type":"response.create","model":"gpt-5.3-codex-spark","tools":[{"type":"function","name":"shell"}]}`)
+		updated, changed, err := stripCodexSparkImageGenerationToolFromRawPayload(payload, "gpt-5.3-codex-spark")
+		require.NoError(t, err)
+		require.False(t, changed)
+		require.Equal(t, string(payload), string(updated))
 	})
 }
 

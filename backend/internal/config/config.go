@@ -643,6 +643,10 @@ type ProxyProbeConfig struct {
 
 type BillingConfig struct {
 	CircuitBreaker CircuitBreakerConfig `mapstructure:"circuit_breaker"`
+	// MinimumBalanceReserve is the conservative preflight floor for balance billing.
+	// Requests in balance mode are rejected when the cached balance is below this
+	// amount, even if it is still positive. Set to 0 to keep the legacy balance > 0 gate.
+	MinimumBalanceReserve float64 `mapstructure:"minimum_balance_reserve"`
 	// UserPlatformQuotaCacheTTLSeconds 用户 × 平台 quota 缓存 TTL（秒），默认 86400=1天，覆盖典型 daily 窗口。
 	// 消费点：
 	//   - billing_cache_service.cacheWriteWorker 异步累加
@@ -1391,7 +1395,7 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 	// 4. Config subdirectory
 	viper.AddConfigPath("./config")
 	// 5. System config directory
-	viper.AddConfigPath("/etc/sub2api")
+	viper.AddConfigPath("/etc/ccapi")
 
 	// 环境变量支持
 	viper.AutomaticEnv()
@@ -1567,7 +1571,7 @@ func setDefaults() {
 	// Log
 	viper.SetDefault("log.level", "info")
 	viper.SetDefault("log.format", "console")
-	viper.SetDefault("log.service_name", "sub2api")
+	viper.SetDefault("log.service_name", "ccapi")
 	viper.SetDefault("log.env", "production")
 	viper.SetDefault("log.caller", true)
 	viper.SetDefault("log.stacktrace_level", "error")
@@ -1621,6 +1625,7 @@ func setDefaults() {
 	viper.SetDefault("billing.circuit_breaker.failure_threshold", 5)
 	viper.SetDefault("billing.circuit_breaker.reset_timeout_seconds", 30)
 	viper.SetDefault("billing.circuit_breaker.half_open_requests", 3)
+	viper.SetDefault("billing.minimum_balance_reserve", 0.000001)
 	viper.SetDefault("billing.user_platform_quota_cache_ttl_seconds", 86400)
 	viper.SetDefault("billing.user_platform_quota_sentinel_ttl_seconds", 3600)
 
@@ -1703,7 +1708,7 @@ func setDefaults() {
 	viper.SetDefault("database.port", 5432)
 	viper.SetDefault("database.user", "postgres")
 	viper.SetDefault("database.password", "postgres")
-	viper.SetDefault("database.dbname", "sub2api")
+	viper.SetDefault("database.dbname", "ccapi")
 	viper.SetDefault("database.sslmode", "prefer")
 	viper.SetDefault("database.max_open_conns", 256)
 	viper.SetDefault("database.max_idle_conns", 128)
@@ -1789,7 +1794,7 @@ func setDefaults() {
 
 	// Dashboard cache
 	viper.SetDefault("dashboard_cache.enabled", true)
-	viper.SetDefault("dashboard_cache.key_prefix", "sub2api:")
+	viper.SetDefault("dashboard_cache.key_prefix", "ccapi:")
 	viper.SetDefault("dashboard_cache.stats_fresh_ttl_seconds", 15)
 	viper.SetDefault("dashboard_cache.stats_ttl_seconds", 30)
 	viper.SetDefault("dashboard_cache.stats_refresh_timeout_seconds", 30)
@@ -2285,6 +2290,9 @@ func (c *Config) Validate() error {
 		if c.Billing.CircuitBreaker.HalfOpenRequests <= 0 {
 			return fmt.Errorf("billing.circuit_breaker.half_open_requests must be positive")
 		}
+	}
+	if c.Billing.MinimumBalanceReserve < 0 {
+		return fmt.Errorf("billing.minimum_balance_reserve must be non-negative")
 	}
 	if c.Database.MaxOpenConns <= 0 {
 		return fmt.Errorf("database.max_open_conns must be positive")
@@ -2886,7 +2894,7 @@ func GetServerAddress() string {
 	v.SetConfigType("yaml")
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config")
-	v.AddConfigPath("/etc/sub2api")
+	v.AddConfigPath("/etc/ccapi")
 
 	// Support SERVER_HOST and SERVER_PORT environment variables
 	v.AutomaticEnv()

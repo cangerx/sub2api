@@ -13,24 +13,24 @@ import (
 	"sync/atomic"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	dbaccount "github.com/Wei-Shaw/sub2api/ent/account"
-	dbapikey "github.com/Wei-Shaw/sub2api/ent/apikey"
-	dbgroup "github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/schema/mixins"
-	dbuser "github.com/Wei-Shaw/sub2api/ent/user"
-	dbusersub "github.com/Wei-Shaw/sub2api/ent/usersubscription"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Wei-Shaw/ccapi/ent"
+	dbaccount "github.com/Wei-Shaw/ccapi/ent/account"
+	dbapikey "github.com/Wei-Shaw/ccapi/ent/apikey"
+	dbgroup "github.com/Wei-Shaw/ccapi/ent/group"
+	"github.com/Wei-Shaw/ccapi/ent/schema/mixins"
+	dbuser "github.com/Wei-Shaw/ccapi/ent/user"
+	dbusersub "github.com/Wei-Shaw/ccapi/ent/usersubscription"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/logger"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/pagination"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/timezone"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/usagestats"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 	"github.com/lib/pq"
 	gocache "github.com/patrickmn/go-cache"
 	"golang.org/x/sync/errgroup"
 )
 
-const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, video_task_id, video_seconds, video_size, video_billing_units, created_at"
+const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, image_prompt, image_urls, image_revised_prompts, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, video_task_id, video_seconds, video_size, video_billing_units, created_at"
 
 // usageLogInsertArgTypes must stay in the same order as:
 //  1. prepareUsageLogInsert().args
@@ -79,6 +79,9 @@ var usageLogInsertArgTypes = [...]string{
 	"text",        // image_output_size
 	"text",        // image_size_source
 	"jsonb",       // image_size_breakdown
+	"text",        // image_prompt
+	"jsonb",       // image_urls
+	"jsonb",       // image_revised_prompts
 	"text",        // service_tier
 	"text",        // reasoning_effort
 	"text",        // inbound_endpoint
@@ -400,6 +403,9 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			image_output_size,
 			image_size_source,
 			image_size_breakdown,
+			image_prompt,
+			image_urls,
+			image_revised_prompts,
 			service_tier,
 			reasoning_effort,
 			inbound_endpoint,
@@ -421,7 +427,7 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54
+			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 		RETURNING id, created_at
@@ -846,6 +852,9 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 			image_output_size,
 			image_size_source,
 			image_size_breakdown,
+			image_prompt,
+			image_urls,
+			image_revised_prompts,
 			service_tier,
 			reasoning_effort,
 			inbound_endpoint,
@@ -856,10 +865,14 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 			billing_tier,
 			billing_mode,
 			account_stats_cost,
+			video_task_id,
+			video_seconds,
+			video_size,
+			video_billing_units,
 			created_at
 		) AS (VALUES `)
 
-	args := make([]any, 0, len(keys)*50)
+	args := make([]any, 0, len(keys)*len(usageLogInsertArgTypes))
 	argPos := 1
 	for idx, key := range keys {
 		if idx > 0 {
@@ -927,6 +940,9 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				image_output_size,
 				image_size_source,
 				image_size_breakdown,
+			image_prompt,
+			image_urls,
+			image_revised_prompts,
 				service_tier,
 				reasoning_effort,
 				inbound_endpoint,
@@ -937,6 +953,10 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				billing_tier,
 				billing_mode,
 				account_stats_cost,
+			video_task_id,
+			video_seconds,
+			video_size,
+			video_billing_units,
 				created_at
 			)
 			SELECT
@@ -979,6 +999,9 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				image_output_size,
 				image_size_source,
 				image_size_breakdown,
+			image_prompt,
+			image_urls,
+			image_revised_prompts,
 				service_tier,
 				reasoning_effort,
 				inbound_endpoint,
@@ -989,6 +1012,10 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				billing_tier,
 				billing_mode,
 				account_stats_cost,
+			video_task_id,
+			video_seconds,
+			video_size,
+			video_billing_units,
 				created_at
 			FROM input
 			ON CONFLICT (request_id, api_key_id) DO NOTHING
@@ -1071,6 +1098,9 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			image_output_size,
 			image_size_source,
 			image_size_breakdown,
+			image_prompt,
+			image_urls,
+			image_revised_prompts,
 			service_tier,
 			reasoning_effort,
 			inbound_endpoint,
@@ -1081,10 +1111,14 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			billing_tier,
 			billing_mode,
 			account_stats_cost,
+			video_task_id,
+			video_seconds,
+			video_size,
+			video_billing_units,
 			created_at
 		) AS (VALUES `)
 
-	args := make([]any, 0, len(preparedList)*50)
+	args := make([]any, 0, len(preparedList)*len(usageLogInsertArgTypes))
 	argPos := 1
 	for idx, prepared := range preparedList {
 		if idx > 0 {
@@ -1149,6 +1183,9 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			image_output_size,
 			image_size_source,
 			image_size_breakdown,
+			image_prompt,
+			image_urls,
+			image_revised_prompts,
 			service_tier,
 			reasoning_effort,
 			inbound_endpoint,
@@ -1159,6 +1196,10 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			billing_tier,
 			billing_mode,
 			account_stats_cost,
+			video_task_id,
+			video_seconds,
+			video_size,
+			video_billing_units,
 			created_at
 		)
 		SELECT
@@ -1201,6 +1242,9 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			image_output_size,
 			image_size_source,
 			image_size_breakdown,
+			image_prompt,
+			image_urls,
+			image_revised_prompts,
 			service_tier,
 			reasoning_effort,
 			inbound_endpoint,
@@ -1211,6 +1255,10 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			billing_tier,
 			billing_mode,
 			account_stats_cost,
+			video_task_id,
+			video_seconds,
+			video_size,
+			video_billing_units,
 			created_at
 		FROM input
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
@@ -1261,6 +1309,9 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			image_output_size,
 			image_size_source,
 			image_size_breakdown,
+			image_prompt,
+			image_urls,
+			image_revised_prompts,
 			service_tier,
 			reasoning_effort,
 			inbound_endpoint,
@@ -1282,7 +1333,7 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54
+				$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 	`, prepared.args...)
@@ -1313,6 +1364,9 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 	imageOutputSize := nullString(log.ImageOutputSize)
 	imageSizeSource := nullString(log.ImageSizeSource)
 	imageSizeBreakdown := nullStringIntMapJSON(log.ImageSizeBreakdown)
+	imagePrompt := nullString(log.ImagePrompt)
+	imageURLs := nullStringSliceJSON(log.ImageURLs)
+	imageRevisedPrompts := nullStringSliceJSON(log.ImageRevisedPrompts)
 	serviceTier := nullString(log.ServiceTier)
 	reasoningEffort := nullString(log.ReasoningEffort)
 	inboundEndpoint := nullString(log.InboundEndpoint)
@@ -1381,6 +1435,9 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			imageOutputSize,
 			imageSizeSource,
 			imageSizeBreakdown,
+			imagePrompt,
+			imageURLs,
+			imageRevisedPrompts,
 			serviceTier,
 			reasoningEffort,
 			inboundEndpoint,
@@ -3565,6 +3622,8 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			COALESCE(SUM(input_tokens), 0) as total_input_tokens,
 			COALESCE(SUM(output_tokens), 0) as total_output_tokens,
 			COALESCE(SUM(cache_creation_tokens + cache_read_tokens), 0) as total_cache_tokens,
+			COALESCE(SUM(cache_creation_tokens), 0) as total_cache_creation_tokens,
+			COALESCE(SUM(cache_read_tokens), 0) as total_cache_read_tokens,
 			COALESCE(SUM(total_cost), 0) as total_cost,
 			COALESCE(SUM(actual_cost), 0) as total_actual_cost,
 			COALESCE(SUM(COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1)), 0) as total_account_cost,
@@ -3595,6 +3654,8 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			&stats.TotalInputTokens,
 			&stats.TotalOutputTokens,
 			&stats.TotalCacheTokens,
+			&stats.TotalCacheCreationTokens,
+			&stats.TotalCacheReadTokens,
 			&stats.TotalCost,
 			&stats.TotalActualCost,
 			&totalAccountCost,
@@ -4120,6 +4181,10 @@ func (r *usageLogRepository) hydrateUsageLogAssociations(ctx context.Context, lo
 	if err != nil {
 		return err
 	}
+	videoURLs, err := r.loadVideoContentURLs(ctx, collectUsageLogVideoTaskIDs(logs))
+	if err != nil {
+		return err
+	}
 	groups, err := r.loadGroups(ctx, ids.groupIDs)
 	if err != nil {
 		return err
@@ -4138,6 +4203,13 @@ func (r *usageLogRepository) hydrateUsageLogAssociations(ctx context.Context, lo
 		}
 		if acc, ok := accounts[logs[i].AccountID]; ok {
 			logs[i].Account = acc
+		}
+		if logs[i].VideoTaskID != nil {
+			if urls, ok := videoURLs[*logs[i].VideoTaskID]; ok {
+				logs[i].VideoContentURL = urls.contentURL
+				logs[i].VideoUpstreamURL = urls.upstreamURL
+				logs[i].VideoLocalURL = urls.localURL
+			}
 		}
 		if logs[i].GroupID != nil {
 			if group, ok := groups[*logs[i].GroupID]; ok {
@@ -4159,6 +4231,12 @@ type usageLogIDs struct {
 	accountIDs      []int64
 	groupIDs        []int64
 	subscriptionIDs []int64
+}
+
+type usageLogVideoURLs struct {
+	contentURL  *string
+	upstreamURL *string
+	localURL    *string
 }
 
 func collectUsageLogIDs(logs []service.UsageLog) usageLogIDs {
@@ -4189,6 +4267,24 @@ func collectUsageLogIDs(logs []service.UsageLog) usageLogIDs {
 		groupIDs:        setToSlice(groupIDs),
 		subscriptionIDs: setToSlice(subscriptionIDs),
 	}
+}
+
+func collectUsageLogVideoTaskIDs(logs []service.UsageLog) []string {
+	taskIDs := make(map[string]struct{})
+	for i := range logs {
+		if logs[i].VideoTaskID == nil {
+			continue
+		}
+		taskID := strings.TrimSpace(*logs[i].VideoTaskID)
+		if taskID != "" {
+			taskIDs[taskID] = struct{}{}
+		}
+	}
+	out := make([]string, 0, len(taskIDs))
+	for id := range taskIDs {
+		out = append(out, id)
+	}
+	return out
 }
 
 func (r *usageLogRepository) loadUsers(ctx context.Context, ids []int64) (map[int64]*service.User, error) {
@@ -4233,6 +4329,43 @@ func (r *usageLogRepository) loadAccounts(ctx context.Context, ids []int64) (map
 	}
 	for _, m := range models {
 		out[m.ID] = accountEntityToService(m)
+	}
+	return out, nil
+}
+
+func (r *usageLogRepository) loadVideoContentURLs(ctx context.Context, publicIDs []string) (map[string]usageLogVideoURLs, error) {
+	out := make(map[string]usageLogVideoURLs)
+	if len(publicIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.sql.QueryContext(ctx, `
+		SELECT public_id, content_url, upstream_content_url, local_content_url
+		FROM video_generation_tasks
+		WHERE public_id = ANY($1)
+	`, pq.Array(publicIDs))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			publicID    string
+			contentURL  sql.NullString
+			upstreamURL sql.NullString
+			localURL    sql.NullString
+		)
+		if err := rows.Scan(&publicID, &contentURL, &upstreamURL, &localURL); err != nil {
+			return nil, err
+		}
+		out[publicID] = usageLogVideoURLs{
+			contentURL:  stringPtrFromNull(contentURL),
+			upstreamURL: stringPtrFromNull(upstreamURL),
+			localURL:    stringPtrFromNull(localURL),
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
@@ -4309,6 +4442,9 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		imageOutputSize       sql.NullString
 		imageSizeSource       sql.NullString
 		imageSizeBreakdown    sql.NullString
+		imagePrompt           sql.NullString
+		imageURLs             sql.NullString
+		imageRevisedPrompts   sql.NullString
 		serviceTier           sql.NullString
 		reasoningEffort       sql.NullString
 		inboundEndpoint       sql.NullString
@@ -4367,6 +4503,9 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&imageOutputSize,
 		&imageSizeSource,
 		&imageSizeBreakdown,
+		&imagePrompt,
+		&imageURLs,
+		&imageRevisedPrompts,
 		&serviceTier,
 		&reasoningEffort,
 		&inboundEndpoint,
@@ -4459,6 +4598,11 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		log.ImageSizeSource = &imageSizeSource.String
 	}
 	log.ImageSizeBreakdown = stringIntMapFromNullJSON(imageSizeBreakdown)
+	if imagePrompt.Valid {
+		log.ImagePrompt = &imagePrompt.String
+	}
+	log.ImageURLs = stringSliceFromNullJSON(imageURLs)
+	log.ImageRevisedPrompts = stringSliceFromNullJSON(imageRevisedPrompts)
 	if serviceTier.Valid {
 		log.ServiceTier = &serviceTier.String
 	}
@@ -4639,11 +4783,39 @@ func nullString(v *string) sql.NullString {
 	return sql.NullString{String: *v, Valid: true}
 }
 
+func stringPtrFromNull(v sql.NullString) *string {
+	if !v.Valid {
+		return nil
+	}
+	out := strings.TrimSpace(v.String)
+	if out == "" {
+		return nil
+	}
+	return &out
+}
+
 func nullStringIntMapJSON(v map[string]int) any {
 	if len(v) == 0 {
 		return nil
 	}
 	payload, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	return string(payload)
+}
+
+func nullStringSliceJSON(v []string) any {
+	items := make([]string, 0, len(v))
+	for _, item := range v {
+		if trimmed := strings.TrimSpace(item); trimmed != "" {
+			items = append(items, trimmed)
+		}
+	}
+	if len(items) == 0 {
+		return nil
+	}
+	payload, err := json.Marshal(items)
 	if err != nil {
 		return nil
 	}
@@ -4662,6 +4834,26 @@ func stringIntMapFromNullJSON(v sql.NullString) map[string]int {
 		return nil
 	}
 	return out
+}
+
+func stringSliceFromNullJSON(v sql.NullString) []string {
+	if !v.Valid || strings.TrimSpace(v.String) == "" {
+		return nil
+	}
+	var out []string
+	if err := json.Unmarshal([]byte(v.String), &out); err != nil {
+		return nil
+	}
+	cleaned := out[:0]
+	for _, item := range out {
+		if trimmed := strings.TrimSpace(item); trimmed != "" {
+			cleaned = append(cleaned, trimmed)
+		}
+	}
+	if len(cleaned) == 0 {
+		return nil
+	}
+	return append([]string(nil), cleaned...)
 }
 
 func coalesceTrimmedString(v sql.NullString, fallback string) string {

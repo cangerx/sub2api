@@ -16,9 +16,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/Wei-Shaw/ccapi/internal/config"
+	infraerrors "github.com/Wei-Shaw/ccapi/internal/pkg/errors"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/logger"
 )
 
 const (
@@ -30,7 +30,7 @@ const (
 )
 
 var (
-	ErrBackupS3NotConfigured = infraerrors.BadRequest("BACKUP_S3_NOT_CONFIGURED", "backup S3 storage is not configured")
+	ErrBackupS3NotConfigured = infraerrors.BadRequest("BACKUP_S3_NOT_CONFIGURED", "backup storage is not configured")
 	ErrBackupNotFound        = infraerrors.NotFound("BACKUP_NOT_FOUND", "backup record not found")
 	ErrBackupInProgress      = infraerrors.Conflict("BACKUP_IN_PROGRESS", "a backup is already in progress")
 	ErrRestoreInProgress     = infraerrors.Conflict("RESTORE_IN_PROGRESS", "a restore is already in progress")
@@ -55,13 +55,17 @@ type BackupObjectStore interface {
 	HeadBucket(ctx context.Context) error
 }
 
-// BackupObjectStoreFactory creates an object store from S3 config
+// BackupObjectStoreFactory creates an object store from storage config.
 type BackupObjectStoreFactory func(ctx context.Context, cfg *BackupS3Config) (BackupObjectStore, error)
 
 // ─── 数据模型 ───
 
-// BackupS3Config S3 兼容存储配置（支持 Cloudflare R2）
+// BackupS3Config 备份/媒体对象存储配置。
+//
+// 兼容旧的 S3 配置结构；provider 为空时按 s3 处理。R2/OSS 均使用 S3
+// compatible 协议，本地存储使用 local_path。
 type BackupS3Config struct {
+	Provider        string `json:"provider"` // local / s3 / r2 / oss
 	Endpoint        string `json:"endpoint"` // e.g. https://<account_id>.r2.cloudflarestorage.com
 	Region          string `json:"region"`   // R2 用 "auto"
 	Bucket          string `json:"bucket"`
@@ -69,11 +73,21 @@ type BackupS3Config struct {
 	SecretAccessKey string `json:"secret_access_key,omitempty"` //nolint:revive // field name follows AWS convention
 	Prefix          string `json:"prefix"`                      // S3 key 前缀，如 "backups/"
 	ForcePathStyle  bool   `json:"force_path_style"`
+	LocalPath       string `json:"local_path,omitempty"`      // provider=local 时的根目录
+	PublicBaseURL   string `json:"public_base_url,omitempty"` // 可选，自定义公开访问域名
 }
 
 // IsConfigured 检查必要字段是否已配置
 func (c *BackupS3Config) IsConfigured() bool {
-	return c.Bucket != "" && c.AccessKeyID != "" && c.SecretAccessKey != ""
+	if c == nil {
+		return false
+	}
+	switch normalizeBackupStorageProvider(c.Provider) {
+	case "local":
+		return strings.TrimSpace(c.LocalPath) != ""
+	default:
+		return c.Bucket != "" && c.AccessKeyID != "" && c.SecretAccessKey != ""
+	}
 }
 
 // BackupScheduleConfig 定时备份配置
@@ -115,9 +129,10 @@ type BackupService struct {
 	backingUp bool
 	restoring bool
 
-	storeMu sync.Mutex // 保护 store/s3Cfg 缓存
-	store   BackupObjectStore
-	s3Cfg   *BackupS3Config
+	storeMu  sync.Mutex // 保护 store/s3Cfg 缓存
+	store    BackupObjectStore
+	s3Cfg    *BackupS3Config
+	storeKey string
 
 	recordsMu sync.Mutex // 保护 records 的 load/save 操作
 
@@ -250,8 +265,18 @@ func (s *BackupService) GetS3Config(ctx context.Context) (*BackupS3Config, error
 }
 
 func (s *BackupService) UpdateS3Config(ctx context.Context, cfg BackupS3Config) (*BackupS3Config, error) {
-	// 如果没提供 secret，保留原有值
-	if cfg.SecretAccessKey == "" {
+	cfg.normalize()
+	provider := normalizeBackupStorageProvider(cfg.Provider)
+	if provider == "local" {
+		cfg.Provider = provider
+		cfg.Endpoint = ""
+		cfg.Region = ""
+		cfg.Bucket = ""
+		cfg.AccessKeyID = ""
+		cfg.SecretAccessKey = ""
+		cfg.ForcePathStyle = false
+	} else if cfg.SecretAccessKey == "" {
+		// 如果没提供 secret，保留原有值
 		old, _ := s.loadS3Config(ctx)
 		if old != nil {
 			cfg.SecretAccessKey = old.SecretAccessKey
@@ -277,6 +302,7 @@ func (s *BackupService) UpdateS3Config(ctx context.Context, cfg BackupS3Config) 
 	s.storeMu.Lock()
 	s.store = nil
 	s.s3Cfg = nil
+	s.storeKey = ""
 	s.storeMu.Unlock()
 
 	cfg.SecretAccessKey = ""
@@ -284,16 +310,20 @@ func (s *BackupService) UpdateS3Config(ctx context.Context, cfg BackupS3Config) 
 }
 
 func (s *BackupService) TestS3Connection(ctx context.Context, cfg BackupS3Config) error {
+	cfg.normalize()
 	// 如果没提供 secret，用已保存的
-	if cfg.SecretAccessKey == "" {
+	if normalizeBackupStorageProvider(cfg.Provider) != "local" && cfg.SecretAccessKey == "" {
 		old, _ := s.loadS3Config(ctx)
 		if old != nil {
 			cfg.SecretAccessKey = old.SecretAccessKey
 		}
 	}
 
-	if cfg.Bucket == "" || cfg.AccessKeyID == "" || cfg.SecretAccessKey == "" {
-		return fmt.Errorf("incomplete S3 config: bucket, access_key_id, secret_access_key are required")
+	if !cfg.IsConfigured() {
+		if normalizeBackupStorageProvider(cfg.Provider) == "local" {
+			return fmt.Errorf("incomplete local storage config: local_path is required")
+		}
+		return fmt.Errorf("incomplete object storage config: bucket, access_key_id, secret_access_key are required")
 	}
 
 	store, err := s.storeFactory(ctx, &cfg)
@@ -967,6 +997,7 @@ func (s *BackupService) loadS3Config(ctx context.Context) (*BackupS3Config, erro
 	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
 		return nil, ErrBackupS3ConfigCorrupt
 	}
+	cfg.normalize()
 	// 解密 SecretAccessKey
 	if cfg.SecretAccessKey != "" {
 		decrypted, err := s.encryptor.Decrypt(cfg.SecretAccessKey)
@@ -980,16 +1011,61 @@ func (s *BackupService) loadS3Config(ctx context.Context) (*BackupS3Config, erro
 	return &cfg, nil
 }
 
+func (c *BackupS3Config) normalize() {
+	if c == nil {
+		return
+	}
+	c.Provider = normalizeBackupStorageProvider(c.Provider)
+	c.Prefix = strings.TrimSpace(c.Prefix)
+	switch c.Provider {
+	case "local":
+		c.LocalPath = strings.TrimSpace(c.LocalPath)
+		c.PublicBaseURL = strings.TrimRight(strings.TrimSpace(c.PublicBaseURL), "/")
+	case "r2":
+		if strings.TrimSpace(c.Region) == "" {
+			c.Region = "auto"
+		}
+	case "oss":
+		if strings.TrimSpace(c.Region) == "" {
+			c.Region = "oss"
+		}
+		if strings.TrimSpace(c.Endpoint) != "" {
+			c.ForcePathStyle = true
+		}
+	default:
+		if strings.TrimSpace(c.Region) == "" {
+			c.Region = "auto"
+		}
+	}
+}
+
+func normalizeBackupStorageProvider(provider string) string {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "local":
+		return "local"
+	case "r2":
+		return "r2"
+	case "oss", "aliyun_oss", "aliyun-oss":
+		return "oss"
+	case "s3", "":
+		return "s3"
+	default:
+		return "s3"
+	}
+}
+
 func (s *BackupService) getOrCreateStore(ctx context.Context, cfg *BackupS3Config) (BackupObjectStore, error) {
 	s.storeMu.Lock()
 	defer s.storeMu.Unlock()
 
-	if s.store != nil && s.s3Cfg != nil {
-		return s.store, nil
-	}
-
 	if cfg == nil {
 		return nil, ErrBackupS3NotConfigured
+	}
+	cfg.normalize()
+	cacheKey := backupStorageConfigCacheKey(cfg)
+
+	if s.store != nil && s.s3Cfg != nil && s.storeKey == cacheKey {
+		return s.store, nil
 	}
 
 	store, err := s.storeFactory(ctx, cfg)
@@ -998,7 +1074,25 @@ func (s *BackupService) getOrCreateStore(ctx context.Context, cfg *BackupS3Confi
 	}
 	s.store = store
 	s.s3Cfg = cfg
+	s.storeKey = cacheKey
 	return store, nil
+}
+
+func backupStorageConfigCacheKey(cfg *BackupS3Config) string {
+	if cfg == nil {
+		return ""
+	}
+	return strings.Join([]string{
+		normalizeBackupStorageProvider(cfg.Provider),
+		strings.TrimSpace(cfg.Endpoint),
+		strings.TrimSpace(cfg.Region),
+		strings.TrimSpace(cfg.Bucket),
+		strings.TrimSpace(cfg.AccessKeyID),
+		strings.TrimSpace(cfg.Prefix),
+		strings.TrimSpace(cfg.LocalPath),
+		strings.TrimSpace(cfg.PublicBaseURL),
+		fmt.Sprintf("%t", cfg.ForcePathStyle),
+	}, "\x00")
 }
 
 func (s *BackupService) buildS3Key(cfg *BackupS3Config, fileName string) string {

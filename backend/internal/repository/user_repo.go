@@ -9,19 +9,19 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/apikey"
-	"github.com/Wei-Shaw/sub2api/ent/authidentity"
-	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
-	dbgroup "github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
-	"github.com/Wei-Shaw/sub2api/ent/predicate"
-	"github.com/Wei-Shaw/sub2api/ent/schema/mixins"
-	dbuser "github.com/Wei-Shaw/sub2api/ent/user"
-	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
-	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Wei-Shaw/ccapi/ent"
+	"github.com/Wei-Shaw/ccapi/ent/apikey"
+	"github.com/Wei-Shaw/ccapi/ent/authidentity"
+	"github.com/Wei-Shaw/ccapi/ent/authidentitychannel"
+	dbgroup "github.com/Wei-Shaw/ccapi/ent/group"
+	"github.com/Wei-Shaw/ccapi/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/ccapi/ent/predicate"
+	"github.com/Wei-Shaw/ccapi/ent/schema/mixins"
+	dbuser "github.com/Wei-Shaw/ccapi/ent/user"
+	"github.com/Wei-Shaw/ccapi/ent/userallowedgroup"
+	"github.com/Wei-Shaw/ccapi/ent/usersubscription"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/pagination"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 	"github.com/lib/pq"
 
 	entsql "entgo.io/ent/dialect/sql"
@@ -757,6 +757,17 @@ func (r *userRepository) UpdateBalance(ctx context.Context, id int64, amount flo
 func (r *userRepository) DeductBalance(ctx context.Context, id int64, amount float64) error {
 	client := clientFromContext(ctx, r.client)
 	n, err := client.User.Update().
+		Where(dbuser.IDEQ(id), dbuser.BalanceGTE(amount)).
+		AddBalance(-amount).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+
+	n, err = client.User.Update().
 		Where(dbuser.IDEQ(id)).
 		AddBalance(-amount).
 		Save(ctx)

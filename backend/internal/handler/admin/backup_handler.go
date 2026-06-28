@@ -1,9 +1,9 @@
 package admin
 
 import (
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/response"
+	"github.com/Wei-Shaw/ccapi/internal/server/middleware"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -55,7 +55,7 @@ func (h *BackupHandler) TestS3Connection(c *gin.Context) {
 		response.Success(c, gin.H{"ok": false, "message": err.Error()})
 		return
 	}
-	response.Success(c, gin.H{"ok": true, "message": "connection successful"})
+	response.Success(c, gin.H{"ok": true})
 }
 
 // ─── 定时备份 ───

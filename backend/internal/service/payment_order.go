@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
-	"github.com/Wei-Shaw/sub2api/internal/payment"
-	"github.com/Wei-Shaw/sub2api/internal/payment/provider"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	dbent "github.com/Wei-Shaw/ccapi/ent"
+	"github.com/Wei-Shaw/ccapi/ent/paymentorder"
+	"github.com/Wei-Shaw/ccapi/internal/payment"
+	"github.com/Wei-Shaw/ccapi/internal/payment/provider"
+	infraerrors "github.com/Wei-Shaw/ccapi/internal/pkg/errors"
 )
 
 // --- Order Creation ---
@@ -67,7 +67,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 			return nil, err
 		}
 	}
-	payAmountStr, payAmount, err := calculateCreateOrderPayAmount(limitAmount, feeRate, methodCurrency)
+	payAmountStr, payAmount, err := calculateCreateOrderPayAmountForOrder(req.OrderType, limitAmount, feeRate, cfg.BalanceRechargeMultiplier, methodCurrency)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 		selectedCurrency = paymentProviderConfigCurrency(sel.ProviderKey, sel.Config)
 	}
 	if selectedCurrency != methodCurrency {
-		payAmountStr, payAmount, err = calculateCreateOrderPayAmount(limitAmount, feeRate, selectedCurrency)
+		payAmountStr, payAmount, err = calculateCreateOrderPayAmountForOrder(req.OrderType, limitAmount, feeRate, cfg.BalanceRechargeMultiplier, selectedCurrency)
 		if err != nil {
 			return nil, err
 		}
@@ -292,6 +292,14 @@ func buildPaymentOrderProviderSnapshot(sel *payment.InstanceSelection, req Creat
 	if providerKey == payment.TypeEasyPay {
 		if merchantID := strings.TrimSpace(sel.Config["pid"]); merchantID != "" {
 			snapshot["merchant_id"] = merchantID
+		}
+	}
+	if providerKey == payment.TypeTianque {
+		if merchantID := strings.TrimSpace(sel.Config["mno"]); merchantID != "" {
+			snapshot["merchant_id"] = merchantID
+		}
+		if orgID := strings.TrimSpace(sel.Config["orgId"]); orgID != "" {
+			snapshot["org_id"] = orgID
 		}
 	}
 	if providerKey == payment.TypeStripe {
@@ -504,7 +512,7 @@ func (s *PaymentService) buildPaymentSubject(plan *dbent.SubscriptionPlan, limit
 	if plan != nil {
 		productName := plan.ProductName
 		if productName == "" {
-			productName = "Sub2API Subscription " + plan.Name
+			productName = "CCAPI Subscription " + plan.Name
 		}
 		return applyPaymentProductNameAffix(productName, cfg)
 	}
@@ -516,7 +524,7 @@ func (s *PaymentService) buildPaymentSubject(plan *dbent.SubscriptionPlan, limit
 	if hasPaymentProductNameAffix(cfg) {
 		return applyPaymentProductNameAffix(amountStr, cfg)
 	}
-	return "Sub2API " + amountStr + " " + currency
+	return "CCAPI " + amountStr + " " + currency
 }
 
 func hasPaymentProductNameAffix(cfg *PaymentConfig) bool {
@@ -610,6 +618,19 @@ func calculateCreateOrderPayAmount(limitAmount, feeRate float64, currency string
 			WithMetadata(map[string]string{"currency": currency})
 	}
 	return payAmountStr, payAmount, nil
+}
+
+func calculateCreateOrderPayAmountForOrder(orderType string, limitAmount, feeRate, multiplier float64, currency string) (string, float64, error) {
+	paymentAmount := calculateCreateOrderPaymentAmount(orderType, limitAmount, multiplier, currency)
+	return calculateCreateOrderPayAmount(paymentAmount, feeRate, currency)
+}
+
+func calculateCreateOrderPaymentAmount(orderType string, limitAmount, multiplier float64, currency string) float64 {
+	normalizedCurrency, err := payment.NormalizePaymentCurrency(currency)
+	if err != nil || normalizedCurrency != payment.DefaultPaymentCurrency || orderType != payment.OrderTypeSubscription {
+		return limitAmount
+	}
+	return calculateGatewayPaymentAmount(limitAmount, multiplier, normalizedCurrency)
 }
 
 func validateCreateOrderAmountCurrency(amount float64, currency string) error {

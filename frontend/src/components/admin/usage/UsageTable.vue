@@ -96,12 +96,45 @@
 
         <template #cell-tokens="{ row }">
           <!-- 图片生成请求（仅按次计费时显示图片格式） -->
-          <div v-if="isImageUsage(row)" class="flex items-center gap-1.5">
-            <svg class="h-4 w-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span class="font-medium text-gray-900 dark:text-white">{{ row.image_count }}{{ t('usage.imageUnit') }}</span>
-            <span class="text-gray-400">({{ formatImageBillingSize(row, t) }})</span>
+          <div v-if="isImageUsage(row)" class="flex min-w-[180px] items-center gap-2">
+            <div class="flex items-center gap-1.5">
+              <svg class="h-4 w-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span class="font-medium text-gray-900 dark:text-white">{{ row.image_count }}{{ t('usage.imageUnit') }}</span>
+              <span class="text-gray-400">({{ formatImageBillingSize(row, t) }})</span>
+            </div>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-dark-600 dark:text-gray-300 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
+              @click.stop="openMediaDetail(row)"
+            >
+              <Icon name="eye" size="xs" />
+              {{ t('usage.viewMedia') }}
+            </button>
+          </div>
+          <!-- 视频生成请求 -->
+          <div v-else-if="isVideoUsage(row)" class="flex min-w-[180px] items-start gap-2">
+            <div class="min-w-0 space-y-1 text-sm">
+              <div class="flex items-center gap-1.5">
+                <Icon name="video" size="sm" class="shrink-0 text-rose-500" />
+                <span class="font-medium text-gray-900 dark:text-white">{{ t('usage.videoGeneration') }}</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                <span v-if="row.video_seconds != null">{{ row.video_seconds }}s</span>
+                <span v-if="row.video_size">{{ row.video_size }}</span>
+                <span v-if="row.video_billing_units != null">{{ t('usage.videoBillingUnits', { count: row.video_billing_units }) }}</span>
+                <span v-if="row.video_task_id" class="max-w-[160px] truncate" :title="row.video_task_id">{{ formatVideoTaskID(row.video_task_id) }}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 dark:border-dark-600 dark:text-gray-300 dark:hover:border-rose-500/40 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
+              @click.stop="openVideoDetail(row)"
+            >
+              <Icon name="eye" size="xs" />
+              {{ t('usage.viewMedia') }}
+            </button>
           </div>
           <!-- Token 请求 -->
           <div v-else class="flex items-center gap-1.5">
@@ -301,7 +334,7 @@
               <span class="font-medium text-pink-300">${{ tooltipData.image_output_cost.toFixed(6) }}</span>
             </div>
             <!-- Token billing: show unit prices per 1M tokens -->
-            <template v-if="!tooltipData?.billing_mode || tooltipData.billing_mode === BILLING_MODE_TOKEN">
+            <template v-if="tooltipData && !isImageUsage(tooltipData) && (!tooltipData.billing_mode || tooltipData.billing_mode === BILLING_MODE_TOKEN)">
               <div v-if="tooltipData && tooltipData.input_tokens > 0" class="flex items-center justify-between gap-4">
                 <span class="text-gray-400">{{ t('usage.inputTokenPrice') }}</span>
                 <span class="font-medium text-sky-300">{{ formatTokenPricePerMillion(tooltipData.input_cost, tooltipData.input_tokens) }} {{ t('usage.perMillionTokens') }}</span>
@@ -315,7 +348,7 @@
                 <span class="font-medium text-pink-300">{{ formatTokenPricePerMillion(tooltipData.image_output_cost ?? 0, tooltipData.image_output_tokens) }} {{ t('usage.perMillionTokens') }}</span>
               </div>
             </template>
-            <template v-else-if="isImageUsage(tooltipData)">
+            <template v-else-if="tooltipData && isImageUsage(tooltipData)">
               <div class="flex items-center justify-between gap-4">
                 <span class="text-gray-400">{{ t('usage.imageCount') }}</span>
                 <span class="font-medium text-white">{{ tooltipData.image_count }}{{ t('usage.imageUnit') }}</span>
@@ -399,6 +432,9 @@
       </div>
     </div>
   </Teleport>
+
+  <ImageUsageDetailModal :row="mediaDetailRow" @close="closeMediaDetail" />
+  <VideoUsageDetailModal :row="videoDetailRow" @close="closeVideoDetail" />
 </template>
 
 <script setup lang="ts">
@@ -411,6 +447,8 @@ import { getUsageServiceTierLabel } from '@/utils/usageServiceTier'
 import { resolveUsageRequestType } from '@/utils/usageRequestType'
 import {
   BILLING_MODE_TOKEN,
+  BILLING_MODE_SECOND,
+  BILLING_MODE_SEGMENT,
   getBillingModeLabel,
   getBillingModeBadgeClass,
   isImageUsage,
@@ -439,6 +477,8 @@ function accountBilled(row: { total_cost?: number | null; account_stats_cost?: n
 import DataTable from '@/components/common/DataTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Icon from '@/components/icons/Icon.vue'
+import ImageUsageDetailModal from '@/components/usage/ImageUsageDetailModal.vue'
+import VideoUsageDetailModal from '@/components/usage/VideoUsageDetailModal.vue'
 import type { AdminUsageLog } from '@/types'
 import type { Column } from '@/components/common/types'
 
@@ -472,6 +512,35 @@ const tooltipData = ref<AdminUsageLog | null>(null)
 const tokenTooltipVisible = ref(false)
 const tokenTooltipPosition = ref({ x: 0, y: 0 })
 const tokenTooltipData = ref<AdminUsageLog | null>(null)
+
+// Media detail modal state
+const mediaDetailRow = ref<AdminUsageLog | null>(null)
+const videoDetailRow = ref<AdminUsageLog | null>(null)
+
+const isVideoUsage = (row: AdminUsageLog): boolean => {
+  return Boolean(row.video_task_id?.trim()) || row.billing_mode === BILLING_MODE_SECOND || row.billing_mode === BILLING_MODE_SEGMENT || row.inbound_endpoint === '/v1/videos'
+}
+
+const openMediaDetail = (row: AdminUsageLog) => {
+  mediaDetailRow.value = row
+}
+
+const closeMediaDetail = () => {
+  mediaDetailRow.value = null
+}
+
+const openVideoDetail = (row: AdminUsageLog) => {
+  videoDetailRow.value = row
+}
+
+const closeVideoDetail = () => {
+  videoDetailRow.value = null
+}
+
+const formatVideoTaskID = (taskID: string): string => {
+  if (taskID.length <= 18) return taskID
+  return `${taskID.slice(0, 8)}...${taskID.slice(-6)}`
+}
 
 const getRequestTypeLabel = (row: AdminUsageLog): string => {
   const requestType = resolveUsageRequestType(row)

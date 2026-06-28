@@ -566,8 +566,8 @@ func TestLoadDefaultDashboardCacheConfig(t *testing.T) {
 	if !cfg.Dashboard.Enabled {
 		t.Fatalf("Dashboard.Enabled = false, want true")
 	}
-	if cfg.Dashboard.KeyPrefix != "sub2api:" {
-		t.Fatalf("Dashboard.KeyPrefix = %q, want %q", cfg.Dashboard.KeyPrefix, "sub2api:")
+	if cfg.Dashboard.KeyPrefix != "ccapi:" {
+		t.Fatalf("Dashboard.KeyPrefix = %q, want %q", cfg.Dashboard.KeyPrefix, "ccapi:")
 	}
 	if cfg.Dashboard.StatsFreshTTLSeconds != 15 {
 		t.Fatalf("Dashboard.StatsFreshTTLSeconds = %d, want 15", cfg.Dashboard.StatsFreshTTLSeconds)
@@ -771,7 +771,7 @@ func TestConfigAddressHelpers(t *testing.T) {
 		Port:     5432,
 		User:     "postgres",
 		Password: "",
-		DBName:   "sub2api",
+		DBName:   "ccapi",
 		SSLMode:  "disable",
 	}
 	if !strings.Contains(dbCfg.DSN(), "password=") {
@@ -1156,6 +1156,11 @@ func TestValidateConfigErrors(t *testing.T) {
 			name:    "billing circuit breaker half open",
 			mutate:  func(c *Config) { c.Billing.CircuitBreaker.HalfOpenRequests = 0 },
 			wantErr: "billing.circuit_breaker.half_open_requests",
+		},
+		{
+			name:    "billing minimum balance reserve",
+			mutate:  func(c *Config) { c.Billing.MinimumBalanceReserve = -0.01 },
+			wantErr: "billing.minimum_balance_reserve",
 		},
 		{
 			name:    "database max open conns",

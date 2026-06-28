@@ -7,7 +7,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/Wei-Shaw/sub2api/ent/predicate"
+	"github.com/Wei-Shaw/ccapi/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.
@@ -93,6 +93,11 @@ func GroupID(v int64) predicate.APIKey {
 // MultiGroupRouting applies equality check predicate on the "multi_group_routing" field. It's identical to MultiGroupRoutingEQ.
 func MultiGroupRouting(v bool) predicate.APIKey {
 	return predicate.APIKey(sql.FieldEQ(FieldMultiGroupRouting, v))
+}
+
+// ForceImageURLResponse applies equality check predicate on the "force_image_url_response" field. It's identical to ForceImageURLResponseEQ.
+func ForceImageURLResponse(v bool) predicate.APIKey {
+	return predicate.APIKey(sql.FieldEQ(FieldForceImageURLResponse, v))
 }
 
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
@@ -483,6 +488,16 @@ func MultiGroupRoutingEQ(v bool) predicate.APIKey {
 // MultiGroupRoutingNEQ applies the NEQ predicate on the "multi_group_routing" field.
 func MultiGroupRoutingNEQ(v bool) predicate.APIKey {
 	return predicate.APIKey(sql.FieldNEQ(FieldMultiGroupRouting, v))
+}
+
+// ForceImageURLResponseEQ applies the EQ predicate on the "force_image_url_response" field.
+func ForceImageURLResponseEQ(v bool) predicate.APIKey {
+	return predicate.APIKey(sql.FieldEQ(FieldForceImageURLResponse, v))
+}
+
+// ForceImageURLResponseNEQ applies the NEQ predicate on the "force_image_url_response" field.
+func ForceImageURLResponseNEQ(v bool) predicate.APIKey {
+	return predicate.APIKey(sql.FieldNEQ(FieldForceImageURLResponse, v))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

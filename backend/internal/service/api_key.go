@@ -3,7 +3,7 @@ package service
 import (
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/ip"
 )
 
 // API Key status constants
@@ -36,6 +36,8 @@ type APIKey struct {
 	Status  string
 	// MultiGroupRouting: 开启后按 GroupBindings 的优先级/权重在多个分组间路由。
 	MultiGroupRouting bool
+	// ForceImageURLResponse: 开启后 OpenAI 图片接口强制返回可访问 URL。
+	ForceImageURLResponse bool
 	// GroupBindings: 多分组路由的分组绑定列表（仅 MultiGroupRouting=true 时使用）。
 	GroupBindings []APIKeyGroupBinding
 	IPWhitelist   []string

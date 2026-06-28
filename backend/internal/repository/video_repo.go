@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	dbvideocalltemplate "github.com/Wei-Shaw/sub2api/ent/videocalltemplate"
-	dbvideogenerationtask "github.com/Wei-Shaw/sub2api/ent/videogenerationtask"
-	dbvideomodel "github.com/Wei-Shaw/sub2api/ent/videomodel"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Wei-Shaw/ccapi/ent"
+	dbvideocalltemplate "github.com/Wei-Shaw/ccapi/ent/videocalltemplate"
+	dbvideogenerationtask "github.com/Wei-Shaw/ccapi/ent/videogenerationtask"
+	dbvideomodel "github.com/Wei-Shaw/ccapi/ent/videomodel"
+	"github.com/Wei-Shaw/ccapi/internal/service"
 )
 
 type videoRepository struct {

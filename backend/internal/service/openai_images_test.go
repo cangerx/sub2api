@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/ccapi/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/imroc/req/v3"
 	"github.com/stretchr/testify/require"
@@ -442,6 +442,16 @@ func TestAccountSupportsOpenAIImageCapability_OAuthSupportsNative(t *testing.T) 
 	require.True(t, account.SupportsOpenAIImageCapability(OpenAIImagesCapabilityNative))
 }
 
+func TestAccountSupportsOpenAIImageCapability_EmptyRequirementDoesNotRejectGrok(t *testing.T) {
+	account := &Account{
+		Platform: PlatformGrok,
+		Type:     AccountTypeOAuth,
+	}
+
+	require.True(t, account.SupportsOpenAIImageCapability(""))
+	require.False(t, account.SupportsOpenAIImageCapability(OpenAIImagesCapabilityBasic))
+}
+
 func TestAccountSupportsOpenAIEndpointCapability(t *testing.T) {
 	t.Run("OpenAI APIKey 默认兼容 chat 和 embeddings", func(t *testing.T) {
 		account := &Account{
@@ -512,6 +522,19 @@ func TestAccountSupportsOpenAIEndpointCapability(t *testing.T) {
 		}
 
 		require.False(t, account.SupportsOpenAIEndpointCapability(OpenAIEndpointCapability("unknown")))
+	})
+
+	t.Run("通用 capabilities 可限制 OpenAI 能力", func(t *testing.T) {
+		account := &Account{
+			Platform: PlatformOpenAI,
+			Type:     AccountTypeAPIKey,
+			Credentials: map[string]any{
+				"capabilities": []any{"chat"},
+			},
+		}
+
+		require.True(t, account.SupportsOpenAIEndpointCapability(OpenAIEndpointCapabilityChatCompletions))
+		require.False(t, account.SupportsOpenAIEndpointCapability(OpenAIEndpointCapabilityEmbeddings))
 	})
 }
 
@@ -654,6 +677,77 @@ func TestOpenAIGatewayServiceForwardImages_OAuthPassesNAndReturnsAllImages(t *te
 	require.Equal(t, "aW1hZ2UtMw==", gjson.Get(rec.Body.String(), "data.2.b64_json").String())
 	require.Equal(t, "draw a cat 1", gjson.Get(rec.Body.String(), "data.0.revised_prompt").String())
 	require.Equal(t, "draw a cat 3", gjson.Get(rec.Body.String(), "data.2.revised_prompt").String())
+}
+
+func TestOpenAIGatewayServiceForwardImages_OAuthNonStreamPollsPendingResponse(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	body := []byte(`{"model":"gpt-image-2","prompt":"draw a cat","response_format":"b64_json"}`)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/images/generations", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = req
+	c.Set("api_key", &APIKey{ID: 42})
+
+	svc := &OpenAIGatewayService{}
+	parsed, err := svc.ParseOpenAIImagesRequest(c, body)
+	require.NoError(t, err)
+
+	upstream := &httpUpstreamRecorder{
+		responses: []*http.Response{
+			{
+				StatusCode: http.StatusOK,
+				Header: http.Header{
+					"Content-Type": []string{"text/event-stream"},
+					"X-Request-Id": []string{"req_img_pending"},
+				},
+				Body: io.NopCloser(strings.NewReader(
+					"data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_img_async_1\",\"status\":\"in_progress\",\"created_at\":1710000100}}\n\n" +
+						"data: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"resp_img_async_1\",\"status\":\"in_progress\",\"created_at\":1710000100}}\n\n",
+				)),
+			},
+			{
+				StatusCode: http.StatusOK,
+				Header: http.Header{
+					"Content-Type": []string{"application/json"},
+					"X-Request-Id": []string{"req_img_completed"},
+				},
+				Body: io.NopCloser(strings.NewReader(
+					`{"id":"resp_img_async_1","status":"completed","created_at":1710000100,"tool_usage":{"image_gen":{"images":1}},"output":[{"type":"image_generation_call","result":"YXN5bmMtaW1hZ2U=","revised_prompt":"draw a better cat","output_format":"png","quality":"high","size":"1024x1024"}]}`,
+				)),
+			},
+		},
+	}
+	svc.httpUpstream = upstream
+
+	account := &Account{
+		ID:       1,
+		Name:     "openai-oauth",
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeOAuth,
+		Credentials: map[string]any{
+			"access_token":       "token-123",
+			"chatgpt_account_id": "acct-123",
+		},
+	}
+
+	result, err := svc.ForwardImages(context.Background(), c, account, body, parsed, "")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Equal(t, 1, result.ImageCount)
+	require.Len(t, upstream.requests, 2)
+	require.Equal(t, http.MethodPost, upstream.requests[0].Method)
+	require.Equal(t, http.MethodGet, upstream.requests[1].Method)
+	require.Equal(t, chatgptCodexURL+"/resp_img_async_1", upstream.requests[1].URL.String())
+	require.Equal(t, "application/json", upstream.requests[1].Header.Get("Accept"))
+	require.Empty(t, upstream.requests[1].Header.Get("Content-Type"))
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "gpt-image-2", gjson.Get(rec.Body.String(), "model").String())
+	require.Equal(t, "YXN5bmMtaW1hZ2U=", gjson.Get(rec.Body.String(), "data.0.b64_json").String())
+	require.Equal(t, "draw a better cat", gjson.Get(rec.Body.String(), "data.0.revised_prompt").String())
+	require.JSONEq(t, `{"images":1}`, gjson.Get(rec.Body.String(), "usage").Raw)
 }
 
 func TestOpenAIGatewayServiceForwardImages_OAuthUpstreamHTTPErrorSurfacesRealError(t *testing.T) {

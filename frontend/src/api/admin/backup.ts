@@ -1,6 +1,7 @@
 import { apiClient } from '../client'
 
 export interface BackupS3Config {
+  provider?: 'local' | 's3' | 'r2' | 'oss'
   endpoint: string
   region: string
   bucket: string
@@ -8,6 +9,8 @@ export interface BackupS3Config {
   secret_access_key?: string
   prefix: string
   force_path_style: boolean
+  local_path?: string
+  public_base_url?: string
 }
 
 export interface BackupScheduleConfig {

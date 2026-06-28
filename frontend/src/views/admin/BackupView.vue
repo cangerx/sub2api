@@ -16,14 +16,27 @@
         </div>
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div>
+            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.s3.provider') }}</label>
+            <select v-model="s3Form.provider" class="input w-full" @change="applyProviderDefaults">
+              <option value="r2">Cloudflare R2</option>
+              <option value="oss">阿里云 OSS</option>
+              <option value="s3">S3 Compatible</option>
+              <option value="local">{{ t('admin.backup.s3.local') }}</option>
+            </select>
+          </div>
+          <div v-if="s3Form.provider === 'local'">
+            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.s3.localPath') }}</label>
+            <input v-model="s3Form.local_path" class="input w-full" placeholder="/data/ccapi/storage" />
+          </div>
+          <div v-if="s3Form.provider !== 'local'">
             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.s3.endpoint') }}</label>
-            <input v-model="s3Form.endpoint" class="input w-full" placeholder="https://<account_id>.r2.cloudflarestorage.com" />
+            <input v-model="s3Form.endpoint" class="input w-full" :placeholder="endpointPlaceholder" />
           </div>
-          <div>
+          <div v-if="s3Form.provider !== 'local'">
             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.s3.region') }}</label>
-            <input v-model="s3Form.region" class="input w-full" placeholder="auto" />
+            <input v-model="s3Form.region" class="input w-full" :placeholder="regionPlaceholder" />
           </div>
-          <div>
+          <div v-if="s3Form.provider !== 'local'">
             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.s3.bucket') }}</label>
             <input v-model="s3Form.bucket" class="input w-full" />
           </div>
@@ -32,14 +45,18 @@
             <input v-model="s3Form.prefix" class="input w-full" placeholder="backups/" />
           </div>
           <div>
+            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.s3.publicBaseUrl') }}</label>
+            <input v-model="s3Form.public_base_url" class="input w-full" placeholder="https://cdn.example.com/backups" />
+          </div>
+          <div v-if="s3Form.provider !== 'local'">
             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.s3.accessKeyId') }}</label>
             <input v-model="s3Form.access_key_id" class="input w-full" />
           </div>
-          <div>
+          <div v-if="s3Form.provider !== 'local'">
             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.s3.secretAccessKey') }}</label>
             <input v-model="s3Form.secret_access_key" type="password" class="input w-full" :placeholder="s3SecretConfigured ? t('admin.backup.s3.secretConfigured') : ''" />
           </div>
-          <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 md:col-span-2">
+          <label v-if="s3Form.provider !== 'local'" class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 md:col-span-2">
             <input v-model="s3Form.force_path_style" type="checkbox" />
             <span>{{ t('admin.backup.s3.forcePathStyle') }}</span>
           </label>
@@ -290,6 +307,7 @@ const appStore = useAppStore()
 
 // S3 config
 const s3Form = ref<BackupS3Config>({
+  provider: 'r2',
   endpoint: '',
   region: 'auto',
   bucket: '',
@@ -297,6 +315,8 @@ const s3Form = ref<BackupS3Config>({
   secret_access_key: '',
   prefix: 'backups/',
   force_path_style: false,
+  local_path: '',
+  public_base_url: '',
 })
 const s3SecretConfigured = ref(false)
 const savingS3 = ref(false)
@@ -435,10 +455,147 @@ const r2ConfigRows = computed(() => [
   { field: t('admin.backup.s3.forcePathStyle'), value: t('admin.backup.r2Guide.step4.unchecked') },
 ])
 
+const endpointPlaceholder = computed(() => {
+  if (s3Form.value.provider === 'oss') return 'https://oss-cn-hangzhou.aliyuncs.com'
+  if (s3Form.value.provider === 'r2') return 'https://<account_id>.r2.cloudflarestorage.com'
+  return 'https://s3.example.com'
+})
+
+const regionPlaceholder = computed(() => {
+  if (s3Form.value.provider === 'oss') return 'oss-cn-hangzhou'
+  if (s3Form.value.provider === 'r2') return 'auto'
+  return 'auto'
+})
+
+function backupMessage(errorOrMessage: unknown, fallbackKey: string): string {
+  const err = errorOrMessage as {
+    status?: number
+    code?: string | number
+    reason?: string
+    message?: string
+    error?: string
+    response?: { status?: number; data?: { code?: string | number; message?: string; detail?: string } }
+  } | null
+  const code = String(err?.reason || err?.code || err?.response?.data?.code || '')
+  const raw = typeof errorOrMessage === 'string'
+    ? errorOrMessage
+    : String(err?.message || err?.error || err?.response?.data?.message || err?.response?.data?.detail || '')
+
+  const codeKeyMap: Record<string, string> = {
+    BACKUP_S3_NOT_CONFIGURED: 'admin.backup.errors.storageNotConfigured',
+    BACKUP_NOT_FOUND: 'admin.backup.errors.notFound',
+    BACKUP_IN_PROGRESS: 'admin.backup.operations.alreadyInProgress',
+    RESTORE_IN_PROGRESS: 'admin.backup.operations.restoreRunning',
+    BACKUP_RECORDS_CORRUPT: 'admin.backup.errors.recordsCorrupt',
+    BACKUP_S3_CONFIG_CORRUPT: 'admin.backup.errors.storageConfigCorrupt',
+    BACKUP_NOT_COMPLETED: 'admin.backup.errors.notCompleted',
+    INVALID_CRON: 'admin.backup.errors.invalidCron',
+  }
+  if (code && codeKeyMap[code]) return t(codeKeyMap[code])
+
+  if (raw.includes('incomplete local storage config') || raw.includes('local_path is required')) {
+    return t('admin.backup.s3.errors.localPathRequired')
+  }
+  if (raw.includes('incomplete object storage config') || raw.includes('incomplete S3 config')) {
+    return t('admin.backup.s3.errors.objectStorageRequired')
+  }
+  if (raw.includes('connection successful')) {
+    return t('admin.backup.s3.testSuccess')
+  }
+  if (raw.includes('cron expression is required')) {
+    return t('admin.backup.errors.cronRequired')
+  }
+  if (raw.includes('invalid cron expression') || raw.includes('failed to schedule')) {
+    return t('admin.backup.errors.invalidCron')
+  }
+  if (raw.includes('backup storage is not configured')) {
+    return t('admin.backup.errors.storageNotConfigured')
+  }
+  if (raw.includes('backup record not found') || raw.includes('backup is not completed')) {
+    return t('admin.backup.errors.notFound')
+  }
+  if (raw.includes('can only restore from a completed backup')) {
+    return t('admin.backup.errors.notCompleted')
+  }
+  if (raw.includes('incorrect admin password')) {
+    return t('admin.backup.errors.incorrectPassword')
+  }
+  if (raw.includes('password is required')) {
+    return t('admin.backup.errors.passwordRequired')
+  }
+  if (raw.includes('a backup is already in progress')) {
+    return t('admin.backup.operations.alreadyInProgress')
+  }
+  if (raw.includes('a restore is already in progress')) {
+    return t('admin.backup.operations.restoreRunning')
+  }
+  if (raw.includes('Network error')) {
+    return t('errors.networkError')
+  }
+  return raw || t(fallbackKey)
+}
+
+function applyProviderDefaults() {
+  if (s3Form.value.provider === 'local') {
+    s3Form.value.endpoint = ''
+    s3Form.value.region = ''
+    s3Form.value.bucket = ''
+    s3Form.value.access_key_id = ''
+    s3Form.value.secret_access_key = ''
+    s3Form.value.force_path_style = false
+    if (!s3Form.value.local_path) s3Form.value.local_path = './data/storage'
+    return
+  }
+  if (s3Form.value.provider === 'r2') {
+    if (!s3Form.value.region) s3Form.value.region = 'auto'
+    s3Form.value.force_path_style = false
+    return
+  }
+  if (s3Form.value.provider === 'oss') {
+    if (!s3Form.value.region || s3Form.value.region === 'auto') s3Form.value.region = 'oss-cn-hangzhou'
+    s3Form.value.force_path_style = true
+    return
+  }
+  if (!s3Form.value.region) s3Form.value.region = 'auto'
+}
+
+function buildStoragePayload(): BackupS3Config {
+  const provider = s3Form.value.provider || 'r2'
+  const prefix = s3Form.value.prefix || 'backups/'
+  if (provider === 'local') {
+    return {
+      provider: 'local',
+      endpoint: '',
+      region: '',
+      bucket: '',
+      access_key_id: '',
+      secret_access_key: '',
+      prefix,
+      force_path_style: false,
+      local_path: s3Form.value.local_path || './data/storage',
+      public_base_url: s3Form.value.public_base_url || '',
+    }
+  }
+  return {
+    provider,
+    endpoint: s3Form.value.endpoint || '',
+    region: s3Form.value.region || 'auto',
+    bucket: s3Form.value.bucket || '',
+    access_key_id: s3Form.value.access_key_id || '',
+    secret_access_key: s3Form.value.secret_access_key || '',
+    prefix,
+    force_path_style: Boolean(s3Form.value.force_path_style),
+    local_path: '',
+    public_base_url: s3Form.value.public_base_url || '',
+  }
+}
+
 async function loadS3Config() {
   try {
     const cfg = await adminAPI.backup.getS3Config()
+    const provider = cfg.provider || (cfg.local_path ? 'local' : 'r2')
     s3Form.value = {
+      provider,
       endpoint: cfg.endpoint || '',
       region: cfg.region || 'auto',
       bucket: cfg.bucket || '',
@@ -446,21 +603,39 @@ async function loadS3Config() {
       secret_access_key: '',
       prefix: cfg.prefix || 'backups/',
       force_path_style: cfg.force_path_style,
+      local_path: cfg.local_path || '',
+      public_base_url: cfg.public_base_url || '',
     }
+    applyProviderDefaults()
     s3SecretConfigured.value = Boolean(cfg.access_key_id)
   } catch (error) {
-    appStore.showError((error as { message?: string })?.message || t('errors.networkError'))
+    appStore.showError(backupMessage(error, 'errors.networkError'))
   }
 }
 
 async function saveS3Config() {
   savingS3.value = true
   try {
-    await adminAPI.backup.updateS3Config(s3Form.value)
+    applyProviderDefaults()
+    const payload = buildStoragePayload()
+    const saved = await adminAPI.backup.updateS3Config(payload)
+    s3Form.value = {
+      provider: saved.provider || payload.provider,
+      endpoint: saved.endpoint || payload.endpoint,
+      region: saved.region || payload.region,
+      bucket: saved.bucket || payload.bucket,
+      access_key_id: saved.access_key_id || payload.access_key_id,
+      secret_access_key: '',
+      prefix: saved.prefix || payload.prefix,
+      force_path_style: saved.force_path_style ?? payload.force_path_style,
+      local_path: saved.local_path || payload.local_path || '',
+      public_base_url: saved.public_base_url || payload.public_base_url || '',
+    }
+    applyProviderDefaults()
+    s3SecretConfigured.value = s3Form.value.provider !== 'local' && Boolean(s3Form.value.access_key_id)
     appStore.showSuccess(t('admin.backup.s3.saved'))
-    await loadS3Config()
   } catch (error) {
-    appStore.showError((error as { message?: string })?.message || t('errors.networkError'))
+    appStore.showError(backupMessage(error, 'errors.networkError'))
   } finally {
     savingS3.value = false
   }
@@ -469,14 +644,15 @@ async function saveS3Config() {
 async function testS3() {
   testingS3.value = true
   try {
-    const result = await adminAPI.backup.testS3Connection(s3Form.value)
+    applyProviderDefaults()
+    const result = await adminAPI.backup.testS3Connection(buildStoragePayload())
     if (result.ok) {
-      appStore.showSuccess(result.message || t('admin.backup.s3.testSuccess'))
+      appStore.showSuccess(backupMessage(result.message, 'admin.backup.s3.testSuccess'))
     } else {
-      appStore.showError(result.message || t('admin.backup.s3.testFailed'))
+      appStore.showError(backupMessage(result.message, 'admin.backup.s3.testFailed'))
     }
   } catch (error) {
-    appStore.showError((error as { message?: string })?.message || t('errors.networkError'))
+    appStore.showError(backupMessage(error, 'errors.networkError'))
   } finally {
     testingS3.value = false
   }
@@ -492,7 +668,7 @@ async function loadSchedule() {
       retain_count: cfg.retain_count || 10,
     }
   } catch (error) {
-    appStore.showError((error as { message?: string })?.message || t('errors.networkError'))
+    appStore.showError(backupMessage(error, 'errors.networkError'))
   }
 }
 
@@ -502,7 +678,7 @@ async function saveSchedule() {
     await adminAPI.backup.updateSchedule(scheduleForm.value)
     appStore.showSuccess(t('admin.backup.schedule.saved'))
   } catch (error) {
-    appStore.showError((error as { message?: string })?.message || t('errors.networkError'))
+    appStore.showError(backupMessage(error, 'errors.networkError'))
   } finally {
     savingSchedule.value = false
   }
@@ -514,7 +690,7 @@ async function loadBackups() {
     const result = await adminAPI.backup.listBackups()
     backups.value = result.items || []
   } catch (error) {
-    appStore.showError((error as { message?: string })?.message || t('errors.networkError'))
+    appStore.showError(backupMessage(error, 'errors.networkError'))
   } finally {
     loadingBackups.value = false
   }
@@ -528,10 +704,10 @@ async function createBackup() {
     backups.value.unshift(record)
     startPolling(record.id)
   } catch (error: any) {
-    if (error?.response?.status === 409) {
+    if (error?.status === 409 || error?.response?.status === 409) {
       appStore.showWarning(t('admin.backup.operations.alreadyInProgress'))
     } else {
-      appStore.showError(error?.message || t('errors.networkError'))
+      appStore.showError(backupMessage(error, 'errors.networkError'))
     }
     creatingBackup.value = false
   }
@@ -542,7 +718,7 @@ async function downloadBackup(id: string) {
     const result = await adminAPI.backup.getDownloadURL(id)
     window.open(result.url, '_blank')
   } catch (error) {
-    appStore.showError((error as { message?: string })?.message || t('errors.networkError'))
+    appStore.showError(backupMessage(error, 'errors.networkError'))
   }
 }
 
@@ -556,10 +732,10 @@ async function restoreBackup(id: string) {
     updateRecordInList(record)
     startRestorePolling(id)
   } catch (error: any) {
-    if (error?.response?.status === 409) {
+    if (error?.status === 409 || error?.response?.status === 409) {
       appStore.showWarning(t('admin.backup.operations.restoreRunning'))
     } else {
-      appStore.showError(error?.message || t('errors.networkError'))
+      appStore.showError(backupMessage(error, 'errors.networkError'))
     }
     restoringId.value = ''
   }
@@ -572,7 +748,7 @@ async function removeBackup(id: string) {
     appStore.showSuccess(t('admin.backup.actions.deleted'))
     await loadBackups()
   } catch (error) {
-    appStore.showError((error as { message?: string })?.message || t('errors.networkError'))
+    appStore.showError(backupMessage(error, 'errors.networkError'))
   }
 }
 

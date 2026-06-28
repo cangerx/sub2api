@@ -3,7 +3,7 @@ package provider
 import (
 	"fmt"
 
-	"github.com/Wei-Shaw/sub2api/internal/payment"
+	"github.com/Wei-Shaw/ccapi/internal/payment"
 )
 
 // CreateProvider creates a Provider from a provider key, instance ID and decrypted config.
@@ -19,6 +19,8 @@ func CreateProvider(providerKey string, instanceID string, config map[string]str
 		return NewStripe(instanceID, config)
 	case payment.TypeAirwallex:
 		return NewAirwallex(instanceID, config)
+	case payment.TypeTianque, "suixingpay":
+		return NewTianque(instanceID, config)
 	default:
 		return nil, fmt.Errorf("unknown provider key: %s", providerKey)
 	}

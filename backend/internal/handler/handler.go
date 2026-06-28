@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
+	"github.com/Wei-Shaw/ccapi/internal/handler/admin"
 )
 
 // AdminHandlers contains all admin-related HTTP handlers
@@ -17,6 +17,7 @@ type AdminHandlers struct {
 	OpenAIOAuth            *admin.OpenAIOAuthHandler
 	GeminiOAuth            *admin.GeminiOAuthHandler
 	AntigravityOAuth       *admin.AntigravityOAuthHandler
+	GrokOAuth              *admin.GrokOAuthHandler
 	Proxy                  *admin.ProxyHandler
 	Redeem                 *admin.RedeemHandler
 	Promo                  *admin.PromoHandler

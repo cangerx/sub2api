@@ -301,7 +301,7 @@ const baseSettingsResponse = {
   default_balance: 0,
   default_concurrency: 1,
   default_subscriptions: [],
-  site_name: "Sub2API",
+  site_name: "CCAPI",
   site_logo: "",
   site_subtitle: "",
   api_base_url: "",
@@ -579,10 +579,10 @@ describe("admin SettingsView payment visible method controls", () => {
 
     expect(paymentLinks).toHaveLength(2);
     expect(paymentLinks[0]?.attributes("href")).toBe(
-      "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md",
+      "https://github.com/Wei-Shaw/ccapi/blob/main/docs/PAYMENT_CN.md",
     );
     expect(paymentLinks[1]?.attributes("href")).toBe(
-      "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md#支持的支付方式",
+      "https://github.com/Wei-Shaw/ccapi/blob/main/docs/PAYMENT_CN.md#支持的支付方式",
     );
     for (const link of paymentLinks) {
       expect(link.attributes("href")).toContain("docs/PAYMENT");
@@ -792,6 +792,70 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(paymentHelpImageUpload).toBeDefined();
     expect(paymentHelpImageUpload?.attributes("data-upload-label")).toBe("上传图片");
     expect(paymentHelpImageUpload?.attributes("data-remove-label")).toBe("移除");
+  });
+
+  it("normalizes null supported_types from API so provider card stays visible", async () => {
+    // Backend returns null for supported_types when the list is empty
+    // (Go nil slice → JSON null). Without normalization, ProviderCard's
+    // isSelected() throws TypeError on null.includes(), causing the card
+    // to vanish from the list.
+    const providerWithNullTypes = {
+      id: 42,
+      provider_key: "easypay",
+      name: "EasyPay",
+      config: {},
+      supported_types: null as unknown as string[],
+      enabled: true,
+      payment_mode: "",
+      refund_enabled: false,
+      allow_user_refund: false,
+      limits: "",
+      sort_order: 0,
+    };
+    getProviders.mockReset();
+    getProviders.mockResolvedValue({ data: [providerWithNullTypes] });
+
+    let receivedProviders: Array<Record<string, unknown>> = [];
+    const PaymentProviderListCapture = defineComponent({
+      props: {
+        providers: {
+          type: Array,
+          default: () => [],
+        },
+      },
+      setup(props) {
+        receivedProviders = props.providers as Array<Record<string, unknown>>;
+        return () => h("div", { class: "provider-list-capture" });
+      },
+    });
+
+    const wrapper = mount(SettingsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          Select: SelectStub,
+          Toggle: ToggleStub,
+          Icon: true,
+          ConfirmDialog: true,
+          PaymentProviderList: PaymentProviderListCapture,
+          PaymentProviderDialog: true,
+          GroupBadge: true,
+          GroupOptionItem: true,
+          ProxySelector: true,
+          ImageUpload: ImageUploadStub,
+          BackupSettings: true,
+        },
+      },
+    });
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+
+    // The provider should still be in the list
+    expect(receivedProviders.length).toBe(1);
+    // supported_types should be normalized to an empty array, not null
+    expect(Array.isArray(receivedProviders[0].supported_types)).toBe(true);
+    expect(receivedProviders[0].supported_types).toEqual([]);
   });
 });
 
@@ -1085,7 +1149,7 @@ describe("admin SettingsView platform quota matrix", () => {
     getProviders.mockResolvedValue({ data: [] });
   });
 
-  it("从 baseSettings 加载默认平台配额数据并在 Users tab 渲染 4 平台行", async () => {
+  it("从 baseSettings 加载默认平台配额数据并在 Users tab 渲染 5 平台行", async () => {
     const wrapper = mountView();
     await flushPromises();
     await openUsersTab(wrapper);
@@ -1100,7 +1164,7 @@ describe("admin SettingsView platform quota matrix", () => {
     expect(html).toContain("antigravity");
   });
 
-  it("保存时 updateSettings payload 应包含嵌套 default_platform_quotas 对象（含全 4 平台）", async () => {
+  it("保存时 updateSettings payload 应包含嵌套 default_platform_quotas 对象（含全 5 平台）", async () => {
     const wrapper = mountView();
     await flushPromises();
     await openUsersTab(wrapper);
@@ -1116,7 +1180,7 @@ describe("admin SettingsView platform quota matrix", () => {
     // 应携带嵌套对象，而非扁平字段
     expect(payload).toHaveProperty("default_platform_quotas");
     const quotas = payload["default_platform_quotas"] as Record<string, unknown>;
-    const platforms = ["anthropic", "openai", "gemini", "antigravity"];
+    const platforms = ["anthropic", "openai", "gemini", "antigravity", "video", "grok"];
     for (const p of platforms) {
       expect(quotas).toHaveProperty(p);
       const pq = quotas[p] as Record<string, unknown>;
@@ -1130,7 +1194,7 @@ describe("admin SettingsView platform quota matrix", () => {
     expect(payload).not.toHaveProperty("default_platform_quota_openai_weekly");
   });
 
-  it("加载后 form.default_platform_quotas 含全 4 平台，从嵌套 JSON 正确读取数值", async () => {
+  it("加载后 form.default_platform_quotas 含全 5 平台，从嵌套 JSON 正确读取数值", async () => {
     getSettings.mockResolvedValueOnce({
       ...baseSettingsResponse,
       default_platform_quotas: {

@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
-	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/sub2api/internal/payment"
-	"github.com/Wei-Shaw/sub2api/internal/payment/provider"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	dbent "github.com/Wei-Shaw/ccapi/ent"
+	"github.com/Wei-Shaw/ccapi/ent/paymentorder"
+	"github.com/Wei-Shaw/ccapi/ent/paymentproviderinstance"
+	"github.com/Wei-Shaw/ccapi/internal/payment"
+	"github.com/Wei-Shaw/ccapi/internal/payment/provider"
+	infraerrors "github.com/Wei-Shaw/ccapi/internal/pkg/errors"
 )
 
 // validateProviderConfig runs the provider's constructor to surface config-level
@@ -115,6 +115,7 @@ var providerSensitiveConfigFields = map[string]map[string]struct{}{
 	payment.TypeWxpay:     {"privatekey": {}, "apiv3key": {}, "publickey": {}},
 	payment.TypeStripe:    {"secretkey": {}, "webhooksecret": {}},
 	payment.TypeAirwallex: {"apikey": {}, "webhooksecret": {}},
+	payment.TypeTianque:   {"privatekey": {}},
 }
 
 // providerPendingOrderProtectedConfigFields lists config keys that cannot be
@@ -127,6 +128,7 @@ var providerPendingOrderProtectedConfigFields = map[string]map[string]struct{}{
 	payment.TypeWxpay:     {"privatekey": {}, "apiv3key": {}, "publickey": {}, "appid": {}, "mpappid": {}, "mchid": {}, "publickeyid": {}, "certserial": {}},
 	payment.TypeStripe:    {"secretkey": {}, "webhooksecret": {}, "currency": {}},
 	payment.TypeAirwallex: {"clientid": {}, "apikey": {}, "webhooksecret": {}, "apibase": {}, "accountid": {}, "currency": {}},
+	payment.TypeTianque:   {"orgid": {}, "mno": {}, "privatekey": {}, "apibase": {}},
 }
 
 func isSensitiveProviderConfigField(providerKey, fieldName string) bool {
@@ -178,6 +180,7 @@ func (s *PaymentConfigService) countPendingOrdersByPlan(ctx context.Context, pla
 
 var validProviderKeys = map[string]bool{
 	payment.TypeEasyPay: true, payment.TypeAlipay: true, payment.TypeWxpay: true, payment.TypeStripe: true, payment.TypeAirwallex: true,
+	payment.TypeTianque: true,
 }
 
 func (s *PaymentConfigService) CreateProviderInstance(ctx context.Context, req CreateProviderInstanceRequest) (*dbent.PaymentProviderInstance, error) {

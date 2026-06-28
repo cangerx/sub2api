@@ -12,10 +12,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/sub2api/ent/predicate"
-	"github.com/Wei-Shaw/sub2api/ent/videocalltemplate"
-	"github.com/Wei-Shaw/sub2api/ent/videogenerationtask"
-	"github.com/Wei-Shaw/sub2api/ent/videomodel"
+	"github.com/Wei-Shaw/ccapi/ent/predicate"
+	"github.com/Wei-Shaw/ccapi/ent/videocalltemplate"
+	"github.com/Wei-Shaw/ccapi/ent/videogenerationtask"
+	"github.com/Wei-Shaw/ccapi/ent/videomodel"
 )
 
 // VideoModelUpdate is the builder for updating VideoModel entities.

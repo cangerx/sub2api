@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/sub2api/internal/payment"
-	"github.com/Wei-Shaw/sub2api/internal/payment/provider"
+	dbent "github.com/Wei-Shaw/ccapi/ent"
+	"github.com/Wei-Shaw/ccapi/ent/paymentproviderinstance"
+	"github.com/Wei-Shaw/ccapi/internal/payment"
+	"github.com/Wei-Shaw/ccapi/internal/payment/provider"
 )
 
 // --- Order Status Constants ---
@@ -337,15 +337,17 @@ func psSliceContains(sl []string, s string) bool {
 
 // Subscription validity period unit constants.
 const (
-	validityUnitWeek  = "week"
-	validityUnitMonth = "month"
+	validityUnitWeek   = "week"
+	validityUnitWeeks  = "weeks"
+	validityUnitMonth  = "month"
+	validityUnitMonths = "months"
 )
 
 func psComputeValidityDays(days int, unit string) int {
 	switch unit {
-	case validityUnitWeek:
+	case validityUnitWeek, validityUnitWeeks:
 		return days * 7
-	case validityUnitMonth:
+	case validityUnitMonth, validityUnitMonths:
 		return days * 30
 	default:
 		return days

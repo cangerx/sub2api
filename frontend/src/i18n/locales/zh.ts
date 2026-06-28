@@ -187,8 +187,8 @@ export default {
 
   // Setup Wizard
   setup: {
-    title: 'Sub2API 安装向导',
-    description: '配置您的 Sub2API 实例',
+    title: 'CCAPI 安装向导',
+    description: '配置您的 CCAPI 实例',
     database: {
       title: '数据库配置',
       description: '连接到您的 PostgreSQL 数据库',
@@ -794,6 +794,8 @@ export default {
     groupChangedSuccess: '分组更换成功',
     failedToChangeGroup: '更换分组失败',
     groupRequired: '请选择分组',
+    forceImageUrlResponse: '图片强制返回 URL',
+    forceImageUrlResponseHint: '开启后此密钥调用图片生成/编辑接口时，即使客户端请求 base64，也会返回可访问的图片地址。',
     usage: '用量',
     today: '今日',
     total: '近30天',
@@ -1002,6 +1004,35 @@ export default {
     imageSizeNotRecorded: '未记录',
     imageSizeLegacyUnstandardized: '历史非标准',
     imageSizeUnknown: '未知',
+    viewMedia: '查看',
+    mediaDetails: '图片详情',
+    generatedImage: '生成图片',
+    openImage: '打开原图',
+    copyImageUrl: '复制链接',
+    downloadImage: '下载',
+    copied: '已复制',
+    publicUrl: '公网 URL',
+    imageUrlCount: 'URL 数量',
+    imagePreviewFailed: '图片预览加载失败',
+    noImageUrlRecorded: '未记录图片地址',
+    prompt: '提示词',
+    revisedPrompts: '优化提示词',
+    noPromptRecorded: '未记录提示词',
+    noRevisedPromptRecorded: '未记录优化提示词',
+    dataUrl: 'Data URL 图片',
+    videoGeneration: '视频生成',
+    videoDetails: '视频详情',
+    videoTaskId: '视频任务 ID',
+    copyVideoTaskId: '复制任务 ID',
+    videoSeconds: '视频时长',
+    videoSize: '视频尺寸',
+    videoBillingUnitCount: '计费单位',
+    videoPlaybackUrl: '视频播放地址',
+    noVideoUrlRecorded: '未记录视频地址',
+    noVideoUrlRecordedHint: '当前用量记录只保存了视频任务 ID、时长、尺寸和计费信息，暂未保存视频文件地址。',
+    videoBillingUnits: '{count} 个计费单位',
+    billingModeSecond: '视频按秒',
+    billingModeSegment: '视频按区间',
     cacheRead: '读取',
     cacheWrite: '写入',
     serviceTier: '服务档位',
@@ -1670,13 +1701,17 @@ export default {
 
     backup: {
       title: '数据库备份',
-      description: '全量数据库备份到 S3 兼容存储，支持定时备份与恢复',
+      description: '全量数据库备份到对象存储，支持本地、R2、OSS、S3 与定时恢复',
       s3: {
-        title: 'S3 存储配置',
-        description: '配置 S3 兼容存储（支持 Cloudflare R2）',
-        descriptionPrefix: '配置 S3 兼容存储（支持',
-        descriptionSuffix: '）',
-        enabled: '启用 S3 存储',
+        title: '对象存储配置',
+        description: '配置本地、Cloudflare R2、阿里云 OSS 或 S3 兼容存储',
+        descriptionPrefix: '配置对象存储（支持',
+        descriptionSuffix: '、OSS、本地）',
+        enabled: '启用对象存储',
+        provider: '存储类型',
+        local: '本地存储',
+        localPath: '本地目录',
+        publicBaseUrl: '公开访问地址',
         endpoint: '端点地址',
         region: '区域',
         bucket: '存储桶',
@@ -1686,9 +1721,13 @@ export default {
         secretConfigured: '已配置，留空保持不变',
         forcePathStyle: '强制路径风格',
         testConnection: '测试连接',
-        testSuccess: 'S3 连接测试成功',
-        testFailed: 'S3 连接测试失败',
-        saved: 'S3 配置已保存'
+        testSuccess: '存储连接测试成功',
+        testFailed: '存储连接测试失败',
+        saved: '存储配置已保存',
+        errors: {
+          localPathRequired: '请填写本地存储目录',
+          objectStorageRequired: '请填写存储桶、Access Key ID 和 Secret Access Key'
+        }
       },
       schedule: {
         title: '定时备份',
@@ -1714,6 +1753,17 @@ export default {
         backupFailed: '备份失败',
         restoreRunning: '恢复进行中...',
         restoreFailed: '恢复失败',
+      },
+      errors: {
+        storageNotConfigured: '请先配置对象存储',
+        notFound: '备份记录不存在',
+        notCompleted: '只能恢复已完成的备份',
+        recordsCorrupt: '备份记录数据异常',
+        storageConfigCorrupt: '对象存储配置数据异常',
+        cronRequired: '启用定时备份时请填写 Cron 表达式',
+        invalidCron: 'Cron 表达式格式不正确',
+        incorrectPassword: '管理员密码不正确',
+        passwordRequired: '恢复备份需要输入管理员密码'
       },
       columns: {
         status: '状态',
@@ -1756,7 +1806,7 @@ export default {
         step1: {
           title: '创建 R2 存储桶',
           line1: '登录 Cloudflare Dashboard (dash.cloudflare.com)，左侧菜单选择「R2 对象存储」',
-          line2: '点击「创建存储桶」，输入名称（如 sub2api-backups），选择区域',
+          line2: '点击「创建存储桶」，输入名称（如 ccapi-backups），选择区域',
           line3: '点击创建完成'
         },
         step2: {
@@ -3396,7 +3446,7 @@ export default {
         expiresAt: '过期时间',
         actions: '操作'
       },
-      usageWindowsHint: '“5h / 7d”是上游账号（如 OpenAI ChatGPT、Claude）官方的滚动用量窗口限制，由上游对账号设定，并非 sub2api 配置，也与你映射的模型无关。窗口滚动到期后用量会自动重置，无法在 sub2api 端解除该限制。',
+      usageWindowsHint: '“5h / 7d”是上游账号（如 OpenAI ChatGPT、Claude）官方的滚动用量窗口限制，由上游对账号设定，并非 ccapi 配置，也与你映射的模型无关。窗口滚动到期后用量会自动重置，无法在 ccapi 端解除该限制。',
       allPrivacyModes: '全部Privacy状态',
       privacyUnset: '未设置',
       privacyTrainingOff: '已关闭训练数据共享',
@@ -3492,6 +3542,7 @@ export default {
         gemini: 'Gemini',
         antigravity: 'Antigravity',
         video: 'Video',
+        grok: 'Grok',
       },
       types: {
         oauth: 'OAuth',
@@ -3500,12 +3551,17 @@ export default {
         googleOauth: 'Google OAuth',
         codeAssist: 'Code Assist',
         antigravityOauth: 'Antigravity OAuth',
+        grokOauth: 'Grok OAuth',
         antigravityApikey: '通过 Base URL + API Key 连接',
         upstream: '对接上游',
         upstreamDesc: '通过 Base URL + API Key 连接上游',
         api_key: 'API Key',
         cookie: 'Cookie'
       },
+      antigravityProjectIdLabel: 'GCP Project ID（可选）',
+      antigravityProjectIdPlaceholder: 'your-gcp-project-id',
+      antigravityProjectIdHint:
+        'standard-tier 且未自动返回 project_id 的 Antigravity 账号需要填写用户自带 GCP project。',
       status: {
         active: '正常',
         inactive: '停用',
@@ -3579,6 +3635,18 @@ export default {
         gemini3Flash: 'G3F',
         gemini3Image: 'G31FI',
         claude: 'Claude',
+        grokRequests: '请求',
+        grokTokens: 'Token',
+        grokUnknown: 'Grok 配额需等待首次上游响应返回 xAI rate-limit 头后显示。',
+        grokRetryAfter: '{time} 后重试',
+        grokProbe: '探测',
+        grokProbeTooltip: '发送最小 xAI Responses 探测请求并读取配额响应头',
+        grokResetUnsupported: '不支持重置',
+        grokResetUnsupportedTooltip: 'xAI 未向 Grok OAuth 账号开放重置额度接口',
+        grokNoHeaders: '未观察到配额响应头',
+        grokLastStatus: '状态 {status}',
+        grokLastProbe: '探测 {time}',
+        grokLastHeadersSeen: '响应头 {time}',
         passiveSampled: '被动采样',
         activeQuery: '查询'
       },
@@ -3591,7 +3659,9 @@ export default {
         resetTooltipNeedQuery: '先点击「次数」加载剩余重置次数',
         resetTooltipNoCredits: '没有可用的重置次数',
         noCreditsAvailable: '没有可用的重置次数',
-        resetSuccess: '已重置 {windows} 个窗口'
+        resetSuccess: '已重置 {windows} 个窗口',
+        confirmTitle: '确认重置周限',
+        confirmMessage: '将消耗 1 次重置次数立即恢复当前窗口，剩余 {count} 次。此操作不可撤销，确定继续吗？'
       },
       tier: {
         free: 'Free',
@@ -3787,8 +3857,8 @@ export default {
         responsesStatusForcedChatCompletions: '已强制 Chat Completions',
         codexCLIOnly: '仅允许 Codex 官方客户端',
         codexCLIOnlyDesc: '仅对 OpenAI OAuth 生效。开启后仅允许 Codex 官方客户端家族访问；关闭后完全绕过并保持原逻辑。',
-        codexCLIOnlyAllowClaudeCode: '额外放行 Claude Code 的 Codex 插件',
-        codexCLIOnlyAllowClaudeCodeDesc: '仅在上方开关开启时生效。额外放行通过 Claude Code 的 Codex 插件发起的请求（精确匹配 originator=Claude Code），不影响对其他非官方客户端的拦截。',
+        codexCLIOnlyAppServer: '允许 Codex app-server 客户端',
+        codexCLIOnlyAppServerDesc: '仅在上方开关开启时生效。开启后本账号额外放行内嵌 Codex 引擎、经 app-server 协议接入的第三方客户端（如 Claude Code 的 codex 插件），仍需通过全局引擎指纹门；与全局 app-server 开关取 OR（任一开即放行）。',
         codexImageGenerationBridge: 'Codex 图片生成桥接',
         codexImageGenerationBridgeDesc:
           '账号级策略优先于渠道和全局配置。仅控制 Codex 走 /responses 文本端点时是否注入 image_generation 工具；不影响独立图片生成接口。',
@@ -3819,6 +3889,10 @@ export default {
         testModeDefault: '常规请求',
         testModeCompact: 'Compact 探测',
         modelRestrictionDisabledByPassthrough: '已开启自动透传：模型白名单/映射不会生效。',
+      },
+      grok: {
+        baseUrlHint: 'Grok OAuth 账号会转发到官方 xAI API Base URL。',
+        apiKeyHint: 'Grok 订阅支持使用 OAuth refresh token；API Key 账号不在本次范围内。'
       },
       anthropic: {
         apiKeyPassthrough: '自动透传（仅替换认证）',
@@ -3863,7 +3937,7 @@ export default {
       poolMode: '池模式',
       poolModeHint: '上游为账号池时启用，错误不标记本地账号状态',
       poolModeInfo:
-        '启用后，上游 429/403/401 错误将自动重试而不标记账号限流或错误，适用于上游指向另一个 sub2api 实例的场景。',
+        '启用后，上游 429/403/401 错误将自动重试而不标记账号限流或错误，适用于上游指向另一个 ccapi 实例的场景。',
       poolModeRetryCount: '同账号重试次数',
       poolModeRetryCountHint: '仅在池模式下生效。0 表示不原地重试；默认 {default}，最大 {max}。',
       poolModeRetryStatusCodes: '同账号重试状态码',
@@ -4122,6 +4196,14 @@ export default {
           codexSessionImportFailed: 'Codex 账号导入失败',
           codexSessionImportSuccess: '导入完成：新增 {created}，更新 {updated}，跳过 {skipped}',
           codexSessionImportPartial: '部分成功：新增 {created}，更新 {updated}，跳过 {skipped}，失败 {failed}',
+          codexPatAuth: 'Codex Personal Access Token',
+          codexPatDesc: '输入 Codex at- Personal Access Token，系统会先调用 OpenAI whoami 校验后再创建账号。',
+          codexPatInputLabel: 'Codex PAT',
+          codexPatPlaceholder: 'at-...',
+          codexPatHint: '这是独立认证模式，不保存 refresh_token，也不会写入 OAuth access_token 过期时间。',
+          codexPatImportAndCreate: '校验并创建 Codex PAT 账号',
+          codexPatEmpty: '请输入 Codex Personal Access Token',
+          codexPatImportFailed: 'Codex PAT 账号创建失败',
           sessionTokenAuth: '手动输入 ST',
           sessionTokenDesc: '输入您已有的 Session Token，支持批量输入（每行一个），系统将自动验证并创建账号。',
           sessionTokenPlaceholder: '粘贴您的 Session Token...\n支持多个，每行一个',
@@ -4138,6 +4220,31 @@ export default {
           validateAndCreate: '验证并创建账号',
           pleaseEnterRefreshToken: '请输入 Refresh Token',
           pleaseEnterSessionToken: '请输入 Session Token'
+        },
+        grok: {
+          title: 'Grok 账号授权',
+          followSteps: '请按照以下步骤授权您的 xAI/Grok 账号：',
+          step1GenerateUrl: '生成 xAI 授权链接',
+          generateAuthUrl: '生成授权链接',
+          step2OpenUrl: '在浏览器中打开链接并完成授权',
+          openUrlDesc: '在新标签页中打开授权链接，登录 xAI 并授权 API 访问。',
+          importantNotice: '当浏览器跳转到本地 callback URL 后，请复制完整 URL 或 code 参数回填到这里。',
+          step3EnterCode: '输入授权链接或 Code',
+          authCodeDesc: '授权完成后，粘贴 callback URL、查询字符串或授权码：',
+          authCode: '授权链接或 Code',
+          authCodePlaceholder: '粘贴完整 callback URL、?code=... 查询字符串或 code 值',
+          authCodeHint: '支持完整 callback URL、查询字符串或裸 code。',
+          refreshTokenAuth: '手动输入 RT',
+          refreshTokenDesc: '输入已有的 xAI refresh token，支持批量输入（每行一个）。',
+          refreshTokenPlaceholder: '粘贴您的 xAI refresh token...\n支持多个，每行一个',
+          validating: '验证中...',
+          validateAndCreate: '验证并创建账号',
+          pleaseEnterRefreshToken: '请输入 Refresh Token',
+          failedToGenerateUrl: '生成 Grok 授权链接失败',
+          missingExchangeParams: '缺少授权码、state 或 OAuth 会话',
+          failedToExchangeCode: 'Grok 授权码兑换失败',
+          failedToValidateRT: '验证 Grok refresh token 失败',
+          oauthOnlyHint: '首版 Grok 支持仅包含 OAuth 订阅的 Responses API 文本/推理转发。'
         },
         // Gemini specific
         gemini: {
@@ -4355,6 +4462,7 @@ export default {
       openaiAccount: 'OpenAI 账号',
       geminiAccount: 'Gemini 账号',
       antigravityAccount: 'Antigravity 账号',
+      grokAccount: 'Grok 账号',
       inputMethod: '输入方式',
       reAuthorizedSuccess: '账号重新授权成功',
       // Test Modal
@@ -5907,7 +6015,7 @@ export default {
       },
       linuxdo: {
         title: 'LinuxDo Connect 登录',
-        description: '配置 LinuxDo Connect OAuth，用于 Sub2API 用户登录',
+        description: '配置 LinuxDo Connect OAuth，用于 CCAPI 用户登录',
         enable: '启用 LinuxDo 登录',
         enableHint: '在登录/注册页面显示 LinuxDo 登录入口',
         clientId: 'Client ID',
@@ -5926,7 +6034,7 @@ export default {
       },
       dingtalk: {
         title: '钉钉登录',
-        description: '配置钉钉 OAuth，用于 Sub2API 用户登录',
+        description: '配置钉钉 OAuth，用于 CCAPI 用户登录',
         enable: '启用钉钉登录-企业内部应用',
         enableHint: '在登录/注册页面显示钉钉登录入口',
         clientId: 'Client ID（AppKey）',
@@ -6103,9 +6211,41 @@ export default {
         openaiCodexUserAgent: 'OpenAI Codex UA',
         openaiCodexUserAgentPlaceholder: 'codex-tui/0.125.0 (Ubuntu 22.4.0; x86_64) xterm-256color (codex-tui; 0.125.0)',
         openaiCodexUserAgentHint: '用于规避 OpenAI 上游 Cloudflare 对浏览器 UA 的访问质询。仅在检测到客户端 User-Agent 为浏览器（Mozilla/...）时生效，其他客户端原样透传。留空使用内置默认值。',
-        openaiAllowClaudeCodeCodexPlugin: '允许在 Claude Code 中使用 Codex 插件',
-        openaiAllowClaudeCodeCodexPluginDesc:
-          '全局开关，仅对已开启「仅允许 Codex 官方客户端」的 OpenAI OAuth 账号生效。开启后，所有此类账号都额外放行通过 Claude Code 的 Codex 插件发起的请求（精确匹配 originator=Claude Code），无需逐账号配置；上游请求仍保持透传。',
+        codexHardeningTitle: 'Codex 设置',
+        codexClientRestrictionTitle: 'Codex 客户端限制',
+        codexHardeningDesc:
+          '仅对已开启「仅允许 Codex 官方客户端」的 OpenAI OAuth 账号生效（全局）。在 User-Agent/Originator 之外，用版本区间、引擎指纹门与黑/白名单巩固判定。',
+        minCodexVersion: '最低 Codex 版本',
+        minCodexVersionPlaceholder: '例如 0.142.0',
+        maxCodexVersion: '最高 Codex 版本',
+        maxCodexVersionPlaceholder: '例如 0.200.0',
+        codexVersionHint:
+          '仅对官方客户端生效，校验其版本是否落在 [最低, 最高] 区间。留空表示该侧不限制。',
+        codexFingerprintSignals: 'Codex 引擎指纹信号',
+        codexFingerprintSignalsDesc:
+          '定义引擎指纹信号：勾「必须」的信号需全部命中（AND），每条 / 分隔的变体取或（OR）；一条都不勾即不校验。默认只勾 x-codex- 前缀。类型：头精确 / 头前缀 / body 路径。',
+        codexFpTypeHeaderExact: '头精确',
+        codexFpTypeHeaderPrefix: '头前缀',
+        codexFpTypeBodyPath: 'body 路径',
+        codexFpMatchPlaceholder: '匹配，变体用 / 分隔（如 session-id / session_id 或 x-codex-）',
+        codexFpRequired: '必须',
+        codexFingerprintNoRequiredWarn: '未勾选任何「必须」信号——引擎指纹门当前不生效，等于放行所有通过身份/版本的候选。如需启用校验，请至少勾选一条信号。',
+        codexAllowAppServer: 'Codex app-server',
+        codexAllowAppServerDesc:
+          '放行内嵌 Codex 引擎、经 app-server 协议接入的第三方客户端（如 Claude Code 的 codex 插件）。默认关闭；开启后此类客户端通过引擎指纹门（下方信号列表）即放行，关闭则仅放行官方客户端与白名单。',
+        codexBlacklist: 'User-Agent/Originator 黑名单',
+        codexBlacklistDesc:
+          '命中任一字段即拒，优先于一切放行。originator 精确匹配，User-Agent 为包含匹配（多个用逗号分隔）。',
+        codexWhitelist: 'User-Agent/Originator 白名单',
+        codexWhitelistDesc:
+          '放行官方集之外的客户端：需 originator 精确，且每个 User-Agent 标记都命中。默认仍需过引擎指纹门，勾「跳过引擎指纹」可免。',
+        codexWhitelistSkipFingerprint: '跳过引擎指纹',
+        codexWhitelistSkipFingerprintTooltip:
+          '风险：勾选后该条仅凭 originator + User-Agent（均可伪造）放行，不再要求引擎指纹兜底。仅用于确属可信、但本身不发 codex 引擎指纹的第三方客户端。',
+        codexOriginatorPlaceholder: 'originator（精确，如 opencode）',
+        codexUaContainsPlaceholder: 'User-Agent 包含标记，逗号分隔（如 opencode/）',
+        codexAddRow: '添加一条',
+        codexRemoveRow: '删除',
       },
       webSearchEmulation: {
         title: 'Web Search 模拟',
@@ -6149,7 +6289,7 @@ export default {
           '禁用用户注册、公开页面和自助服务功能。仅管理员可以登录和管理平台。',
         siteName: '站点名称',
         siteNameHint: '显示在邮件和页面标题中',
-        siteNamePlaceholder: 'Sub2API',
+        siteNamePlaceholder: 'CCAPI',
         siteSubtitle: '站点副标题',
         siteSubtitleHint: '显示在登录和注册页面',
         siteSubtitlePlaceholder: '订阅转 API 转换平台',
@@ -6290,6 +6430,7 @@ export default {
         providerWxpay: '微信官方',
         providerStripe: 'Stripe',
         providerAirwallex: 'Airwallex',
+        providerTianque: '随行付',
         typeDisabled: '类型已禁用',
         enableTypesFirst: '请先在上方启用至少一种服务商',
         easypayRedirect: '跳转',
@@ -6304,6 +6445,9 @@ export default {
         field_notifyUrl: '异步通知地址',
         field_returnUrl: '同步跳转地址',
         callbackBaseUrl: '回调基础地址',
+        field_orgId: '机构号',
+        field_mno: '商户号',
+        field_version: '接口版本',
         field_privateKey: '私钥',
         field_publicKey: '公钥',
         field_mpAppId: '公众号 App ID',
@@ -6324,6 +6468,12 @@ export default {
         field_currency: '支付币种',
         field_accountId: 'Airwallex 账户 ID',
         field_airwallexApiBaseHint: '必须和 API Key 所属环境一致：沙箱/测试密钥使用 https://api-demo.airwallex.com/api/v1，生产密钥使用 https://api.airwallex.com/api/v1。环境混用会返回 credentials_invalid / Access Denied。',
+        field_tianqueApiBaseHint: '测试环境默认 https://openapi-test.tianquetech.com，生产环境请按随行付后台提供的 openapi 地址填写。',
+        field_tianqueOrgIdHint: '随行付开放平台分配的机构号，通常为 8 或 10 位数字。',
+        field_tianqueMnoHint: '随行付商户编号，用于实际收款商户识别。',
+        field_tianquePrivateKeyHint: '填写商户 RSA 私钥，支持完整 PEM 或去掉头尾后的 Base64 内容；保存后不会明文回显。',
+        field_tianqueVersionHint: '随行付接口版本，未特殊要求保持 1.2。',
+        tianqueNotifyHint: '将生成的完整回调地址配置到随行付后台异步通知地址，公网必须可访问。',
         field_paymentCurrencyHint: '默认 CNY。Stripe 和 Airwallex 可按账户支持从下拉项选择 HKD、USD 等币种；微信、支付宝、易支付仍按 CNY。',
         field_accountIdHint: '不涉及多账户、组织级密钥或连接账户收款时可以不填；单账户 Scoped API Key 会默认使用所选账户。',
         field_cid: '支付渠道 ID',
@@ -6388,6 +6538,16 @@ export default {
         wxpayGuideH5Open: '需开通 H5 支付。',
         wxpayGuideH5Call: '移动端非微信浏览器且有客户端 IP 时调用 H5 支付，跳转微信收银台。',
         wxpayGuideH5Fallback: '未开通 H5 或下单失败时，自动改走扫码支付。',
+        tianqueGuideSummary: '随行付作为聚合通道承载支付宝和微信收款，前台仍展示标准支付宝/微信入口。',
+        tianqueGuideNote: '保存后到“可见支付方式”里把支付宝或微信来源切换为随行付，前台才会走该通道。',
+        tianqueGuideMerchantTitle: '商户资料',
+        tianqueGuideMerchantOpen: '在随行付开放平台准备机构号、商户号和 RSA 私钥。',
+        tianqueGuideMerchantCall: '下单时系统按支付方式自动传 ALIPAY 或 WECHAT，并使用商户私钥签名。',
+        tianqueGuideMerchantFallback: '私钥支持完整 PEM；如果后台只给 Base64 内容，也可以直接粘贴。',
+        tianqueGuideCallbackTitle: '异步通知',
+        tianqueGuideCallbackOpen: '把表单生成的回调地址填入随行付后台通知地址。',
+        tianqueGuideCallbackCall: '支付成功通知会按订单号回查原服务商实例并完成充值或订阅发放。',
+        tianqueGuideCallbackFallback: '本地调试需使用公网穿透地址，生产环境请使用 HTTPS 域名。',
         noProviders: '暂无服务商实例',
         supportedTypes: '支持的支付方式',
         supportedTypesHint: '逗号分隔，如 alipay,wxpay',
@@ -6440,7 +6600,7 @@ export default {
         fromEmail: '发件人邮箱',
         fromEmailPlaceholder: "noreply{'@'}example.com",
         fromName: '发件人名称',
-        fromNamePlaceholder: 'Sub2API',
+        fromNamePlaceholder: 'CCAPI',
         useTls: '使用 TLS',
         useTlsHint: '为 SMTP 连接启用 TLS 加密'
       },
@@ -7086,16 +7246,16 @@ export default {
     // Admin tour steps
     admin: {
       welcome: {
-        title: '👋 欢迎使用 Sub2API',
+        title: '👋 欢迎使用 CCAPI',
         description:
-          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Sub2API 是一个强大的 AI 服务中转平台，让您轻松管理和分发 AI 服务。</p><p style="margin-bottom: 12px;"><b>🎯 核心功能：</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>分组管理</b> - 创建不同的服务套餐（VIP、免费试用等）</li><li>🔗 <b>账号池</b> - 连接多个上游 AI 服务商账号</li><li>🔑 <b>密钥分发</b> - 为用户生成独立的 API Key</li><li>💰 <b>计费管理</b> - 灵活的费率和配额控制</li></ul><p style="color: #10b981; font-weight: 600;">接下来，我们将用 3 分钟带您完成首次配置 →</p></div>',
+          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">CCAPI 是一个强大的 AI 服务中转平台，让您轻松管理和分发 AI 服务。</p><p style="margin-bottom: 12px;"><b>🎯 核心功能：</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>分组管理</b> - 创建不同的服务套餐（VIP、免费试用等）</li><li>🔗 <b>账号池</b> - 连接多个上游 AI 服务商账号</li><li>🔑 <b>密钥分发</b> - 为用户生成独立的 API Key</li><li>💰 <b>计费管理</b> - 灵活的费率和配额控制</li></ul><p style="color: #10b981; font-weight: 600;">接下来，我们将用 3 分钟带您完成首次配置 →</p></div>',
         nextBtn: '开始配置 🚀',
         prevBtn: '跳过'
       },
       groupManage: {
         title: '📦 第一步：分组管理',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;"><b>什么是分组？</b></p><p style="margin-bottom: 12px;">分组是 Sub2API 的核心概念，它就像一个"服务套餐"：</p><ul style="margin-left: 20px; margin-bottom: 12px; font-size: 13px;"><li>🎯 每个分组可以包含多个上游账号</li><li>💰 每个分组有独立的计费倍率</li><li>👥 可以设置为公开或专属分组</li></ul><p style="margin-top: 12px; padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 示例：</b>您可以创建"VIP专线"（高倍率）和"免费试用"（低倍率）两个分组</p><p style="margin-top: 16px; color: #10b981; font-weight: 600;">👉 点击左侧的"分组管理"开始</p></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;"><b>什么是分组？</b></p><p style="margin-bottom: 12px;">分组是 CCAPI 的核心概念，它就像一个"服务套餐"：</p><ul style="margin-left: 20px; margin-bottom: 12px; font-size: 13px;"><li>🎯 每个分组可以包含多个上游账号</li><li>💰 每个分组有独立的计费倍率</li><li>👥 可以设置为公开或专属分组</li></ul><p style="margin-top: 12px; padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 示例：</b>您可以创建"VIP专线"（高倍率）和"免费试用"（低倍率）两个分组</p><p style="margin-top: 16px; color: #10b981; font-weight: 600;">👉 点击左侧的"分组管理"开始</p></div>'
       },
       createGroup: {
         title: '➕ 创建新分组',
@@ -7207,9 +7367,9 @@ export default {
     // User tour steps
     user: {
       welcome: {
-        title: '👋 欢迎使用 Sub2API',
+        title: '👋 欢迎使用 CCAPI',
         description:
-          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">您好！欢迎来到 Sub2API AI 服务平台。</p><p style="margin-bottom: 12px;"><b>🎯 快速开始：</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 创建 API 密钥</li><li>📋 复制密钥到您的应用</li><li>🚀 开始使用 AI 服务</li></ul><p style="color: #10b981; font-weight: 600;">只需 1 分钟，让我们开始吧 →</p></div>',
+          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">您好！欢迎来到 CCAPI AI 服务平台。</p><p style="margin-bottom: 12px;"><b>🎯 快速开始：</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 创建 API 密钥</li><li>📋 复制密钥到您的应用</li><li>🚀 开始使用 AI 服务</li></ul><p style="color: #10b981; font-weight: 600;">只需 1 分钟，让我们开始吧 →</p></div>',
         nextBtn: '开始 🚀',
         prevBtn: '跳过'
       },
@@ -7262,6 +7422,7 @@ export default {
       wxpay: '微信支付',
       stripe: 'Stripe',
       airwallex: 'Airwallex',
+      tianque: '随行付',
       card: '银行卡',
       link: 'Link',
       alipay_direct: '支付宝（直连）',

@@ -10,12 +10,12 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/sub2api/ent/account"
-	"github.com/Wei-Shaw/sub2api/ent/apikey"
-	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/user"
-	"github.com/Wei-Shaw/sub2api/ent/videogenerationtask"
-	"github.com/Wei-Shaw/sub2api/ent/videomodel"
+	"github.com/Wei-Shaw/ccapi/ent/account"
+	"github.com/Wei-Shaw/ccapi/ent/apikey"
+	"github.com/Wei-Shaw/ccapi/ent/group"
+	"github.com/Wei-Shaw/ccapi/ent/user"
+	"github.com/Wei-Shaw/ccapi/ent/videogenerationtask"
+	"github.com/Wei-Shaw/ccapi/ent/videomodel"
 )
 
 // VideoGenerationTask is the model entity for the VideoGenerationTask schema.

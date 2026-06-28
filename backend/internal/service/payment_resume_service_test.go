@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/payment"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/Wei-Shaw/ccapi/internal/payment"
+	infraerrors "github.com/Wei-Shaw/ccapi/internal/pkg/errors"
 )
 
 func TestNormalizeVisibleMethods(t *testing.T) {
@@ -437,8 +437,10 @@ func TestNormalizeVisibleMethodSource(t *testing.T) {
 	}{
 		{name: "alipay official alias", method: payment.TypeAlipay, input: "alipay", want: VisibleMethodSourceOfficialAlipay},
 		{name: "alipay easypay alias", method: payment.TypeAlipay, input: "easypay", want: VisibleMethodSourceEasyPayAlipay},
+		{name: "alipay tianque alias", method: payment.TypeAlipay, input: "tianque", want: VisibleMethodSourceTianqueAlipay},
 		{name: "wxpay official alias", method: payment.TypeWxpay, input: "wxpay", want: VisibleMethodSourceOfficialWechat},
 		{name: "wxpay easypay alias", method: payment.TypeWxpay, input: "easypay", want: VisibleMethodSourceEasyPayWechat},
+		{name: "wxpay tianque alias", method: payment.TypeWxpay, input: "tianque", want: VisibleMethodSourceTianqueWechat},
 		{name: "unsupported source", method: payment.TypeWxpay, input: "stripe", want: ""},
 	}
 
@@ -464,8 +466,10 @@ func TestVisibleMethodProviderKeyForSource(t *testing.T) {
 	}{
 		{name: "official alipay", method: payment.TypeAlipay, source: VisibleMethodSourceOfficialAlipay, want: payment.TypeAlipay, ok: true},
 		{name: "easypay alipay", method: payment.TypeAlipay, source: VisibleMethodSourceEasyPayAlipay, want: payment.TypeEasyPay, ok: true},
+		{name: "tianque alipay", method: payment.TypeAlipay, source: VisibleMethodSourceTianqueAlipay, want: payment.TypeTianque, ok: true},
 		{name: "official wechat", method: payment.TypeWxpay, source: VisibleMethodSourceOfficialWechat, want: payment.TypeWxpay, ok: true},
 		{name: "easypay wechat", method: payment.TypeWxpay, source: VisibleMethodSourceEasyPayWechat, want: payment.TypeEasyPay, ok: true},
+		{name: "tianque wechat", method: payment.TypeWxpay, source: VisibleMethodSourceTianqueWechat, want: payment.TypeTianque, ok: true},
 		{name: "mismatched method and source", method: payment.TypeAlipay, source: VisibleMethodSourceOfficialWechat, want: "", ok: false},
 	}
 
@@ -801,7 +805,7 @@ func mustCreateFallbackSignedToken(t *testing.T, claims any) string {
 		t.Fatalf("marshal claims: %v", err)
 	}
 	encodedPayload := base64.RawURLEncoding.EncodeToString(payload)
-	mac := hmac.New(sha256.New, []byte("sub2api-payment-resume"))
+	mac := hmac.New(sha256.New, []byte("ccapi-payment-resume"))
 	_, _ = mac.Write([]byte(encodedPayload))
 	signature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 	return encodedPayload + "." + signature
