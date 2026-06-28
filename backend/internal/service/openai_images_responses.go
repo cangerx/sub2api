@@ -35,6 +35,48 @@ type openAIResponsesImageResult struct {
 	Model         string
 }
 
+const (
+	openAIImageUsageURLsContextKey           = "openai_image_usage_urls"
+	openAIImageUsageRevisedPromptsContextKey = "openai_image_usage_revised_prompts"
+)
+
+func rememberOpenAIImageUsageResults(c *gin.Context, results []openAIResponsesImageResult) {
+	if c == nil || len(results) == 0 {
+		return
+	}
+	urls := make([]string, 0, len(results))
+	revisedPrompts := make([]string, 0, len(results))
+	for _, img := range results {
+		if url := strings.TrimSpace(img.URL); url != "" {
+			urls = append(urls, url)
+		}
+		if prompt := strings.TrimSpace(img.RevisedPrompt); prompt != "" {
+			revisedPrompts = append(revisedPrompts, prompt)
+		}
+	}
+	if len(urls) > 0 {
+		c.Set(openAIImageUsageURLsContextKey, urls)
+	}
+	if len(revisedPrompts) > 0 {
+		c.Set(openAIImageUsageRevisedPromptsContextKey, revisedPrompts)
+	}
+}
+
+func openAIImageUsageStringsFromContext(c *gin.Context, key string) []string {
+	if c == nil {
+		return nil
+	}
+	value, ok := c.Get(key)
+	if !ok {
+		return nil
+	}
+	items, ok := value.([]string)
+	if !ok || len(items) == 0 {
+		return nil
+	}
+	return append([]string(nil), items...)
+}
+
 type OpenAIImagesUpstreamError struct {
 	StatusCode        int
 	ErrorType         string
@@ -374,7 +416,12 @@ func openAIImagesLocalPublicBaseURL(c *gin.Context) string {
 }
 
 func (s *OpenAIGatewayService) persistOpenAIImageResults(ctx context.Context, c *gin.Context, results []openAIResponsesImageResult) ([]openAIResponsesImageResult, error) {
-	if len(results) == 0 || s == nil || s.settingService == nil || s.imageStoreFactory == nil {
+	if len(results) == 0 {
+		return results, nil
+	}
+	// Record upstream URLs/revised prompts even when storage is disabled. Raw base64 is never stored here.
+	rememberOpenAIImageUsageResults(c, results)
+	if s == nil || s.settingService == nil || s.imageStoreFactory == nil {
 		return results, nil
 	}
 	cfg, err := s.settingService.GetBackupStorageConfig(ctx)
@@ -425,6 +472,7 @@ func (s *OpenAIGatewayService) persistOpenAIImageResults(ctx context.Context, c 
 		}
 		persisted[i].URL = mediaURL
 	}
+	rememberOpenAIImageUsageResults(c, persisted)
 	return persisted, nil
 }
 
@@ -1908,18 +1956,21 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesOAuth(
 		if err != nil {
 			if imageCount > 0 {
 				return &OpenAIForwardResult{
-					RequestID:        resp.Header.Get("x-request-id"),
-					Usage:            usage,
-					Model:            requestModel,
-					UpstreamModel:    requestModel,
-					Stream:           parsed.Stream,
-					ResponseHeaders:  resp.Header.Clone(),
-					Duration:         time.Since(startTime),
-					FirstTokenMs:     firstTokenMs,
-					ImageCount:       imageCount,
-					ImageSize:        parsed.SizeTier,
-					ImageInputSize:   parsed.Size,
-					ImageOutputSizes: imageOutputSizes,
+					RequestID:           resp.Header.Get("x-request-id"),
+					Usage:               usage,
+					Model:               requestModel,
+					UpstreamModel:       requestModel,
+					Stream:              parsed.Stream,
+					ResponseHeaders:     resp.Header.Clone(),
+					Duration:            time.Since(startTime),
+					FirstTokenMs:        firstTokenMs,
+					ImageCount:          imageCount,
+					ImageSize:           parsed.SizeTier,
+					ImageInputSize:      parsed.Size,
+					ImageOutputSizes:    imageOutputSizes,
+					ImagePrompt:         parsed.Prompt,
+					ImageURLs:           openAIImageUsageStringsFromContext(c, openAIImageUsageURLsContextKey),
+					ImageRevisedPrompts: openAIImageUsageStringsFromContext(c, openAIImageUsageRevisedPromptsContextKey),
 				}, err
 			}
 			return nil, s.handleOpenAIImagesOAuthResponseError(
@@ -1958,18 +2009,21 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesOAuth(
 		imageCount = parsed.N
 	}
 	return &OpenAIForwardResult{
-		RequestID:        resp.Header.Get("x-request-id"),
-		Usage:            usage,
-		Model:            requestModel,
-		UpstreamModel:    requestModel,
-		Stream:           parsed.Stream,
-		ResponseHeaders:  resp.Header.Clone(),
-		Duration:         time.Since(startTime),
-		FirstTokenMs:     firstTokenMs,
-		ImageCount:       imageCount,
-		ImageSize:        parsed.SizeTier,
-		ImageInputSize:   parsed.Size,
-		ImageOutputSizes: imageOutputSizes,
+		RequestID:           resp.Header.Get("x-request-id"),
+		Usage:               usage,
+		Model:               requestModel,
+		UpstreamModel:       requestModel,
+		Stream:              parsed.Stream,
+		ResponseHeaders:     resp.Header.Clone(),
+		Duration:            time.Since(startTime),
+		FirstTokenMs:        firstTokenMs,
+		ImageCount:          imageCount,
+		ImageSize:           parsed.SizeTier,
+		ImageInputSize:      parsed.Size,
+		ImageOutputSizes:    imageOutputSizes,
+		ImagePrompt:         parsed.Prompt,
+		ImageURLs:           openAIImageUsageStringsFromContext(c, openAIImageUsageURLsContextKey),
+		ImageRevisedPrompts: openAIImageUsageStringsFromContext(c, openAIImageUsageRevisedPromptsContextKey),
 	}, nil
 }
 

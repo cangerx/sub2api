@@ -674,18 +674,21 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 		if err != nil {
 			if streamCount > 0 {
 				return &OpenAIForwardResult{
-					RequestID:        resp.Header.Get("x-request-id"),
-					Usage:            streamUsage,
-					Model:            requestModel,
-					UpstreamModel:    upstreamModel,
-					Stream:           parsed.Stream,
-					ResponseHeaders:  resp.Header.Clone(),
-					Duration:         time.Since(startTime),
-					FirstTokenMs:     ttft,
-					ImageCount:       streamCount,
-					ImageSize:        parsed.SizeTier,
-					ImageInputSize:   parsed.Size,
-					ImageOutputSizes: streamSizes,
+					RequestID:           resp.Header.Get("x-request-id"),
+					Usage:               streamUsage,
+					Model:               requestModel,
+					UpstreamModel:       upstreamModel,
+					Stream:              parsed.Stream,
+					ResponseHeaders:     resp.Header.Clone(),
+					Duration:            time.Since(startTime),
+					FirstTokenMs:        ttft,
+					ImageCount:          streamCount,
+					ImageSize:           parsed.SizeTier,
+					ImageInputSize:      parsed.Size,
+					ImageOutputSizes:    streamSizes,
+					ImagePrompt:         parsed.Prompt,
+					ImageURLs:           openAIImageUsageStringsFromContext(c, openAIImageUsageURLsContextKey),
+					ImageRevisedPrompts: openAIImageUsageStringsFromContext(c, openAIImageUsageRevisedPromptsContextKey),
 				}, err
 			}
 			return nil, err
@@ -695,18 +698,21 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 		imageOutputSizes := streamSizes
 		firstTokenMs = ttft
 		return &OpenAIForwardResult{
-			RequestID:        resp.Header.Get("x-request-id"),
-			Usage:            usage,
-			Model:            requestModel,
-			UpstreamModel:    upstreamModel,
-			Stream:           parsed.Stream,
-			ResponseHeaders:  resp.Header.Clone(),
-			Duration:         time.Since(startTime),
-			FirstTokenMs:     firstTokenMs,
-			ImageCount:       imageCount,
-			ImageSize:        parsed.SizeTier,
-			ImageInputSize:   parsed.Size,
-			ImageOutputSizes: imageOutputSizes,
+			RequestID:           resp.Header.Get("x-request-id"),
+			Usage:               usage,
+			Model:               requestModel,
+			UpstreamModel:       upstreamModel,
+			Stream:              parsed.Stream,
+			ResponseHeaders:     resp.Header.Clone(),
+			Duration:            time.Since(startTime),
+			FirstTokenMs:        firstTokenMs,
+			ImageCount:          imageCount,
+			ImageSize:           parsed.SizeTier,
+			ImageInputSize:      parsed.Size,
+			ImageOutputSizes:    imageOutputSizes,
+			ImagePrompt:         parsed.Prompt,
+			ImageURLs:           openAIImageUsageStringsFromContext(c, openAIImageUsageURLsContextKey),
+			ImageRevisedPrompts: openAIImageUsageStringsFromContext(c, openAIImageUsageRevisedPromptsContextKey),
 		}, nil
 	} else {
 		nonStreamUsage, nonStreamCount, nonStreamSizes, err := s.handleOpenAIImagesNonStreamingResponse(resp, c)
@@ -718,18 +724,21 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 			imageCount = nonStreamCount
 		}
 		return &OpenAIForwardResult{
-			RequestID:        resp.Header.Get("x-request-id"),
-			Usage:            usage,
-			Model:            requestModel,
-			UpstreamModel:    upstreamModel,
-			Stream:           parsed.Stream,
-			ResponseHeaders:  resp.Header.Clone(),
-			Duration:         time.Since(startTime),
-			FirstTokenMs:     firstTokenMs,
-			ImageCount:       imageCount,
-			ImageSize:        parsed.SizeTier,
-			ImageInputSize:   parsed.Size,
-			ImageOutputSizes: nonStreamSizes,
+			RequestID:           resp.Header.Get("x-request-id"),
+			Usage:               usage,
+			Model:               requestModel,
+			UpstreamModel:       upstreamModel,
+			Stream:              parsed.Stream,
+			ResponseHeaders:     resp.Header.Clone(),
+			Duration:            time.Since(startTime),
+			FirstTokenMs:        firstTokenMs,
+			ImageCount:          imageCount,
+			ImageSize:           parsed.SizeTier,
+			ImageInputSize:      parsed.Size,
+			ImageOutputSizes:    nonStreamSizes,
+			ImagePrompt:         parsed.Prompt,
+			ImageURLs:           openAIImageUsageStringsFromContext(c, openAIImageUsageURLsContextKey),
+			ImageRevisedPrompts: openAIImageUsageStringsFromContext(c, openAIImageUsageRevisedPromptsContextKey),
 		}, nil
 	}
 }
@@ -928,7 +937,7 @@ func (s *OpenAIGatewayService) persistOpenAIImagesAPIResponseBody(ctx context.Co
 				}
 			}
 		}
-		if result.Result == "" {
+		if result.Result == "" && result.URL == "" && result.RevisedPrompt == "" {
 			continue
 		}
 		results = append(results, result)

@@ -167,13 +167,16 @@ type UsageLog struct {
 	CacheTTLOverridden bool
 
 	// 图片生成字段
-	ImageCount         int
-	ImageSize          *string
-	ImageInputSize     *string
-	ImageOutputSize    *string
-	ImageSizeSource    *string
-	ImageSizeBreakdown map[string]int
-	MediaType          *string
+	ImageCount          int
+	ImageSize           *string
+	ImageInputSize      *string
+	ImageOutputSize     *string
+	ImageSizeSource     *string
+	ImageSizeBreakdown  map[string]int
+	ImagePrompt         *string
+	ImageURLs           []string
+	ImageRevisedPrompts []string
+	MediaType           *string
 
 	// 视频生成字段
 	VideoTaskID       *string

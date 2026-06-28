@@ -482,15 +482,24 @@ type UsageLog struct {
 	FirstTokenMs *int   `json:"first_token_ms"`
 
 	// 图片生成字段
-	ImageCount         int            `json:"image_count"`
-	ImageSize          *string        `json:"image_size"`
-	ImageInputSize     *string        `json:"image_input_size"`
-	ImageOutputSize    *string        `json:"image_output_size"`
-	ImageOutputTokens  int            `json:"image_output_tokens"`
-	ImageOutputCost    float64        `json:"image_output_cost"`
-	ImageSizeSource    *string        `json:"image_size_source"`
-	ImageSizeBreakdown map[string]int `json:"image_size_breakdown"`
-	MediaType          *string        `json:"media_type"`
+	ImageCount          int            `json:"image_count"`
+	ImageSize           *string        `json:"image_size"`
+	ImageInputSize      *string        `json:"image_input_size"`
+	ImageOutputSize     *string        `json:"image_output_size"`
+	ImageOutputTokens   int            `json:"image_output_tokens"`
+	ImageOutputCost     float64        `json:"image_output_cost"`
+	ImageSizeSource     *string        `json:"image_size_source"`
+	ImageSizeBreakdown  map[string]int `json:"image_size_breakdown"`
+	ImagePrompt         *string        `json:"image_prompt,omitempty"`
+	ImageURLs           []string       `json:"image_urls,omitempty"`
+	ImageRevisedPrompts []string       `json:"image_revised_prompts,omitempty"`
+	MediaType           *string        `json:"media_type"`
+
+	// 视频生成字段
+	VideoTaskID       *string `json:"video_task_id,omitempty"`
+	VideoSeconds      *int    `json:"video_seconds,omitempty"`
+	VideoSize         *string `json:"video_size,omitempty"`
+	VideoBillingUnits *int    `json:"video_billing_units,omitempty"`
 
 	// User-Agent
 	UserAgent *string `json:"user_agent"`

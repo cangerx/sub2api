@@ -80,6 +80,9 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			sqlmock.AnyArg(), // image_output_size
 			sqlmock.AnyArg(), // image_size_source
 			sqlmock.AnyArg(), // image_size_breakdown
+			sqlmock.AnyArg(), // image_prompt
+			sqlmock.AnyArg(), // image_urls
+			sqlmock.AnyArg(), // image_revised_prompts
 			sqlmock.AnyArg(), // service_tier
 			sqlmock.AnyArg(), // reasoning_effort
 			sqlmock.AnyArg(), // inbound_endpoint
@@ -167,6 +170,9 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			sqlmock.AnyArg(), // image_output_size
 			sqlmock.AnyArg(), // image_size_source
 			sqlmock.AnyArg(), // image_size_breakdown
+			sqlmock.AnyArg(), // image_prompt
+			sqlmock.AnyArg(), // image_urls
+			sqlmock.AnyArg(), // image_revised_prompts
 			serviceTier,
 			sqlmock.AnyArg(),
 			sqlmock.AnyArg(),
@@ -641,6 +647,9 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{Valid: true, String: "3840x2160"},
 			sql.NullString{Valid: true, String: "output"},
 			sql.NullString{Valid: true, String: `{"4K":2}`},
+			sql.NullString{Valid: true, String: "a neon city"},
+			sql.NullString{Valid: true, String: `["https://cdn.example.com/1.png"]`},
+			sql.NullString{Valid: true, String: `["a detailed neon city"]`},
 			sql.NullString{},
 			sql.NullString{},
 			sql.NullString{},
@@ -668,6 +677,10 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 		require.NotNil(t, log.ImageSizeSource)
 		require.Equal(t, "output", *log.ImageSizeSource)
 		require.Equal(t, map[string]int{"4K": 2}, log.ImageSizeBreakdown)
+		require.NotNil(t, log.ImagePrompt)
+		require.Equal(t, "a neon city", *log.ImagePrompt)
+		require.Equal(t, []string{"https://cdn.example.com/1.png"}, log.ImageURLs)
+		require.Equal(t, []string{"a detailed neon city"}, log.ImageRevisedPrompts)
 	})
 
 	t.Run("request_type_ws_v2_overrides_legacy", func(t *testing.T) {
@@ -713,6 +726,9 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{}, // image_output_size
 			sql.NullString{}, // image_size_source
 			sql.NullString{}, // image_size_breakdown
+			sql.NullString{}, // image_prompt
+			sql.NullString{}, // image_urls
+			sql.NullString{}, // image_revised_prompts
 			sql.NullString{Valid: true, String: "priority"},
 			sql.NullString{},
 			sql.NullString{},
@@ -769,6 +785,9 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{}, // image_output_size
 			sql.NullString{}, // image_size_source
 			sql.NullString{}, // image_size_breakdown
+			sql.NullString{}, // image_prompt
+			sql.NullString{}, // image_urls
+			sql.NullString{}, // image_revised_prompts
 			sql.NullString{Valid: true, String: "flex"},
 			sql.NullString{},
 			sql.NullString{},
@@ -825,6 +844,9 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{}, // image_output_size
 			sql.NullString{}, // image_size_source
 			sql.NullString{}, // image_size_breakdown
+			sql.NullString{}, // image_prompt
+			sql.NullString{}, // image_urls
+			sql.NullString{}, // image_revised_prompts
 			sql.NullString{Valid: true, String: "priority"},
 			sql.NullString{},
 			sql.NullString{},

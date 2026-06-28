@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/ccapi/ent/account"
 	"github.com/Wei-Shaw/ccapi/ent/apikey"
@@ -811,6 +812,62 @@ func (_u *UsageLogUpdate) ClearImageSizeBreakdown() *UsageLogUpdate {
 	return _u
 }
 
+// SetImagePrompt sets the "image_prompt" field.
+func (_u *UsageLogUpdate) SetImagePrompt(v string) *UsageLogUpdate {
+	_u.mutation.SetImagePrompt(v)
+	return _u
+}
+
+// SetNillableImagePrompt sets the "image_prompt" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableImagePrompt(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetImagePrompt(*v)
+	}
+	return _u
+}
+
+// ClearImagePrompt clears the value of the "image_prompt" field.
+func (_u *UsageLogUpdate) ClearImagePrompt() *UsageLogUpdate {
+	_u.mutation.ClearImagePrompt()
+	return _u
+}
+
+// SetImageUrls sets the "image_urls" field.
+func (_u *UsageLogUpdate) SetImageUrls(v []string) *UsageLogUpdate {
+	_u.mutation.SetImageUrls(v)
+	return _u
+}
+
+// AppendImageUrls appends value to the "image_urls" field.
+func (_u *UsageLogUpdate) AppendImageUrls(v []string) *UsageLogUpdate {
+	_u.mutation.AppendImageUrls(v)
+	return _u
+}
+
+// ClearImageUrls clears the value of the "image_urls" field.
+func (_u *UsageLogUpdate) ClearImageUrls() *UsageLogUpdate {
+	_u.mutation.ClearImageUrls()
+	return _u
+}
+
+// SetImageRevisedPrompts sets the "image_revised_prompts" field.
+func (_u *UsageLogUpdate) SetImageRevisedPrompts(v []string) *UsageLogUpdate {
+	_u.mutation.SetImageRevisedPrompts(v)
+	return _u
+}
+
+// AppendImageRevisedPrompts appends value to the "image_revised_prompts" field.
+func (_u *UsageLogUpdate) AppendImageRevisedPrompts(v []string) *UsageLogUpdate {
+	_u.mutation.AppendImageRevisedPrompts(v)
+	return _u
+}
+
+// ClearImageRevisedPrompts clears the value of the "image_revised_prompts" field.
+func (_u *UsageLogUpdate) ClearImageRevisedPrompts() *UsageLogUpdate {
+	_u.mutation.ClearImageRevisedPrompts()
+	return _u
+}
+
 // SetCacheTTLOverridden sets the "cache_ttl_overridden" field.
 func (_u *UsageLogUpdate) SetCacheTTLOverridden(v bool) *UsageLogUpdate {
 	_u.mutation.SetCacheTTLOverridden(v)
@@ -1209,6 +1266,34 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ImageSizeBreakdownCleared() {
 		_spec.ClearField(usagelog.FieldImageSizeBreakdown, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ImagePrompt(); ok {
+		_spec.SetField(usagelog.FieldImagePrompt, field.TypeString, value)
+	}
+	if _u.mutation.ImagePromptCleared() {
+		_spec.ClearField(usagelog.FieldImagePrompt, field.TypeString)
+	}
+	if value, ok := _u.mutation.ImageUrls(); ok {
+		_spec.SetField(usagelog.FieldImageUrls, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedImageUrls(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, usagelog.FieldImageUrls, value)
+		})
+	}
+	if _u.mutation.ImageUrlsCleared() {
+		_spec.ClearField(usagelog.FieldImageUrls, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ImageRevisedPrompts(); ok {
+		_spec.SetField(usagelog.FieldImageRevisedPrompts, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedImageRevisedPrompts(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, usagelog.FieldImageRevisedPrompts, value)
+		})
+	}
+	if _u.mutation.ImageRevisedPromptsCleared() {
+		_spec.ClearField(usagelog.FieldImageRevisedPrompts, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.CacheTTLOverridden(); ok {
 		_spec.SetField(usagelog.FieldCacheTTLOverridden, field.TypeBool, value)
@@ -2157,6 +2242,62 @@ func (_u *UsageLogUpdateOne) ClearImageSizeBreakdown() *UsageLogUpdateOne {
 	return _u
 }
 
+// SetImagePrompt sets the "image_prompt" field.
+func (_u *UsageLogUpdateOne) SetImagePrompt(v string) *UsageLogUpdateOne {
+	_u.mutation.SetImagePrompt(v)
+	return _u
+}
+
+// SetNillableImagePrompt sets the "image_prompt" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableImagePrompt(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetImagePrompt(*v)
+	}
+	return _u
+}
+
+// ClearImagePrompt clears the value of the "image_prompt" field.
+func (_u *UsageLogUpdateOne) ClearImagePrompt() *UsageLogUpdateOne {
+	_u.mutation.ClearImagePrompt()
+	return _u
+}
+
+// SetImageUrls sets the "image_urls" field.
+func (_u *UsageLogUpdateOne) SetImageUrls(v []string) *UsageLogUpdateOne {
+	_u.mutation.SetImageUrls(v)
+	return _u
+}
+
+// AppendImageUrls appends value to the "image_urls" field.
+func (_u *UsageLogUpdateOne) AppendImageUrls(v []string) *UsageLogUpdateOne {
+	_u.mutation.AppendImageUrls(v)
+	return _u
+}
+
+// ClearImageUrls clears the value of the "image_urls" field.
+func (_u *UsageLogUpdateOne) ClearImageUrls() *UsageLogUpdateOne {
+	_u.mutation.ClearImageUrls()
+	return _u
+}
+
+// SetImageRevisedPrompts sets the "image_revised_prompts" field.
+func (_u *UsageLogUpdateOne) SetImageRevisedPrompts(v []string) *UsageLogUpdateOne {
+	_u.mutation.SetImageRevisedPrompts(v)
+	return _u
+}
+
+// AppendImageRevisedPrompts appends value to the "image_revised_prompts" field.
+func (_u *UsageLogUpdateOne) AppendImageRevisedPrompts(v []string) *UsageLogUpdateOne {
+	_u.mutation.AppendImageRevisedPrompts(v)
+	return _u
+}
+
+// ClearImageRevisedPrompts clears the value of the "image_revised_prompts" field.
+func (_u *UsageLogUpdateOne) ClearImageRevisedPrompts() *UsageLogUpdateOne {
+	_u.mutation.ClearImageRevisedPrompts()
+	return _u
+}
+
 // SetCacheTTLOverridden sets the "cache_ttl_overridden" field.
 func (_u *UsageLogUpdateOne) SetCacheTTLOverridden(v bool) *UsageLogUpdateOne {
 	_u.mutation.SetCacheTTLOverridden(v)
@@ -2585,6 +2726,34 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if _u.mutation.ImageSizeBreakdownCleared() {
 		_spec.ClearField(usagelog.FieldImageSizeBreakdown, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ImagePrompt(); ok {
+		_spec.SetField(usagelog.FieldImagePrompt, field.TypeString, value)
+	}
+	if _u.mutation.ImagePromptCleared() {
+		_spec.ClearField(usagelog.FieldImagePrompt, field.TypeString)
+	}
+	if value, ok := _u.mutation.ImageUrls(); ok {
+		_spec.SetField(usagelog.FieldImageUrls, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedImageUrls(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, usagelog.FieldImageUrls, value)
+		})
+	}
+	if _u.mutation.ImageUrlsCleared() {
+		_spec.ClearField(usagelog.FieldImageUrls, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ImageRevisedPrompts(); ok {
+		_spec.SetField(usagelog.FieldImageRevisedPrompts, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedImageRevisedPrompts(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, usagelog.FieldImageRevisedPrompts, value)
+		})
+	}
+	if _u.mutation.ImageRevisedPromptsCleared() {
+		_spec.ClearField(usagelog.FieldImageRevisedPrompts, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.CacheTTLOverridden(); ok {
 		_spec.SetField(usagelog.FieldCacheTTLOverridden, field.TypeBool, value)

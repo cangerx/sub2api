@@ -92,6 +92,12 @@ const (
 	FieldImageSizeSource = "image_size_source"
 	// FieldImageSizeBreakdown holds the string denoting the image_size_breakdown field in the database.
 	FieldImageSizeBreakdown = "image_size_breakdown"
+	// FieldImagePrompt holds the string denoting the image_prompt field in the database.
+	FieldImagePrompt = "image_prompt"
+	// FieldImageUrls holds the string denoting the image_urls field in the database.
+	FieldImageUrls = "image_urls"
+	// FieldImageRevisedPrompts holds the string denoting the image_revised_prompts field in the database.
+	FieldImageRevisedPrompts = "image_revised_prompts"
 	// FieldCacheTTLOverridden holds the string denoting the cache_ttl_overridden field in the database.
 	FieldCacheTTLOverridden = "cache_ttl_overridden"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -187,6 +193,9 @@ var Columns = []string{
 	FieldImageOutputSize,
 	FieldImageSizeSource,
 	FieldImageSizeBreakdown,
+	FieldImagePrompt,
+	FieldImageUrls,
+	FieldImageRevisedPrompts,
 	FieldCacheTTLOverridden,
 	FieldCreatedAt,
 }
@@ -462,6 +471,11 @@ func ByImageOutputSize(opts ...sql.OrderTermOption) OrderOption {
 // ByImageSizeSource orders the results by the image_size_source field.
 func ByImageSizeSource(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldImageSizeSource, opts...).ToFunc()
+}
+
+// ByImagePrompt orders the results by the image_prompt field.
+func ByImagePrompt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldImagePrompt, opts...).ToFunc()
 }
 
 // ByCacheTTLOverridden orders the results by the cache_ttl_overridden field.

@@ -1315,6 +1315,15 @@ export interface UsageLog {
   image_size_breakdown: ImageSizeBreakdown | null
   image_output_tokens: number
   image_output_cost: number
+  image_prompt?: string | null
+  image_urls?: string[] | null
+  image_revised_prompts?: string[] | null
+
+  // 视频生成字段
+  video_task_id?: string | null
+  video_seconds?: number | null
+  video_size?: string | null
+  video_billing_units?: number | null
 
   // User-Agent
   user_agent: string | null

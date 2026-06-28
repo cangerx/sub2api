@@ -245,6 +245,11 @@ func ImageSizeSource(v string) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldImageSizeSource, v))
 }
 
+// ImagePrompt applies equality check predicate on the "image_prompt" field. It's identical to ImagePromptEQ.
+func ImagePrompt(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldImagePrompt, v))
+}
+
 // CacheTTLOverridden applies equality check predicate on the "cache_ttl_overridden" field. It's identical to CacheTTLOverriddenEQ.
 func CacheTTLOverridden(v bool) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldCacheTTLOverridden, v))
@@ -2148,6 +2153,101 @@ func ImageSizeBreakdownIsNil() predicate.UsageLog {
 // ImageSizeBreakdownNotNil applies the NotNil predicate on the "image_size_breakdown" field.
 func ImageSizeBreakdownNotNil() predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldNotNull(FieldImageSizeBreakdown))
+}
+
+// ImagePromptEQ applies the EQ predicate on the "image_prompt" field.
+func ImagePromptEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldImagePrompt, v))
+}
+
+// ImagePromptNEQ applies the NEQ predicate on the "image_prompt" field.
+func ImagePromptNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldImagePrompt, v))
+}
+
+// ImagePromptIn applies the In predicate on the "image_prompt" field.
+func ImagePromptIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldImagePrompt, vs...))
+}
+
+// ImagePromptNotIn applies the NotIn predicate on the "image_prompt" field.
+func ImagePromptNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldImagePrompt, vs...))
+}
+
+// ImagePromptGT applies the GT predicate on the "image_prompt" field.
+func ImagePromptGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldImagePrompt, v))
+}
+
+// ImagePromptGTE applies the GTE predicate on the "image_prompt" field.
+func ImagePromptGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldImagePrompt, v))
+}
+
+// ImagePromptLT applies the LT predicate on the "image_prompt" field.
+func ImagePromptLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldImagePrompt, v))
+}
+
+// ImagePromptLTE applies the LTE predicate on the "image_prompt" field.
+func ImagePromptLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldImagePrompt, v))
+}
+
+// ImagePromptContains applies the Contains predicate on the "image_prompt" field.
+func ImagePromptContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldImagePrompt, v))
+}
+
+// ImagePromptHasPrefix applies the HasPrefix predicate on the "image_prompt" field.
+func ImagePromptHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldImagePrompt, v))
+}
+
+// ImagePromptHasSuffix applies the HasSuffix predicate on the "image_prompt" field.
+func ImagePromptHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldImagePrompt, v))
+}
+
+// ImagePromptIsNil applies the IsNil predicate on the "image_prompt" field.
+func ImagePromptIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldImagePrompt))
+}
+
+// ImagePromptNotNil applies the NotNil predicate on the "image_prompt" field.
+func ImagePromptNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldImagePrompt))
+}
+
+// ImagePromptEqualFold applies the EqualFold predicate on the "image_prompt" field.
+func ImagePromptEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldImagePrompt, v))
+}
+
+// ImagePromptContainsFold applies the ContainsFold predicate on the "image_prompt" field.
+func ImagePromptContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldImagePrompt, v))
+}
+
+// ImageUrlsIsNil applies the IsNil predicate on the "image_urls" field.
+func ImageUrlsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldImageUrls))
+}
+
+// ImageUrlsNotNil applies the NotNil predicate on the "image_urls" field.
+func ImageUrlsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldImageUrls))
+}
+
+// ImageRevisedPromptsIsNil applies the IsNil predicate on the "image_revised_prompts" field.
+func ImageRevisedPromptsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldImageRevisedPrompts))
+}
+
+// ImageRevisedPromptsNotNil applies the NotNil predicate on the "image_revised_prompts" field.
+func ImageRevisedPromptsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldImageRevisedPrompts))
 }
 
 // CacheTTLOverriddenEQ applies the EQ predicate on the "cache_ttl_overridden" field.

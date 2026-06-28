@@ -525,6 +525,32 @@ func (_c *UsageLogCreate) SetImageSizeBreakdown(v map[string]int) *UsageLogCreat
 	return _c
 }
 
+// SetImagePrompt sets the "image_prompt" field.
+func (_c *UsageLogCreate) SetImagePrompt(v string) *UsageLogCreate {
+	_c.mutation.SetImagePrompt(v)
+	return _c
+}
+
+// SetNillableImagePrompt sets the "image_prompt" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableImagePrompt(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetImagePrompt(*v)
+	}
+	return _c
+}
+
+// SetImageUrls sets the "image_urls" field.
+func (_c *UsageLogCreate) SetImageUrls(v []string) *UsageLogCreate {
+	_c.mutation.SetImageUrls(v)
+	return _c
+}
+
+// SetImageRevisedPrompts sets the "image_revised_prompts" field.
+func (_c *UsageLogCreate) SetImageRevisedPrompts(v []string) *UsageLogCreate {
+	_c.mutation.SetImageRevisedPrompts(v)
+	return _c
+}
+
 // SetCacheTTLOverridden sets the "cache_ttl_overridden" field.
 func (_c *UsageLogCreate) SetCacheTTLOverridden(v bool) *UsageLogCreate {
 	_c.mutation.SetCacheTTLOverridden(v)
@@ -994,6 +1020,18 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ImageSizeBreakdown(); ok {
 		_spec.SetField(usagelog.FieldImageSizeBreakdown, field.TypeJSON, value)
 		_node.ImageSizeBreakdown = value
+	}
+	if value, ok := _c.mutation.ImagePrompt(); ok {
+		_spec.SetField(usagelog.FieldImagePrompt, field.TypeString, value)
+		_node.ImagePrompt = &value
+	}
+	if value, ok := _c.mutation.ImageUrls(); ok {
+		_spec.SetField(usagelog.FieldImageUrls, field.TypeJSON, value)
+		_node.ImageUrls = value
+	}
+	if value, ok := _c.mutation.ImageRevisedPrompts(); ok {
+		_spec.SetField(usagelog.FieldImageRevisedPrompts, field.TypeJSON, value)
+		_node.ImageRevisedPrompts = value
 	}
 	if value, ok := _c.mutation.CacheTTLOverridden(); ok {
 		_spec.SetField(usagelog.FieldCacheTTLOverridden, field.TypeBool, value)
@@ -1827,6 +1865,60 @@ func (u *UsageLogUpsert) UpdateImageSizeBreakdown() *UsageLogUpsert {
 // ClearImageSizeBreakdown clears the value of the "image_size_breakdown" field.
 func (u *UsageLogUpsert) ClearImageSizeBreakdown() *UsageLogUpsert {
 	u.SetNull(usagelog.FieldImageSizeBreakdown)
+	return u
+}
+
+// SetImagePrompt sets the "image_prompt" field.
+func (u *UsageLogUpsert) SetImagePrompt(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldImagePrompt, v)
+	return u
+}
+
+// UpdateImagePrompt sets the "image_prompt" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateImagePrompt() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldImagePrompt)
+	return u
+}
+
+// ClearImagePrompt clears the value of the "image_prompt" field.
+func (u *UsageLogUpsert) ClearImagePrompt() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldImagePrompt)
+	return u
+}
+
+// SetImageUrls sets the "image_urls" field.
+func (u *UsageLogUpsert) SetImageUrls(v []string) *UsageLogUpsert {
+	u.Set(usagelog.FieldImageUrls, v)
+	return u
+}
+
+// UpdateImageUrls sets the "image_urls" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateImageUrls() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldImageUrls)
+	return u
+}
+
+// ClearImageUrls clears the value of the "image_urls" field.
+func (u *UsageLogUpsert) ClearImageUrls() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldImageUrls)
+	return u
+}
+
+// SetImageRevisedPrompts sets the "image_revised_prompts" field.
+func (u *UsageLogUpsert) SetImageRevisedPrompts(v []string) *UsageLogUpsert {
+	u.Set(usagelog.FieldImageRevisedPrompts, v)
+	return u
+}
+
+// UpdateImageRevisedPrompts sets the "image_revised_prompts" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateImageRevisedPrompts() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldImageRevisedPrompts)
+	return u
+}
+
+// ClearImageRevisedPrompts clears the value of the "image_revised_prompts" field.
+func (u *UsageLogUpsert) ClearImageRevisedPrompts() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldImageRevisedPrompts)
 	return u
 }
 
@@ -2689,6 +2781,69 @@ func (u *UsageLogUpsertOne) UpdateImageSizeBreakdown() *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) ClearImageSizeBreakdown() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearImageSizeBreakdown()
+	})
+}
+
+// SetImagePrompt sets the "image_prompt" field.
+func (u *UsageLogUpsertOne) SetImagePrompt(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetImagePrompt(v)
+	})
+}
+
+// UpdateImagePrompt sets the "image_prompt" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateImagePrompt() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateImagePrompt()
+	})
+}
+
+// ClearImagePrompt clears the value of the "image_prompt" field.
+func (u *UsageLogUpsertOne) ClearImagePrompt() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearImagePrompt()
+	})
+}
+
+// SetImageUrls sets the "image_urls" field.
+func (u *UsageLogUpsertOne) SetImageUrls(v []string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetImageUrls(v)
+	})
+}
+
+// UpdateImageUrls sets the "image_urls" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateImageUrls() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateImageUrls()
+	})
+}
+
+// ClearImageUrls clears the value of the "image_urls" field.
+func (u *UsageLogUpsertOne) ClearImageUrls() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearImageUrls()
+	})
+}
+
+// SetImageRevisedPrompts sets the "image_revised_prompts" field.
+func (u *UsageLogUpsertOne) SetImageRevisedPrompts(v []string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetImageRevisedPrompts(v)
+	})
+}
+
+// UpdateImageRevisedPrompts sets the "image_revised_prompts" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateImageRevisedPrompts() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateImageRevisedPrompts()
+	})
+}
+
+// ClearImageRevisedPrompts clears the value of the "image_revised_prompts" field.
+func (u *UsageLogUpsertOne) ClearImageRevisedPrompts() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearImageRevisedPrompts()
 	})
 }
 
@@ -3719,6 +3874,69 @@ func (u *UsageLogUpsertBulk) UpdateImageSizeBreakdown() *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) ClearImageSizeBreakdown() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearImageSizeBreakdown()
+	})
+}
+
+// SetImagePrompt sets the "image_prompt" field.
+func (u *UsageLogUpsertBulk) SetImagePrompt(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetImagePrompt(v)
+	})
+}
+
+// UpdateImagePrompt sets the "image_prompt" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateImagePrompt() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateImagePrompt()
+	})
+}
+
+// ClearImagePrompt clears the value of the "image_prompt" field.
+func (u *UsageLogUpsertBulk) ClearImagePrompt() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearImagePrompt()
+	})
+}
+
+// SetImageUrls sets the "image_urls" field.
+func (u *UsageLogUpsertBulk) SetImageUrls(v []string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetImageUrls(v)
+	})
+}
+
+// UpdateImageUrls sets the "image_urls" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateImageUrls() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateImageUrls()
+	})
+}
+
+// ClearImageUrls clears the value of the "image_urls" field.
+func (u *UsageLogUpsertBulk) ClearImageUrls() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearImageUrls()
+	})
+}
+
+// SetImageRevisedPrompts sets the "image_revised_prompts" field.
+func (u *UsageLogUpsertBulk) SetImageRevisedPrompts(v []string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetImageRevisedPrompts(v)
+	})
+}
+
+// UpdateImageRevisedPrompts sets the "image_revised_prompts" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateImageRevisedPrompts() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateImageRevisedPrompts()
+	})
+}
+
+// ClearImageRevisedPrompts clears the value of the "image_revised_prompts" field.
+func (u *UsageLogUpsertBulk) ClearImageRevisedPrompts() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearImageRevisedPrompts()
 	})
 }
 

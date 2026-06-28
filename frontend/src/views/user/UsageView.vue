@@ -229,22 +229,46 @@
 
           <template #cell-tokens="{ row }">
             <!-- 图片生成请求 -->
-            <div v-if="isImageUsage(row)" class="flex items-center gap-1.5">
-              <svg
-                class="h-4 w-4 text-indigo-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div v-if="isImageUsage(row)" class="flex min-w-[180px] items-center gap-2">
+              <div class="flex items-center gap-1.5">
+                <svg
+                  class="h-4 w-4 text-indigo-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <span class="font-medium text-gray-900 dark:text-white">{{ row.image_count }}{{ t('usage.imageUnit') }}</span>
+                <span class="text-gray-400">({{ formatImageBillingSize(row, t) }})</span>
+              </div>
+              <button
+                v-if="hasImageDetails(row)"
+                type="button"
+                class="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-dark-600 dark:text-gray-300 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
+                @click.stop="openMediaDetail(row)"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              <span class="font-medium text-gray-900 dark:text-white">{{ row.image_count }}{{ t('usage.imageUnit') }}</span>
-              <span class="text-gray-400">({{ formatImageBillingSize(row, t) }})</span>
+                <Icon name="eye" size="xs" />
+                {{ t('usage.viewMedia') }}
+              </button>
+            </div>
+            <!-- 视频生成请求 -->
+            <div v-else-if="isVideoUsage(row)" class="space-y-1 text-sm">
+              <div class="flex items-center gap-1.5">
+                <Icon name="video" size="sm" class="text-rose-500" />
+                <span class="font-medium text-gray-900 dark:text-white">{{ t('usage.videoGeneration') }}</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                <span v-if="row.video_seconds != null">{{ row.video_seconds }}s</span>
+                <span v-if="row.video_size">{{ row.video_size }}</span>
+                <span v-if="row.video_billing_units != null">{{ t('usage.videoBillingUnits', { count: row.video_billing_units }) }}</span>
+                <span v-if="row.video_task_id" class="max-w-[160px] truncate" :title="row.video_task_id">{{ formatVideoTaskID(row.video_task_id) }}</span>
+              </div>
             </div>
             <!-- Token 请求 -->
             <div v-else class="flex items-center gap-1.5">
@@ -604,6 +628,79 @@
       </div>
     </div>
   </Teleport>
+
+  <!-- Media detail modal -->
+  <Teleport to="body">
+    <div
+      v-if="mediaDetailRow"
+      class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-sm"
+      @click.self="closeMediaDetail"
+    >
+      <div class="flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-dark-700 dark:bg-dark-900">
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-dark-700">
+          <div>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('usage.mediaDetails') }}</h3>
+            <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ mediaDetailRow.model }} · {{ formatDateTime(mediaDetailRow.created_at) }}</p>
+          </div>
+          <button
+            type="button"
+            class="rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-700 dark:hover:text-white"
+            @click="closeMediaDetail"
+          >
+            <Icon name="x" size="sm" />
+          </button>
+        </div>
+
+        <div class="overflow-y-auto p-5">
+          <div v-if="mediaImageURLs.length > 0" class="grid gap-4 sm:grid-cols-2">
+            <div
+              v-for="(url, index) in mediaImageURLs"
+              :key="`${index}-${url.slice(0, 32)}`"
+              class="overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-dark-700 dark:bg-dark-800"
+            >
+              <img :src="url" :alt="`${t('usage.generatedImage')} ${index + 1}`" class="aspect-square w-full object-cover" />
+              <div class="flex items-center justify-between gap-3 px-3 py-2 text-xs">
+                <span class="truncate text-gray-500 dark:text-gray-400" :title="url">{{ formatMediaURL(url) }}</span>
+                <a
+                  :href="url"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="shrink-0 font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
+                >
+                  {{ t('usage.openImage') }}
+                </a>
+              </div>
+            </div>
+          </div>
+          <div v-else class="rounded-xl border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500 dark:border-dark-600 dark:text-gray-400">
+            {{ t('usage.noImageUrlRecorded') }}
+          </div>
+
+          <div class="mt-5 grid gap-4 lg:grid-cols-2">
+            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800/70">
+              <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('usage.prompt') }}</div>
+              <p class="max-h-40 overflow-auto whitespace-pre-wrap break-words text-sm leading-6 text-gray-900 dark:text-gray-100">
+                {{ mediaDetailRow.image_prompt || '-' }}
+              </p>
+            </div>
+            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800/70">
+              <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('usage.revisedPrompts') }}</div>
+              <div v-if="mediaRevisedPrompts.length > 0" class="space-y-3">
+                <p
+                  v-for="(prompt, index) in mediaRevisedPrompts"
+                  :key="`${index}-${prompt.slice(0, 24)}`"
+                  class="max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-white p-3 text-sm leading-6 text-gray-900 ring-1 ring-gray-200 dark:bg-dark-900 dark:text-gray-100 dark:ring-dark-700"
+                >
+                  {{ prompt }}
+                </p>
+              </div>
+              <p v-else class="text-sm text-gray-500 dark:text-gray-400">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -630,6 +727,8 @@ import { getUsageServiceTierLabel } from '@/utils/usageServiceTier'
 import { resolveUsageRequestType } from '@/utils/usageRequestType'
 import {
   BILLING_MODE_TOKEN,
+  BILLING_MODE_SECOND,
+  BILLING_MODE_SEGMENT,
   getBillingModeBadgeClass,
   getBillingModeLabel,
   isImageUsage,
@@ -661,6 +760,11 @@ const tooltipData = ref<UsageLog | null>(null)
 const tokenTooltipVisible = ref(false)
 const tokenTooltipPosition = ref({ x: 0, y: 0 })
 const tokenTooltipData = ref<UsageLog | null>(null)
+
+// Media detail modal state
+const mediaDetailRow = ref<UsageLog | null>(null)
+const mediaImageURLs = computed(() => sanitizeStringArray(mediaDetailRow.value?.image_urls))
+const mediaRevisedPrompts = computed(() => sanitizeStringArray(mediaDetailRow.value?.image_revised_prompts))
 
 // Usage stats from API
 const usageStats = ref<UsageStatsResponse | null>(null)
@@ -802,6 +906,42 @@ const getRequestTypeExportText = (log: UsageLog): string => {
 const formatUsageEndpoints = (log: UsageLog): string => {
   const inbound = log.inbound_endpoint?.trim()
   return inbound || '-'
+}
+
+const sanitizeStringArray = (value: string[] | null | undefined): string[] => {
+  if (!Array.isArray(value)) return []
+  return value.map((item) => item?.trim()).filter((item): item is string => Boolean(item))
+}
+
+const hasImageDetails = (row: UsageLog): boolean => {
+  return Boolean(row.image_prompt?.trim()) || sanitizeStringArray(row.image_urls).length > 0 || sanitizeStringArray(row.image_revised_prompts).length > 0
+}
+
+const isVideoUsage = (row: UsageLog): boolean => {
+  return Boolean(row.video_task_id?.trim()) || row.billing_mode === BILLING_MODE_SECOND || row.billing_mode === BILLING_MODE_SEGMENT || row.inbound_endpoint === '/v1/videos'
+}
+
+const openMediaDetail = (row: UsageLog) => {
+  mediaDetailRow.value = row
+}
+
+const closeMediaDetail = () => {
+  mediaDetailRow.value = null
+}
+
+const formatMediaURL = (url: string): string => {
+  if (url.startsWith('data:')) return t('usage.dataUrl')
+  try {
+    const parsed = new URL(url)
+    return `${parsed.host}${parsed.pathname}`
+  } catch {
+    return url
+  }
+}
+
+const formatVideoTaskID = (taskID: string): string => {
+  if (taskID.length <= 18) return taskID
+  return `${taskID.slice(0, 8)}...${taskID.slice(-6)}`
 }
 
 const formatTokens = (value: number): string => {
