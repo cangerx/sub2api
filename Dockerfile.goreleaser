@@ -42,8 +42,10 @@ RUN addgroup -g 1000 ccapi && \
 
 WORKDIR /app
 
-# Copy pre-built binary from GoReleaser
-COPY ccapi /app/ccapi
+# Copy pre-built binary from GoReleaser.
+# GoReleaser still builds the binary as sub2api; keep /app/ccapi as the
+# container runtime path for backward compatibility with existing deploy files.
+COPY sub2api /app/ccapi
 
 # Create data directory
 RUN mkdir -p /app/data && chown -R ccapi:ccapi /app
