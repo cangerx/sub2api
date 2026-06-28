@@ -313,6 +313,40 @@ func TestOpenAIGatewayServiceRecordUsage_ZeroUsageStillWritesUsageLog(t *testing
 	require.Zero(t, billingRepo.lastCmd.AccountQuotaCost)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_PersistsImageDetails(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	billingRepo := &openAIRecordUsageBillingRepoStub{result: &UsageBillingApplyResult{Applied: true}}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	svc := newOpenAIRecordUsageServiceWithBillingRepoForTest(usageRepo, billingRepo, userRepo, subRepo, nil)
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID:           "resp_image_details",
+			Usage:               OpenAIUsage{},
+			Model:               "gpt-image-2",
+			Duration:            time.Second,
+			ImageCount:          1,
+			ImageSize:           "2K",
+			ImagePrompt:         "a clean product photo on white background",
+			ImageURLs:           []string{"https://cdn.example.com/images/1.png"},
+			ImageRevisedPrompts: []string{"a polished product photo on a pure white background"},
+		},
+		APIKey:        &APIKey{ID: 1003, Quota: 100, Group: &Group{RateMultiplier: 1}},
+		User:          &User{ID: 2003},
+		Account:       &Account{ID: 3003, Type: AccountTypeAPIKey},
+		APIKeyService: &openAIRecordUsageAPIKeyQuotaStub{},
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, 1, usageRepo.calls)
+	require.NotNil(t, usageRepo.lastLog)
+	require.NotNil(t, usageRepo.lastLog.ImagePrompt)
+	require.Equal(t, "a clean product photo on white background", *usageRepo.lastLog.ImagePrompt)
+	require.Equal(t, []string{"https://cdn.example.com/images/1.png"}, usageRepo.lastLog.ImageURLs)
+	require.Equal(t, []string{"a polished product photo on a pure white background"}, usageRepo.lastLog.ImageRevisedPrompts)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_MissingPricingRecordsZeroCostUsageLog(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	billingRepo := &openAIRecordUsageBillingRepoStub{result: &UsageBillingApplyResult{Applied: true}}
