@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"net/textproto"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Wei-Shaw/ccapi/internal/config"
 	"github.com/gin-gonic/gin"
@@ -19,6 +21,33 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )
+
+type openAIImagesObjectStoreStub struct {
+	uploadedKeys []string
+	contentTypes []string
+}
+
+func (s *openAIImagesObjectStoreStub) Upload(_ context.Context, key string, body io.Reader, contentType string) (int64, error) {
+	data, err := io.ReadAll(body)
+	if err != nil {
+		return 0, err
+	}
+	s.uploadedKeys = append(s.uploadedKeys, key)
+	s.contentTypes = append(s.contentTypes, contentType)
+	return int64(len(data)), nil
+}
+
+func (s *openAIImagesObjectStoreStub) Download(context.Context, string) (io.ReadCloser, error) {
+	return io.NopCloser(strings.NewReader("")), nil
+}
+
+func (s *openAIImagesObjectStoreStub) Delete(context.Context, string) error { return nil }
+
+func (s *openAIImagesObjectStoreStub) PresignURL(_ context.Context, key string, _ time.Duration) (string, error) {
+	return "https://cdn.example.com/" + key, nil
+}
+
+func (s *openAIImagesObjectStoreStub) HeadBucket(context.Context) error { return nil }
 
 type failingOpenAIImageWriter struct {
 	gin.ResponseWriter
@@ -1063,6 +1092,153 @@ func TestOpenAIGatewayServiceForwardImages_APIKeyGenerationUsesConfiguredV1BaseU
 	require.Equal(t, "gpt-image-2", gjson.GetBytes(upstream.lastBody, "model").String())
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Equal(t, "aGVsbG8=", gjson.Get(rec.Body.String(), "data.0.b64_json").String())
+}
+
+func TestOpenAIGatewayServiceForwardImages_APIKeyPersistsImageBase64Alias(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	body := []byte(`{"model":"gpt-image-2","prompt":"draw a cat","response_format":"b64_json"}`)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/images/generations", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = req
+
+	cfg := BackupS3Config{
+		Provider:        "s3",
+		Bucket:          "media",
+		AccessKeyID:     "ak",
+		SecretAccessKey: "sk",
+	}
+	raw, err := json.Marshal(cfg)
+	require.NoError(t, err)
+	settingSvc := NewSettingService(&settingRepoStub{
+		values: map[string]string{settingKeyBackupS3Config: string(raw)},
+	}, &config.Config{})
+	store := &openAIImagesObjectStoreStub{}
+	svc := &OpenAIGatewayService{
+		cfg:            &config.Config{},
+		settingService: settingSvc,
+		imageStoreFactory: func(context.Context, *BackupS3Config) (BackupObjectStore, error) {
+			return store, nil
+		},
+		httpUpstream: &httpUpstreamRecorder{
+			resp: &http.Response{
+				StatusCode: http.StatusOK,
+				Header: http.Header{
+					"Content-Type": []string{"application/json"},
+					"X-Request-Id": []string{"req_img_apikey"},
+				},
+				Body: io.NopCloser(strings.NewReader(`{"created":1710000007,"data":[{"image_base64":"aGVsbG8=","revised_prompt":"draw a cat","output_format":"png"}]}`)),
+			},
+		},
+	}
+	parsed, err := svc.ParseOpenAIImagesRequest(c, body)
+	require.NoError(t, err)
+
+	account := &Account{
+		ID:       6,
+		Name:     "openai-apikey",
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeAPIKey,
+		Credentials: map[string]any{
+			"api_key":  "test-api-key",
+			"base_url": "https://image-upstream.example/v1",
+		},
+	}
+
+	result, err := svc.ForwardImages(context.Background(), c, account, body, parsed, "")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Equal(t, 1, result.ImageCount)
+	require.Len(t, store.uploadedKeys, 1)
+	require.Contains(t, store.uploadedKeys[0], "images/openai/")
+	require.Equal(t, []string{"https://cdn.example.com/" + store.uploadedKeys[0]}, result.ImageURLs)
+	require.Equal(t, "image/png", store.contentTypes[0])
+	require.Equal(t, "https://cdn.example.com/"+store.uploadedKeys[0], gjson.Get(rec.Body.String(), "data.0.url").String())
+}
+
+func TestOpenAIGatewayServicePersistOpenAIImagesAPIResponseBodyPersistsImageBase64Alias(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	req := httptest.NewRequest(http.MethodPost, "/v1/images/generations", nil)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = req
+
+	cfg := BackupS3Config{
+		Provider:        "s3",
+		Bucket:          "media",
+		AccessKeyID:     "ak",
+		SecretAccessKey: "sk",
+	}
+	raw, err := json.Marshal(cfg)
+	require.NoError(t, err)
+	settingSvc := NewSettingService(&settingRepoStub{
+		values: map[string]string{settingKeyBackupS3Config: string(raw)},
+	}, &config.Config{})
+	store := &openAIImagesObjectStoreStub{}
+	svc := &OpenAIGatewayService{
+		settingService: settingSvc,
+		imageStoreFactory: func(context.Context, *BackupS3Config) (BackupObjectStore, error) {
+			return store, nil
+		},
+	}
+
+	rewritten, err := svc.persistOpenAIImagesAPIResponseBody(context.Background(), c, []byte(`{"created":1710000007,"data":[{"image_base64":"aGVsbG8=","revised_prompt":"draw a cat","output_format":"png"}]}`))
+	require.NoError(t, err)
+	require.Len(t, store.uploadedKeys, 1)
+	require.Equal(t, "https://cdn.example.com/"+store.uploadedKeys[0], gjson.GetBytes(rewritten, "data.0.url").String())
+	require.Equal(t, []string{"https://cdn.example.com/" + store.uploadedKeys[0]}, openAIImageUsageStringsFromContext(c, openAIImageUsageURLsContextKey))
+}
+
+func TestOpenAIGatewayServiceForwardImages_APIKeyPromptOnlyDataIsNotImage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	body := []byte(`{"model":"gpt-image-2","prompt":"draw a cat","response_format":"b64_json"}`)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/images/generations", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = req
+
+	store := &openAIImagesObjectStoreStub{}
+	svc := &OpenAIGatewayService{
+		cfg: &config.Config{},
+		imageStoreFactory: func(context.Context, *BackupS3Config) (BackupObjectStore, error) {
+			return store, nil
+		},
+		httpUpstream: &httpUpstreamRecorder{
+			resp: &http.Response{
+				StatusCode: http.StatusOK,
+				Header: http.Header{
+					"Content-Type": []string{"application/json"},
+					"X-Request-Id": []string{"req_img_apikey"},
+				},
+				Body: io.NopCloser(strings.NewReader(`{"created":1710000007,"data":[{"revised_prompt":"draw a cat"}]}`)),
+			},
+		},
+	}
+	parsed, err := svc.ParseOpenAIImagesRequest(c, body)
+	require.NoError(t, err)
+
+	account := &Account{
+		ID:       6,
+		Name:     "openai-apikey",
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeAPIKey,
+		Credentials: map[string]any{
+			"api_key":  "test-api-key",
+			"base_url": "https://image-upstream.example/v1",
+		},
+	}
+
+	result, err := svc.ForwardImages(context.Background(), c, account, body, parsed, "")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Zero(t, result.ImageCount)
+	require.Empty(t, result.ImageURLs)
+	require.Empty(t, result.ImageRevisedPrompts)
+	require.Empty(t, store.uploadedKeys)
 }
 
 func TestOpenAIGatewayServiceForwardImages_APIKeyStreamJSONResponseBillsImage(t *testing.T) {

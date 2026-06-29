@@ -22,6 +22,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	"go.uber.org/zap"
 )
 
 type openAIResponsesImageResult struct {
@@ -422,16 +423,35 @@ func (s *OpenAIGatewayService) persistOpenAIImageResults(ctx context.Context, c 
 	// Record upstream URLs/revised prompts even when storage is disabled. Raw base64 is never stored here.
 	rememberOpenAIImageUsageResults(c, results)
 	if s == nil || s.settingService == nil || s.imageStoreFactory == nil {
+		logger.L().With(
+			zap.String("component", "service.openai_gateway"),
+			zap.Int("result_count", len(results)),
+			zap.Bool("has_setting_service", s != nil && s.settingService != nil),
+			zap.Bool("has_store_factory", s != nil && s.imageStoreFactory != nil),
+		).Warn("openai.images.generated_media_storage_unavailable")
 		return results, nil
 	}
 	cfg, err := s.settingService.GetBackupStorageConfig(ctx)
 	if err != nil {
 		if errors.Is(err, ErrSettingNotFound) {
+			logger.L().With(
+				zap.String("component", "service.openai_gateway"),
+				zap.Int("result_count", len(results)),
+			).Info("openai.images.generated_media_storage_not_configured")
 			return results, nil
 		}
 		return nil, err
 	}
 	if cfg == nil || !cfg.IsConfigured() {
+		provider := ""
+		if cfg != nil {
+			provider = normalizeBackupStorageProvider(cfg.Provider)
+		}
+		logger.L().With(
+			zap.String("component", "service.openai_gateway"),
+			zap.Int("result_count", len(results)),
+			zap.String("provider", provider),
+		).Info("openai.images.generated_media_storage_not_configured")
 		return results, nil
 	}
 	if normalizeBackupStorageProvider(cfg.Provider) == "local" && strings.TrimSpace(cfg.PublicBaseURL) == "" {
@@ -445,6 +465,7 @@ func (s *OpenAIGatewayService) persistOpenAIImageResults(ctx context.Context, c 
 	}
 	persisted := make([]openAIResponsesImageResult, len(results))
 	copy(persisted, results)
+	storedCount := 0
 	for i := range persisted {
 		raw := strings.TrimSpace(persisted[i].Result)
 		if raw == "" {
@@ -471,8 +492,17 @@ func (s *OpenAIGatewayService) persistOpenAIImageResults(ctx context.Context, c 
 			return nil, fmt.Errorf("build generated image URL: %w", err)
 		}
 		persisted[i].URL = mediaURL
+		storedCount++
 	}
 	rememberOpenAIImageUsageResults(c, persisted)
+	logger.L().With(
+		zap.String("component", "service.openai_gateway"),
+		zap.Int("result_count", len(results)),
+		zap.Int("stored_count", storedCount),
+		zap.Int("url_count", len(openAIImageUsageStringsFromContext(c, openAIImageUsageURLsContextKey))),
+		zap.String("provider", normalizeBackupStorageProvider(cfg.Provider)),
+		zap.String("public_base_url", strings.TrimSpace(cfg.PublicBaseURL)),
+	).Info("openai.images.generated_media_storage_done")
 	return persisted, nil
 }
 

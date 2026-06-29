@@ -667,7 +667,7 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 	defer func() { _ = resp.Body.Close() }()
 
 	var usage OpenAIUsage
-	imageCount := parsed.N
+	imageCount := 0
 	var firstTokenMs *int
 	if parsed.Stream && isEventStreamResponse(resp.Header) {
 		streamUsage, streamCount, streamSizes, ttft, err := s.handleOpenAIImagesStreamingResponse(resp, c, startTime)
@@ -920,8 +920,17 @@ func (s *OpenAIGatewayService) persistOpenAIImagesAPIResponseBody(ctx context.Co
 	rootFormat := strings.TrimSpace(gjson.GetBytes(body, "output_format").String())
 	for i, item := range items {
 		result := openAIResponsesImageResult{
-			Result:        normalizeOpenAIImageBase64(item.Get("b64_json").String()),
-			URL:           strings.TrimSpace(item.Get("url").String()),
+			Result: normalizeOpenAIImageBase64(firstNonEmptyString(
+				item.Get("b64_json").String(),
+				item.Get("base64").String(),
+				item.Get("image_base64").String(),
+				item.Get("result").String(),
+			)),
+			URL: firstNonEmptyString(
+				item.Get("url").String(),
+				item.Get("image_url").String(),
+				item.Get("download_url").String(),
+			),
 			RevisedPrompt: strings.TrimSpace(item.Get("revised_prompt").String()),
 			OutputFormat:  strings.TrimSpace(item.Get("output_format").String()),
 			Size:          strings.TrimSpace(item.Get("size").String()),
@@ -937,7 +946,7 @@ func (s *OpenAIGatewayService) persistOpenAIImagesAPIResponseBody(ctx context.Co
 				}
 			}
 		}
-		if result.Result == "" && result.URL == "" && result.RevisedPrompt == "" {
+		if result.Result == "" && result.URL == "" {
 			continue
 		}
 		results = append(results, result)
@@ -1422,10 +1431,17 @@ func normalizeOpenAIImageBase64(raw string) string {
 		}
 	}
 	raw = strings.TrimSpace(raw)
-	raw = strings.TrimRight(raw, "=") + strings.Repeat("=", (4-len(raw)%4)%4)
 	if raw == "" {
 		return ""
 	}
+	if _, err := base64.StdEncoding.DecodeString(raw); err == nil {
+		return raw
+	}
+	raw = strings.TrimRight(raw, "=")
+	if raw == "" {
+		return ""
+	}
+	raw += strings.Repeat("=", (4-len(raw)%4)%4)
 	if _, err := base64.StdEncoding.DecodeString(raw); err != nil {
 		return ""
 	}
