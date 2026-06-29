@@ -653,6 +653,7 @@ type GatewayService struct {
 	tlsFPProfileService   *TLSFingerprintProfileService
 	balanceNotifyService  *BalanceNotifyService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
+	imageStoreFactory     BackupObjectStoreFactory
 }
 
 // NewGatewayService creates a new GatewayService
@@ -684,6 +685,7 @@ func NewGatewayService(
 	resolver *ModelPricingResolver,
 	balanceNotifyService *BalanceNotifyService,
 	userPlatformQuotaRepo UserPlatformQuotaRepository,
+	imageStoreFactory BackupObjectStoreFactory,
 ) *GatewayService {
 	userGroupRateTTL := resolveUserGroupRateCacheTTL(cfg)
 	modelsListTTL := resolveModelsListCacheTTL(cfg)
@@ -720,6 +722,7 @@ func NewGatewayService(
 		resolver:              resolver,
 		balanceNotifyService:  balanceNotifyService,
 		userPlatformQuotaRepo: userPlatformQuotaRepo,
+		imageStoreFactory:     imageStoreFactory,
 	}
 	svc.userGroupRateResolver = newUserGroupRateResolver(
 		userGroupRateRepo,
@@ -734,6 +737,20 @@ func NewGatewayService(
 		svc.initDebugGatewayBodyFile(path)
 	}
 	return svc
+}
+
+func (s *GatewayService) persistGeminiInlineImages(ctx context.Context, c *gin.Context, response map[string]any, provider string) ([]string, error) {
+	if s == nil {
+		return nil, nil
+	}
+	images := collectGeminiInlineImagePayloads(response)
+	if len(images) == 0 {
+		return nil, nil
+	}
+	return generatedMediaStore{
+		settingService: s.settingService,
+		storeFactory:   s.imageStoreFactory,
+	}.persistImages(ctx, c, provider, images)
 }
 
 // GenerateSessionHash 从预解析请求计算粘性会话 hash

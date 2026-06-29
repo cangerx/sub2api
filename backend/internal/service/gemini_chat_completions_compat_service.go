@@ -233,6 +233,7 @@ func (s *GeminiMessagesCompatService) forwardClaudeBodyAsChatCompletions(
 
 	var usage *ClaudeUsage
 	var firstTokenMs *int
+	var imageURLs []string
 	if clientStream {
 		streamRes, err := s.handleChatCompletionsStreamingResponseFromGemini(c, resp, startTime, originalModel, account.Type == AccountTypeOAuth, includeUsage)
 		if err != nil {
@@ -251,9 +252,18 @@ func (s *GeminiMessagesCompatService) forwardClaudeBodyAsChatCompletions(
 			return nil, s.writeChatCompletionsError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
 		}
 		c.JSON(http.StatusOK, chatResp)
+		imageURLs, err = s.persistGeminiInlineImages(ctx, c, collected, PlatformGemini)
+		if err != nil {
+			return nil, err
+		}
 		usage = usageObj2
 	} else {
-		usageResp, err := s.handleChatCompletionsNonStreamingResponseFromGemini(c, resp, originalModel, account.Type == AccountTypeOAuth)
+		var response map[string]any
+		usageResp, response, err := s.handleChatCompletionsNonStreamingResponseFromGemini(c, resp, originalModel, account.Type == AccountTypeOAuth)
+		if err != nil {
+			return nil, err
+		}
+		imageURLs, err = s.persistGeminiInlineImages(ctx, c, response, PlatformGemini)
 		if err != nil {
 			return nil, err
 		}
@@ -283,6 +293,7 @@ func (s *GeminiMessagesCompatService) forwardClaudeBodyAsChatCompletions(
 		ImageCount:       imageCount,
 		ImageSize:        imageSize,
 		ImageInputSize:   imageInputSize,
+		ImageURLs:        imageURLs,
 		ClientDisconnect: false,
 	}, nil
 }
@@ -435,10 +446,10 @@ func (s *GeminiMessagesCompatService) handleChatCompletionsNonStreamingResponseF
 	resp *http.Response,
 	originalModel string,
 	isOAuth bool,
-) (*ClaudeUsage, error) {
+) (*ClaudeUsage, map[string]any, error) {
 	respBody, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if isOAuth {
 		if unwrappedBody, uwErr := unwrapGeminiResponse(respBody); uwErr == nil {
@@ -448,17 +459,17 @@ func (s *GeminiMessagesCompatService) handleChatCompletionsNonStreamingResponseF
 
 	var geminiResp map[string]any
 	if err := json.Unmarshal(respBody, &geminiResp); err != nil {
-		return nil, s.writeChatCompletionsError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
+		return nil, nil, s.writeChatCompletionsError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
 	}
 
 	chatResp, usage, err := geminiResponseToChatCompletions(geminiResp, originalModel, respBody, nil)
 	if err != nil {
-		return nil, s.writeChatCompletionsError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
+		return nil, nil, s.writeChatCompletionsError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
 	}
 
 	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
 	c.JSON(http.StatusOK, chatResp)
-	return usage, nil
+	return usage, geminiResp, nil
 }
 
 func geminiResponseToChatCompletions(

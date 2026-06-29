@@ -863,6 +863,7 @@ type AntigravityGatewayService struct {
 	rateLimitService  *RateLimitService
 	httpUpstream      HTTPUpstream
 	settingService    *SettingService
+	imageStoreFactory BackupObjectStoreFactory
 	cache             GatewayCache // 用于模型级限流时清除粘性会话绑定
 	schedulerSnapshot *SchedulerSnapshotService
 	internal500Cache  Internal500CounterCache // INTERNAL 500 渐进惩罚计数器
@@ -893,6 +894,7 @@ func NewAntigravityGatewayService(
 	httpUpstream HTTPUpstream,
 	settingService *SettingService,
 	internal500Cache Internal500CounterCache,
+	imageStoreFactory BackupObjectStoreFactory,
 ) *AntigravityGatewayService {
 	return &AntigravityGatewayService{
 		accountRepo:       accountRepo,
@@ -900,6 +902,7 @@ func NewAntigravityGatewayService(
 		rateLimitService:  rateLimitService,
 		httpUpstream:      httpUpstream,
 		settingService:    settingService,
+		imageStoreFactory: imageStoreFactory,
 		cache:             cache,
 		schedulerSnapshot: schedulerSnapshot,
 		internal500Cache:  internal500Cache,
@@ -1785,6 +1788,7 @@ func (s *AntigravityGatewayService) Forward(ctx context.Context, c *gin.Context,
 	var usage *ClaudeUsage
 	var firstTokenMs *int
 	var clientDisconnect bool
+	var imageURLs []string
 	if claudeReq.Stream {
 		// 客户端要求流式，直接透传转换
 		streamRes, err := s.handleClaudeStreamingResponse(c, resp, startTime, originalModel)
@@ -1797,13 +1801,14 @@ func (s *AntigravityGatewayService) Forward(ctx context.Context, c *gin.Context,
 		clientDisconnect = streamRes.clientDisconnect
 	} else {
 		// 客户端要求非流式，收集流式响应后转换返回
-		streamRes, err := s.handleClaudeStreamToNonStreaming(c, resp, startTime, originalModel)
+		streamRes, err := s.handleClaudeStreamToNonStreaming(ctx, c, resp, startTime, originalModel)
 		if err != nil {
 			logger.LegacyPrintf("service.antigravity_gateway", "%s status=stream_collect_error error=%v", prefix, err)
 			return nil, err
 		}
 		usage = streamRes.usage
 		firstTokenMs = streamRes.firstTokenMs
+		imageURLs = streamRes.imageURLs
 	}
 
 	return &ForwardResult{
@@ -1815,6 +1820,7 @@ func (s *AntigravityGatewayService) Forward(ctx context.Context, c *gin.Context,
 		Duration:         time.Since(startTime),
 		FirstTokenMs:     firstTokenMs,
 		ClientDisconnect: clientDisconnect,
+		ImageURLs:        imageURLs,
 	}, nil
 }
 
@@ -2493,6 +2499,7 @@ handleSuccess:
 	var usage *ClaudeUsage
 	var firstTokenMs *int
 	var clientDisconnect bool
+	var imageURLs []string
 
 	if stream {
 		// 客户端要求流式，直接透传
@@ -2506,13 +2513,14 @@ handleSuccess:
 		clientDisconnect = streamRes.clientDisconnect
 	} else {
 		// 客户端要求非流式，收集流式响应后返回
-		streamRes, err := s.handleGeminiStreamToNonStreaming(c, resp, startTime)
+		streamRes, err := s.handleGeminiStreamToNonStreaming(ctx, c, resp, startTime)
 		if err != nil {
 			logger.LegacyPrintf("service.antigravity_gateway", "%s status=stream_collect_error error=%v", prefix, err)
 			return nil, err
 		}
 		usage = streamRes.usage
 		firstTokenMs = streamRes.firstTokenMs
+		imageURLs = streamRes.imageURLs
 	}
 
 	if usage == nil {
@@ -2538,6 +2546,7 @@ handleSuccess:
 		ImageCount:       imageCount,
 		ImageSize:        imageSize,
 		ImageInputSize:   imageInputSize,
+		ImageURLs:        imageURLs,
 	}, nil
 }
 
@@ -3063,6 +3072,21 @@ type antigravityStreamResult struct {
 	usage            *ClaudeUsage
 	firstTokenMs     *int
 	clientDisconnect bool // 客户端是否在流式传输过程中断开
+	imageURLs        []string
+}
+
+func (s *AntigravityGatewayService) persistGeminiInlineImages(ctx context.Context, c *gin.Context, response map[string]any, provider string) ([]string, error) {
+	if s == nil {
+		return nil, nil
+	}
+	images := collectGeminiInlineImagePayloads(response)
+	if len(images) == 0 {
+		return nil, nil
+	}
+	return generatedMediaStore{
+		settingService: s.settingService,
+		storeFactory:   s.imageStoreFactory,
+	}.persistImages(ctx, c, provider, images)
 }
 
 // antigravityClientWriter 封装流式响应的客户端写入，自动检测断开并标记。
@@ -3328,7 +3352,7 @@ func (s *AntigravityGatewayService) handleGeminiStreamingResponse(c *gin.Context
 
 // handleGeminiStreamToNonStreaming 读取上游流式响应，合并为非流式响应返回给客户端
 // Gemini 流式响应是增量的，需要累积所有 chunk 的内容
-func (s *AntigravityGatewayService) handleGeminiStreamToNonStreaming(c *gin.Context, resp *http.Response, startTime time.Time) (*antigravityStreamResult, error) {
+func (s *AntigravityGatewayService) handleGeminiStreamToNonStreaming(ctx context.Context, c *gin.Context, resp *http.Response, startTime time.Time) (*antigravityStreamResult, error) {
 	scanner := bufio.NewScanner(resp.Body)
 	maxLineSize := defaultMaxLineSize
 	if s.settingService.cfg != nil && s.settingService.cfg.Gateway.MaxLineSize > 0 {
@@ -3506,13 +3530,18 @@ returnResponse:
 		finalResponse = mergeTextPartsToResponse(finalResponse, collectedTextParts)
 	}
 
+	imageURLs, err := s.persistGeminiInlineImages(ctx, c, finalResponse, PlatformAntigravity)
+	if err != nil {
+		return nil, err
+	}
+
 	respBody, err := json.Marshal(finalResponse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal response: %w", err)
 	}
 	c.Data(http.StatusOK, "application/json", respBody)
 
-	return &antigravityStreamResult{usage: usage, firstTokenMs: firstTokenMs}, nil
+	return &antigravityStreamResult{usage: usage, firstTokenMs: firstTokenMs, imageURLs: imageURLs}, nil
 }
 
 // getOrCreateGeminiParts 获取 Gemini 响应的 parts 结构，返回深拷贝和更新回调
@@ -3796,7 +3825,7 @@ func (s *AntigravityGatewayService) writeGoogleError(c *gin.Context, status int,
 
 // handleClaudeStreamToNonStreaming 收集上游流式响应，转换为 Claude 非流式格式返回
 // 用于处理客户端非流式请求但上游只支持流式的情况
-func (s *AntigravityGatewayService) handleClaudeStreamToNonStreaming(c *gin.Context, resp *http.Response, startTime time.Time, originalModel string) (*antigravityStreamResult, error) {
+func (s *AntigravityGatewayService) handleClaudeStreamToNonStreaming(ctx context.Context, c *gin.Context, resp *http.Response, startTime time.Time, originalModel string) (*antigravityStreamResult, error) {
 	scanner := bufio.NewScanner(resp.Body)
 	maxLineSize := defaultMaxLineSize
 	if s.settingService.cfg != nil && s.settingService.cfg.Gateway.MaxLineSize > 0 {
@@ -3941,6 +3970,11 @@ returnResponse:
 		finalResponse = mergeCollectedPartsToResponse(finalResponse, collectedParts)
 	}
 
+	imageURLs, err := s.persistGeminiInlineImages(ctx, c, finalResponse, PlatformAntigravity)
+	if err != nil {
+		return nil, err
+	}
+
 	// 序列化为 JSON（Gemini 格式）
 	geminiBody, err := json.Marshal(finalResponse)
 	if err != nil {
@@ -3964,7 +3998,7 @@ returnResponse:
 		CacheReadInputTokens:     agUsage.CacheReadInputTokens,
 	}
 
-	return &antigravityStreamResult{usage: usage, firstTokenMs: firstTokenMs}, nil
+	return &antigravityStreamResult{usage: usage, firstTokenMs: firstTokenMs, imageURLs: imageURLs}, nil
 }
 
 // handleClaudeStreamingResponse 处理 Claude 流式响应（Gemini SSE → Claude SSE 转换）

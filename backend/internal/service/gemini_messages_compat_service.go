@@ -54,6 +54,8 @@ type GeminiMessagesCompatService struct {
 	antigravityGatewayService *AntigravityGatewayService
 	cfg                       *config.Config
 	responseHeaderFilter      *responseheaders.CompiledHeaderFilter
+	settingService            *SettingService
+	imageStoreFactory         BackupObjectStoreFactory
 }
 
 func (s *GeminiMessagesCompatService) readUpstreamErrorBody(resp *http.Response) []byte {
@@ -78,6 +80,8 @@ func NewGeminiMessagesCompatService(
 	httpUpstream HTTPUpstream,
 	antigravityGatewayService *AntigravityGatewayService,
 	cfg *config.Config,
+	settingService *SettingService,
+	imageStoreFactory BackupObjectStoreFactory,
 ) *GeminiMessagesCompatService {
 	return &GeminiMessagesCompatService{
 		accountRepo:               accountRepo,
@@ -90,12 +94,28 @@ func NewGeminiMessagesCompatService(
 		antigravityGatewayService: antigravityGatewayService,
 		cfg:                       cfg,
 		responseHeaderFilter:      compileResponseHeaderFilter(cfg),
+		settingService:            settingService,
+		imageStoreFactory:         imageStoreFactory,
 	}
 }
 
 // GetTokenProvider returns the token provider for OAuth accounts
 func (s *GeminiMessagesCompatService) GetTokenProvider() *GeminiTokenProvider {
 	return s.tokenProvider
+}
+
+func (s *GeminiMessagesCompatService) persistGeminiInlineImages(ctx context.Context, c *gin.Context, response map[string]any, provider string) ([]string, error) {
+	if s == nil {
+		return nil, nil
+	}
+	images := collectGeminiInlineImagePayloads(response)
+	if len(images) == 0 {
+		return nil, nil
+	}
+	return generatedMediaStore{
+		settingService: s.settingService,
+		storeFactory:   s.imageStoreFactory,
+	}.persistImages(ctx, c, provider, images)
 }
 
 func (s *GeminiMessagesCompatService) SelectAccountForModel(ctx context.Context, groupID *int64, sessionHash string, requestedModel string) (*Account, error) {
@@ -1051,6 +1071,7 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 
 	var usage *ClaudeUsage
 	var firstTokenMs *int
+	var imageURLs []string
 	if req.Stream {
 		streamRes, err := s.handleStreamingResponse(c, resp, startTime, originalModel)
 		if err != nil {
@@ -1067,12 +1088,21 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 			collectedBytes, _ := json.Marshal(collected)
 			claudeResp, usageObj2 := convertGeminiToClaudeMessage(collected, originalModel, collectedBytes)
 			c.JSON(http.StatusOK, claudeResp)
+			imageURLs, err = s.persistGeminiInlineImages(ctx, c, collected, PlatformGemini)
+			if err != nil {
+				return nil, err
+			}
 			usage = usageObj2
 			if usageObj != nil && (usageObj.InputTokens > 0 || usageObj.OutputTokens > 0) {
 				usage = usageObj
 			}
 		} else {
-			usage, err = s.handleNonStreamingResponse(c, resp, originalModel)
+			var response map[string]any
+			usage, response, err = s.handleNonStreamingResponse(c, resp, originalModel)
+			if err != nil {
+				return nil, err
+			}
+			imageURLs, err = s.persistGeminiInlineImages(ctx, c, response, PlatformGemini)
 			if err != nil {
 				return nil, err
 			}
@@ -1098,6 +1128,7 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 		ImageCount:     imageCount,
 		ImageSize:      imageSize,
 		ImageInputSize: imageInputSize,
+		ImageURLs:      imageURLs,
 	}, nil
 }
 
@@ -1575,6 +1606,7 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 
 	var usage *ClaudeUsage
 	var firstTokenMs *int
+	var imageURLs []string
 
 	if stream {
 		streamRes, err := s.handleNativeStreamingResponse(c, resp, startTime, isOAuth)
@@ -1591,9 +1623,18 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 			}
 			b, _ := json.Marshal(collected)
 			c.Data(http.StatusOK, "application/json", b)
+			imageURLs, err = s.persistGeminiInlineImages(ctx, c, collected, PlatformGemini)
+			if err != nil {
+				return nil, err
+			}
 			usage = usageObj
 		} else {
-			usageResp, err := s.handleNativeNonStreamingResponse(c, resp, isOAuth)
+			var response map[string]any
+			usageResp, response, err := s.handleNativeNonStreamingResponse(c, resp, isOAuth)
+			if err != nil {
+				return nil, err
+			}
+			imageURLs, err = s.persistGeminiInlineImages(ctx, c, response, PlatformGemini)
 			if err != nil {
 				return nil, err
 			}
@@ -1624,6 +1665,7 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 		ImageCount:     imageCount,
 		ImageSize:      imageSize,
 		ImageInputSize: imageInputSize,
+		ImageURLs:      imageURLs,
 	}, nil
 }
 
@@ -1943,26 +1985,26 @@ type geminiStreamResult struct {
 	firstTokenMs *int
 }
 
-func (s *GeminiMessagesCompatService) handleNonStreamingResponse(c *gin.Context, resp *http.Response, originalModel string) (*ClaudeUsage, error) {
+func (s *GeminiMessagesCompatService) handleNonStreamingResponse(c *gin.Context, resp *http.Response, originalModel string) (*ClaudeUsage, map[string]any, error) {
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
 	if err != nil {
-		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to read upstream response")
+		return nil, nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to read upstream response")
 	}
 
 	unwrappedBody, err := unwrapGeminiResponse(body)
 	if err != nil {
-		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
+		return nil, nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
 	}
 
 	var geminiResp map[string]any
 	if err := json.Unmarshal(unwrappedBody, &geminiResp); err != nil {
-		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
+		return nil, nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
 	}
 
 	claudeResp, usage := convertGeminiToClaudeMessage(geminiResp, originalModel, unwrappedBody)
 	c.JSON(http.StatusOK, claudeResp)
 
-	return usage, nil
+	return usage, geminiResp, nil
 }
 
 func (s *GeminiMessagesCompatService) handleStreamingResponse(c *gin.Context, resp *http.Response, startTime time.Time, originalModel string) (*geminiStreamResult, error) {
@@ -2500,7 +2542,7 @@ type UpstreamHTTPResult struct {
 	Body       []byte
 }
 
-func (s *GeminiMessagesCompatService) handleNativeNonStreamingResponse(c *gin.Context, resp *http.Response, isOAuth bool) (*ClaudeUsage, error) {
+func (s *GeminiMessagesCompatService) handleNativeNonStreamingResponse(c *gin.Context, resp *http.Response, isOAuth bool) (*ClaudeUsage, map[string]any, error) {
 	if s.cfg != nil && s.cfg.Gateway.GeminiDebugResponseHeaders {
 		logger.LegacyPrintf("service.gemini_messages_compat", "[GeminiAPI] ========== Response Headers ==========")
 		for key, values := range resp.Header {
@@ -2513,7 +2555,7 @@ func (s *GeminiMessagesCompatService) handleNativeNonStreamingResponse(c *gin.Co
 
 	respBody, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if isOAuth {
@@ -2531,10 +2573,12 @@ func (s *GeminiMessagesCompatService) handleNativeNonStreamingResponse(c *gin.Co
 	}
 	c.Data(resp.StatusCode, contentType, respBody)
 
+	var geminiResp map[string]any
+	_ = json.Unmarshal(respBody, &geminiResp)
 	if u := extractGeminiUsage(respBody); u != nil {
-		return u, nil
+		return u, geminiResp, nil
 	}
-	return &ClaudeUsage{}, nil
+	return &ClaudeUsage{}, geminiResp, nil
 }
 
 func (s *GeminiMessagesCompatService) handleNativeStreamingResponse(c *gin.Context, resp *http.Response, startTime time.Time, isOAuth bool) (*geminiNativeStreamResult, error) {

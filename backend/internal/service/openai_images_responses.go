@@ -436,7 +436,7 @@ func (s *OpenAIGatewayService) persistOpenAIImageResults(ctx context.Context, c 
 	}
 	if normalizeBackupStorageProvider(cfg.Provider) == "local" && strings.TrimSpace(cfg.PublicBaseURL) == "" {
 		clone := *cfg
-		clone.PublicBaseURL = openAIImagesLocalPublicBaseURL(c)
+		clone.PublicBaseURL = generatedMediaLocalPublicBaseURL(c)
 		cfg = &clone
 	}
 	store, err := s.imageStoreFactory(ctx, cfg)

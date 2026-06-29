@@ -45,6 +45,7 @@ func newGatewayRecordUsageServiceForTest(usageRepo UsageLogRepository, userRepo 
 		nil,
 		nil,
 		nil, // userPlatformQuotaRepo
+		nil, // imageStoreFactory
 	)
 }
 
@@ -260,6 +261,58 @@ func TestGatewayServiceRecordUsage_PersistsImageDetails(t *testing.T) {
 	require.Equal(t, "a clean product photo on white background", *usageRepo.lastLog.ImagePrompt)
 	require.Equal(t, []string{"https://cdn.example.com/images/1.png"}, usageRepo.lastLog.ImageURLs)
 	require.Equal(t, []string{"a polished product photo on a pure white background"}, usageRepo.lastLog.ImageRevisedPrompts)
+}
+
+func TestGatewayServiceRecordUsage_PersistsStoredGeminiImageURLs(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	svc := newGatewayRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{})
+	svc.settingService = NewSettingService(&settingRepoStub{
+		values: map[string]string{
+			settingKeyBackupS3Config: `{"provider":"s3","bucket":"media","access_key_id":"ak","secret_access_key":"sk"}`,
+		},
+	}, &config.Config{})
+	store := &generatedMediaObjectStoreStub{}
+	svc.imageStoreFactory = func(context.Context, *BackupS3Config) (BackupObjectStore, error) {
+		return store, nil
+	}
+
+	imageURLs, err := svc.persistGeminiInlineImages(context.Background(), nil, map[string]any{
+		"candidates": []any{
+			map[string]any{
+				"content": map[string]any{
+					"parts": []any{
+						map[string]any{
+							"inlineData": map[string]any{
+								"mimeType": "image/png",
+								"data":     "aGVsbG8=",
+							},
+						},
+					},
+				},
+			},
+		},
+	}, PlatformGemini)
+	require.NoError(t, err)
+	require.Len(t, imageURLs, 1)
+
+	err = svc.RecordUsage(context.Background(), &RecordUsageInput{
+		Result: &ForwardResult{
+			RequestID:  "gateway_stored_gemini_image",
+			Model:      "gemini-image",
+			ImageCount: 1,
+			ImageSize:  "2K",
+			ImageURLs:  imageURLs,
+			Duration:   time.Second,
+		},
+		APIKey:  &APIKey{ID: 803, Group: &Group{RateMultiplier: 1}},
+		User:    &User{ID: 603},
+		Account: &Account{ID: 703},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, imageURLs, usageRepo.lastLog.ImageURLs)
+	require.Len(t, store.uploadedKeys, 1)
 }
 
 func TestGatewayServiceRecordUsage_UsageLogWriteErrorDoesNotSkipBilling(t *testing.T) {
