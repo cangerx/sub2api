@@ -233,6 +233,35 @@ func TestGatewayServiceRecordUsage_EmptyImageSizeDefaultsBeforeBillingAndPersist
 	require.InDelta(t, 0.19, usageRepo.lastLog.ActualCost, 1e-12)
 }
 
+func TestGatewayServiceRecordUsage_PersistsImageDetails(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	svc := newGatewayRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{})
+
+	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
+		Result: &ForwardResult{
+			RequestID:           "gateway_image_details",
+			Model:               "gemini-image",
+			ImageCount:          1,
+			ImageSize:           "2K",
+			ImageInputSize:      "auto",
+			ImagePrompt:         "a clean product photo on white background",
+			ImageURLs:           []string{"https://cdn.example.com/images/1.png"},
+			ImageRevisedPrompts: []string{"a polished product photo on a pure white background"},
+			Duration:            time.Second,
+		},
+		APIKey:  &APIKey{ID: 802, Group: &Group{RateMultiplier: 1}},
+		User:    &User{ID: 602},
+		Account: &Account{ID: 702},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.NotNil(t, usageRepo.lastLog.ImagePrompt)
+	require.Equal(t, "a clean product photo on white background", *usageRepo.lastLog.ImagePrompt)
+	require.Equal(t, []string{"https://cdn.example.com/images/1.png"}, usageRepo.lastLog.ImageURLs)
+	require.Equal(t, []string{"a polished product photo on a pure white background"}, usageRepo.lastLog.ImageRevisedPrompts)
+}
+
 func TestGatewayServiceRecordUsage_UsageLogWriteErrorDoesNotSkipBilling(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false, err: MarkUsageLogCreateNotPersisted(context.Canceled)}
 	userRepo := &openAIRecordUsageUserRepoStub{}
