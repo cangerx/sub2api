@@ -502,24 +502,6 @@ func buildPublicOrderResult(order *dbent.PaymentOrder) PublicOrderResult {
 	}
 }
 
-// VerifyOrderPublic keeps the legacy anonymous out_trade_no lookup available as
-// a compatibility path for older result pages and staggered deploys.
-// POST /api/v1/payment/public/orders/verify
-func (h *PaymentHandler) VerifyOrderPublic(c *gin.Context) {
-	var req VerifyOrderRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
-		return
-	}
-
-	order, err := h.paymentService.VerifyOrderPublic(c.Request.Context(), req.OutTradeNo)
-	if err != nil {
-		response.ErrorFrom(c, err)
-		return
-	}
-	response.Success(c, buildPublicOrderResult(order))
-}
-
 // ResolveOrderPublicByResumeToken resolves a payment order from a signed resume token.
 // POST /api/v1/payment/public/orders/resolve
 func (h *PaymentHandler) ResolveOrderPublicByResumeToken(c *gin.Context) {

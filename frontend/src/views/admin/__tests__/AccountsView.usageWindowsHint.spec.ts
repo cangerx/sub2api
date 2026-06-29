@@ -61,6 +61,11 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ query: {} }),
+  useRouter: () => ({ replace: vi.fn() })
+}))
+
 // Render the per-column header slots so we can assert the usage-window header hint.
 const DataTableStub = {
   props: ['columns', 'data'],

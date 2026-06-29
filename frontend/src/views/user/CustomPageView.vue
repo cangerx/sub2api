@@ -107,6 +107,8 @@
           <iframe
             :src="embeddedUrl"
             class="custom-embed-frame"
+            sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts"
+            referrerpolicy="no-referrer"
             allowfullscreen
           ></iframe>
         </div>
@@ -240,10 +242,7 @@ async function fetchAndRenderMarkdown(slug: string) {
     )
 
     const html = marked.parse(raw) as string
-    const sanitized = DOMPurify.sanitize(html, {
-      ADD_TAGS: ['iframe'],
-      ADD_ATTR: ['allowfullscreen', 'frameborder', 'src'],
-    })
+    const sanitized = DOMPurify.sanitize(html, { FORBID_TAGS: ['iframe'] })
 
     // Inject IDs into headings and build TOC
     const toc: TocItem[] = []

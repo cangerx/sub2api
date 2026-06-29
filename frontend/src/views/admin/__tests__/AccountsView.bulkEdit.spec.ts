@@ -61,6 +61,11 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ query: {} }),
+  useRouter: () => ({ replace: vi.fn() })
+}))
+
 const DataTableStub = {
   props: ['columns', 'data'],
   template: `
