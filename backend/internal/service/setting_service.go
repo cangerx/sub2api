@@ -82,7 +82,20 @@ func (s *SettingService) GetBackupStorageConfig(ctx context.Context) (*BackupS3C
 		return nil, ErrBackupS3ConfigCorrupt
 	}
 	cfg.normalize()
+	decryptBackupS3Secret(&cfg, s.secretEncryptor)
 	return &cfg, nil
+}
+
+func decryptBackupS3Secret(cfg *BackupS3Config, encryptor SecretEncryptor) {
+	if cfg == nil || encryptor == nil || cfg.SecretAccessKey == "" || cfg.Provider == "local" {
+		return
+	}
+	decrypted, err := encryptor.Decrypt(cfg.SecretAccessKey)
+	if err != nil {
+		slog.Warn("backup storage secret decrypt failed, keeping raw value for legacy plaintext compatibility", "error", err)
+		return
+	}
+	cfg.SecretAccessKey = decrypted
 }
 
 // cachedVersionBounds 缓存 Claude Code 版本号上下限（进程内缓存，60s TTL）
@@ -211,6 +224,7 @@ type SettingService struct {
 	defaultSubGroupReader       DefaultSubscriptionGroupReader
 	proxyRepo                   ProxyRepository // for resolving websearch provider proxy URLs
 	cfg                         *config.Config
+	secretEncryptor             SecretEncryptor
 	onUpdate                    func() // Callback when settings are updated (for cache invalidation)
 	version                     string // Application version
 	webSearchManagerBuilder     WebSearchManagerBuilder
@@ -680,6 +694,12 @@ func NewSettingService(settingRepo SettingRepository, cfg *config.Config) *Setti
 		settingRepo: settingRepo,
 		cfg:         cfg,
 	}
+}
+
+// SetSecretEncryptor injects the encryptor used to decrypt persisted storage
+// secrets before sharing backup storage config with media/object-store callers.
+func (s *SettingService) SetSecretEncryptor(encryptor SecretEncryptor) {
+	s.secretEncryptor = encryptor
 }
 
 // SetDefaultSubscriptionGroupReader injects an optional group reader for default subscription validation.

@@ -998,16 +998,7 @@ func (s *BackupService) loadS3Config(ctx context.Context) (*BackupS3Config, erro
 		return nil, ErrBackupS3ConfigCorrupt
 	}
 	cfg.normalize()
-	// 解密 SecretAccessKey
-	if cfg.SecretAccessKey != "" {
-		decrypted, err := s.encryptor.Decrypt(cfg.SecretAccessKey)
-		if err != nil {
-			// 兼容未加密的旧数据：如果解密失败，保持原值
-			logger.LegacyPrintf("service.backup", "[Backup] S3 SecretAccessKey 解密失败（可能是旧的未加密数据）: %v", err)
-		} else {
-			cfg.SecretAccessKey = decrypted
-		}
-	}
+	decryptBackupS3Secret(&cfg, s.encryptor)
 	return &cfg, nil
 }
 

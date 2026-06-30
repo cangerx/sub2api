@@ -46,7 +46,7 @@ func TestGeneratedMediaStorePersistsGeminiInlineImages(t *testing.T) {
 		Provider:        "s3",
 		Bucket:          "media",
 		AccessKeyID:     "ak",
-		SecretAccessKey: "sk",
+		SecretAccessKey: "ENC:sk",
 	}
 	raw, err := json.Marshal(cfg)
 	require.NoError(t, err)
@@ -54,10 +54,13 @@ func TestGeneratedMediaStorePersistsGeminiInlineImages(t *testing.T) {
 	settingSvc := NewSettingService(&settingRepoStub{
 		values: map[string]string{settingKeyBackupS3Config: string(raw)},
 	}, &config.Config{})
+	settingSvc.SetSecretEncryptor(&plainEncryptor{})
 	store := &generatedMediaObjectStoreStub{}
+	var receivedSecret string
 	media := generatedMediaStore{
 		settingService: settingSvc,
-		storeFactory: func(context.Context, *BackupS3Config) (BackupObjectStore, error) {
+		storeFactory: func(_ context.Context, cfg *BackupS3Config) (BackupObjectStore, error) {
+			receivedSecret = cfg.SecretAccessKey
 			return store, nil
 		},
 	}
@@ -86,4 +89,5 @@ func TestGeneratedMediaStorePersistsGeminiInlineImages(t *testing.T) {
 	require.Len(t, store.uploadedKeys, 1)
 	require.Contains(t, store.uploadedKeys[0], "images/gemini/")
 	require.Equal(t, "image/png", store.contentTypes[0])
+	require.Equal(t, "sk", receivedSecret)
 }

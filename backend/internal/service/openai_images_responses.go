@@ -395,27 +395,6 @@ func openAIImageOutputExtension(outputFormat string) string {
 	}
 }
 
-func openAIImagesLocalPublicBaseURL(c *gin.Context) string {
-	if c == nil || c.Request == nil {
-		return "/api/v1/media"
-	}
-	scheme := "http"
-	if c.Request.TLS != nil {
-		scheme = "https"
-	}
-	if proto := strings.TrimSpace(c.GetHeader("X-Forwarded-Proto")); proto != "" {
-		scheme = strings.Split(proto, ",")[0]
-	}
-	host := strings.TrimSpace(c.GetHeader("X-Forwarded-Host"))
-	if host == "" {
-		host = c.Request.Host
-	}
-	if host == "" {
-		return "/api/v1/media"
-	}
-	return strings.TrimRight(scheme+"://"+host, "/") + "/api/v1/media"
-}
-
 func (s *OpenAIGatewayService) persistOpenAIImageResults(ctx context.Context, c *gin.Context, results []openAIResponsesImageResult) ([]openAIResponsesImageResult, error) {
 	if len(results) == 0 {
 		return results, nil
@@ -2034,9 +2013,6 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesOAuth(
 				err,
 			)
 		}
-	}
-	if imageCount <= 0 {
-		imageCount = parsed.N
 	}
 	return &OpenAIForwardResult{
 		RequestID:           resp.Header.Get("x-request-id"),
