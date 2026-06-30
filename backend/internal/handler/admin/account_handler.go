@@ -25,6 +25,7 @@ import (
 	"github.com/Wei-Shaw/ccapi/internal/pkg/openai"
 	"github.com/Wei-Shaw/ccapi/internal/pkg/response"
 	"github.com/Wei-Shaw/ccapi/internal/pkg/timezone"
+	"github.com/Wei-Shaw/ccapi/internal/pkg/xai"
 	"github.com/Wei-Shaw/ccapi/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -1978,6 +1979,37 @@ func (h *AccountHandler) GetAvailableModels(c *gin.Context) {
 	account, err := h.adminService.GetAccount(c.Request.Context(), accountID)
 	if err != nil {
 		response.NotFound(c, "Account not found")
+		return
+	}
+
+	if account.IsGrok() {
+		mapping := account.GetModelMapping()
+		if len(mapping) == 0 {
+			response.Success(c, xai.DefaultModels())
+			return
+		}
+
+		defaults := xai.DefaultModels()
+		var models []xai.Model
+		for requestedModel := range mapping {
+			var found bool
+			for _, dm := range defaults {
+				if dm.ID == requestedModel {
+					models = append(models, dm)
+					found = true
+					break
+				}
+			}
+			if !found {
+				models = append(models, xai.Model{
+					ID:          requestedModel,
+					Object:      "model",
+					OwnedBy:     "xai",
+					DisplayName: requestedModel,
+				})
+			}
+		}
+		response.Success(c, models)
 		return
 	}
 
