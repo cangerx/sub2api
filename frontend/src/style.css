@@ -745,6 +745,24 @@
     @apply bg-white/80 backdrop-blur-xl dark:bg-dark-800/80;
   }
 
+  @media (max-width: 1023px) {
+    .glass,
+    .glass-card,
+    .card-glass {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    .glass {
+      @apply bg-white/95 dark:bg-dark-900/95;
+    }
+
+    .glass-card,
+    .card-glass {
+      @apply bg-white/95 dark:bg-dark-800/95;
+    }
+  }
+
   /* 隐藏滚动条 */
   .scrollbar-hide {
     -ms-overflow-style: none;

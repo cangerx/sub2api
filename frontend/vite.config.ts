@@ -81,6 +81,23 @@ export default defineConfig(({ mode }) => {
               return 'vendor-vue'
             }
 
+            // 首屏非必需的重量级功能库，避免被 vendor-misc 预加载
+            if (id.includes('/@paper-design/shaders/')) {
+              return 'vendor-shaders'
+            }
+
+            if (id.includes('/marked/') || id.includes('/dompurify/')) {
+              return 'vendor-markdown'
+            }
+
+            if (id.includes('/driver.js/')) {
+              return 'vendor-tour'
+            }
+
+            if (id.includes('/@stripe/stripe-js/') || id.includes('/@airwallex/components-sdk/')) {
+              return 'vendor-payment-sdk'
+            }
+
             // UI 工具库（较大，单独分离）
             if (id.includes('/@vueuse/') || id.includes('/xlsx/')) {
               return 'vendor-ui'

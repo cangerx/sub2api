@@ -685,24 +685,21 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  ShaderFitOptions,
-  ShaderMount,
-  defaultObjectSizing,
-  grainGradientFragmentShader,
-  GrainGradientShapes,
-  getShaderColorFromString,
-  getShaderNoiseTexture
-} from '@paper-design/shaders'
 import { useAuthStore, useAppStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
+
+type PaperShadersModule = typeof import('@paper-design/shaders')
+type HeroShaderInstance = InstanceType<PaperShadersModule['ShaderMount']>
 
 const { t } = useI18n()
 
 const isScrolled = ref(false)
 const grainShaderEl = ref<HTMLElement | null>(null)
-let heroShader: ShaderMount | null = null
+let shaderModule: PaperShadersModule | null = null
+let heroShader: HeroShaderInstance | null = null
+let heroShaderInitHandle: number | null = null
+let heroShaderInitUsesIdleCallback = false
 
 function handleScroll() {
   isScrolled.value = window.scrollY > 80
@@ -801,6 +798,17 @@ async function initHeroShader() {
   try {
     await nextTick()
 
+    shaderModule = shaderModule || await import('@paper-design/shaders')
+    const {
+      ShaderFitOptions,
+      ShaderMount,
+      defaultObjectSizing,
+      grainGradientFragmentShader,
+      GrainGradientShapes,
+      getShaderColorFromString,
+      getShaderNoiseTexture
+    } = shaderModule
+
     const noiseTexture = getShaderNoiseTexture()
     if (noiseTexture) {
       await waitForShaderImage(noiseTexture)
@@ -873,8 +881,9 @@ function getHeroShaderTheme() {
 }
 
 function applyHeroShaderTheme() {
-  if (!heroShader) return
+  if (!heroShader || !shaderModule) return
 
+  const { getShaderColorFromString } = shaderModule
   const theme = getHeroShaderTheme()
   heroShader.setUniforms({
     u_colorBack: getShaderColorFromString(theme.colorBack),
@@ -886,10 +895,35 @@ function applyHeroShaderTheme() {
   heroShader.setSpeed(1.85)
 }
 
+function shouldSkipHeroShader() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+function scheduleHeroShaderInit() {
+  if (heroShaderInitHandle !== null || shouldSkipHeroShader()) return
+
+  if (typeof window.requestIdleCallback === 'function') {
+    heroShaderInitUsesIdleCallback = true
+    heroShaderInitHandle = window.requestIdleCallback(
+      () => {
+        heroShaderInitHandle = null
+        void initHeroShader()
+      },
+      { timeout: 1800 }
+    )
+    return
+  }
+
+  heroShaderInitUsesIdleCallback = false
+  heroShaderInitHandle = window.setTimeout(() => {
+    heroShaderInitHandle = null
+    void initHeroShader()
+  }, 700)
+}
+
 onMounted(() => {
   initTheme()
-  authStore.checkAuth()
-  void initHeroShader()
+  scheduleHeroShaderInit()
 
   if (!appStore.publicSettingsLoaded) {
     appStore.fetchPublicSettings()
@@ -941,6 +975,14 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
+  if (heroShaderInitHandle !== null) {
+    if (heroShaderInitUsesIdleCallback && typeof window.cancelIdleCallback === 'function') {
+      window.cancelIdleCallback(heroShaderInitHandle)
+    } else {
+      window.clearTimeout(heroShaderInitHandle)
+    }
+    heroShaderInitHandle = null
+  }
   heroShader?.dispose()
   heroShader = null
 })

@@ -48,21 +48,18 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, nextTick } from 'vue'
-import {
-  ShaderFitOptions,
-  ShaderMount,
-  defaultObjectSizing,
-  grainGradientFragmentShader,
-  GrainGradientShapes,
-  getShaderColorFromString,
-  getShaderNoiseTexture
-} from '@paper-design/shaders'
 import { useAppStore } from '@/stores'
 import { sanitizeUrl } from '@/utils/url'
 
+type PaperShadersModule = typeof import('@paper-design/shaders')
+type AuthShaderInstance = InstanceType<PaperShadersModule['ShaderMount']>
+
 const appStore = useAppStore()
 const authShaderEl = ref<HTMLElement | null>(null)
-let authShader: ShaderMount | null = null
+let shaderModule: PaperShadersModule | null = null
+let authShader: AuthShaderInstance | null = null
+let authShaderInitHandle: number | null = null
+let authShaderInitUsesIdleCallback = false
 
 const siteName = computed(() => appStore.siteName || 'CCAPI')
 const siteLogo = computed(() => sanitizeUrl(appStore.siteLogo || '', { allowRelative: true, allowDataUrl: true }))
@@ -92,6 +89,17 @@ async function initAuthShader() {
 
   try {
     await nextTick()
+
+    shaderModule = shaderModule || await import('@paper-design/shaders')
+    const {
+      ShaderFitOptions,
+      ShaderMount,
+      defaultObjectSizing,
+      grainGradientFragmentShader,
+      GrainGradientShapes,
+      getShaderColorFromString,
+      getShaderNoiseTexture
+    } = shaderModule
 
     const noiseTexture = getShaderNoiseTexture()
     if (noiseTexture) {
@@ -137,6 +145,33 @@ async function initAuthShader() {
   }
 }
 
+function scheduleAuthShaderInit() {
+  if (
+    authShaderInitHandle !== null ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    return
+  }
+
+  if (typeof window.requestIdleCallback === 'function') {
+    authShaderInitUsesIdleCallback = true
+    authShaderInitHandle = window.requestIdleCallback(
+      () => {
+        authShaderInitHandle = null
+        void initAuthShader()
+      },
+      { timeout: 1800 }
+    )
+    return
+  }
+
+  authShaderInitUsesIdleCallback = false
+  authShaderInitHandle = window.setTimeout(() => {
+    authShaderInitHandle = null
+    void initAuthShader()
+  }, 700)
+}
+
 function waitForShaderImage(image: HTMLImageElement) {
   if (image.complete && image.naturalWidth > 0) {
     return Promise.resolve()
@@ -150,10 +185,18 @@ function waitForShaderImage(image: HTMLImageElement) {
 
 onMounted(() => {
   appStore.fetchPublicSettings()
-  void initAuthShader()
+  scheduleAuthShaderInit()
 })
 
 onBeforeUnmount(() => {
+  if (authShaderInitHandle !== null) {
+    if (authShaderInitUsesIdleCallback && typeof window.cancelIdleCallback === 'function') {
+      window.cancelIdleCallback(authShaderInitHandle)
+    } else {
+      window.clearTimeout(authShaderInitHandle)
+    }
+    authShaderInitHandle = null
+  }
   authShader?.dispose()
   authShader = null
 })
