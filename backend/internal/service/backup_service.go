@@ -1008,10 +1008,10 @@ func (c *BackupS3Config) normalize() {
 	}
 	c.Provider = normalizeBackupStorageProvider(c.Provider)
 	c.Prefix = strings.TrimSpace(c.Prefix)
+	c.PublicBaseURL = strings.TrimRight(strings.TrimSpace(c.PublicBaseURL), "/")
 	switch c.Provider {
 	case "local":
 		c.LocalPath = strings.TrimSpace(c.LocalPath)
-		c.PublicBaseURL = strings.TrimRight(strings.TrimSpace(c.PublicBaseURL), "/")
 	case "r2":
 		if strings.TrimSpace(c.Region) == "" {
 			c.Region = "auto"

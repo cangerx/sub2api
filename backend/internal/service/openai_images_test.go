@@ -25,6 +25,7 @@ import (
 type openAIImagesObjectStoreStub struct {
 	uploadedKeys []string
 	contentTypes []string
+	presignCalls int
 }
 
 func (s *openAIImagesObjectStoreStub) Upload(_ context.Context, key string, body io.Reader, contentType string) (int64, error) {
@@ -44,6 +45,7 @@ func (s *openAIImagesObjectStoreStub) Download(context.Context, string) (io.Read
 func (s *openAIImagesObjectStoreStub) Delete(context.Context, string) error { return nil }
 
 func (s *openAIImagesObjectStoreStub) PresignURL(_ context.Context, key string, _ time.Duration) (string, error) {
+	s.presignCalls++
 	return "https://cdn.example.com/" + key, nil
 }
 
@@ -1189,6 +1191,45 @@ func TestOpenAIGatewayServicePersistOpenAIImagesAPIResponseBodyPersistsImageBase
 	require.Len(t, store.uploadedKeys, 1)
 	require.Equal(t, "https://cdn.example.com/"+store.uploadedKeys[0], gjson.GetBytes(rewritten, "data.0.url").String())
 	require.Equal(t, []string{"https://cdn.example.com/" + store.uploadedKeys[0]}, openAIImageUsageStringsFromContext(c, openAIImageUsageURLsContextKey))
+}
+
+func TestOpenAIGatewayServicePersistOpenAIImageResultsUsesPublicBaseURLForR2(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	req := httptest.NewRequest(http.MethodPost, "/v1/images/generations", nil)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = req
+
+	cfg := BackupS3Config{
+		Provider:        "r2",
+		Bucket:          "uvv",
+		AccessKeyID:     "ak",
+		SecretAccessKey: "sk",
+		PublicBaseURL:   " https://oss.lingmi.cc.cd/ ",
+	}
+	raw, err := json.Marshal(cfg)
+	require.NoError(t, err)
+	settingSvc := NewSettingService(&settingRepoStub{
+		values: map[string]string{settingKeyBackupS3Config: string(raw)},
+	}, &config.Config{})
+	store := &openAIImagesObjectStoreStub{}
+	svc := &OpenAIGatewayService{
+		settingService: settingSvc,
+		imageStoreFactory: func(_ context.Context, cfg *BackupS3Config) (BackupObjectStore, error) {
+			require.Equal(t, "https://oss.lingmi.cc.cd", cfg.PublicBaseURL)
+			return store, nil
+		},
+	}
+
+	persisted, err := svc.persistOpenAIImageResults(context.Background(), c, []openAIResponsesImageResult{
+		{Result: "aGVsbG8=", OutputFormat: "png"},
+	})
+	require.NoError(t, err)
+	require.Len(t, persisted, 1)
+	require.Len(t, store.uploadedKeys, 1)
+	require.Equal(t, "https://oss.lingmi.cc.cd/"+store.uploadedKeys[0], persisted[0].URL)
+	require.Equal(t, []string{"https://oss.lingmi.cc.cd/" + store.uploadedKeys[0]}, openAIImageUsageStringsFromContext(c, openAIImageUsageURLsContextKey))
+	require.Zero(t, store.presignCalls)
 }
 
 func TestOpenAIGatewayServiceForwardImages_APIKeyPromptOnlyDataIsNotImage(t *testing.T) {

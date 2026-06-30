@@ -17,6 +17,7 @@ import (
 type generatedMediaObjectStoreStub struct {
 	uploadedKeys []string
 	contentTypes []string
+	presignCalls int
 }
 
 func (s *generatedMediaObjectStoreStub) Upload(_ context.Context, key string, body io.Reader, contentType string) (int64, error) {
@@ -36,6 +37,7 @@ func (s *generatedMediaObjectStoreStub) Download(context.Context, string) (io.Re
 func (s *generatedMediaObjectStoreStub) Delete(context.Context, string) error { return nil }
 
 func (s *generatedMediaObjectStoreStub) PresignURL(_ context.Context, key string, _ time.Duration) (string, error) {
+	s.presignCalls++
 	return "https://cdn.example.com/" + key, nil
 }
 
@@ -90,4 +92,42 @@ func TestGeneratedMediaStorePersistsGeminiInlineImages(t *testing.T) {
 	require.Contains(t, store.uploadedKeys[0], "images/gemini/")
 	require.Equal(t, "image/png", store.contentTypes[0])
 	require.Equal(t, "sk", receivedSecret)
+}
+
+func TestGeneratedMediaStoreUsesPublicBaseURLForObjectStorage(t *testing.T) {
+	cfg := BackupS3Config{
+		Provider:        "r2",
+		Bucket:          "uvv",
+		AccessKeyID:     "ak",
+		SecretAccessKey: "sk",
+		PublicBaseURL:   " https://oss.lingmi.cc.cd/ ",
+	}
+	raw, err := json.Marshal(cfg)
+	require.NoError(t, err)
+
+	settingSvc := NewSettingService(&settingRepoStub{
+		values: map[string]string{settingKeyBackupS3Config: string(raw)},
+	}, &config.Config{})
+	store := &generatedMediaObjectStoreStub{}
+	media := generatedMediaStore{
+		settingService: settingSvc,
+		storeFactory: func(_ context.Context, cfg *BackupS3Config) (BackupObjectStore, error) {
+			require.Equal(t, "https://oss.lingmi.cc.cd", cfg.PublicBaseURL)
+			return store, nil
+		},
+	}
+
+	urls, err := media.persistImages(context.Background(), nil, "gemini", []generatedImagePayload{
+		{Data: "aGVsbG8=", MIMEType: "image/png"},
+	})
+	require.NoError(t, err)
+	require.Len(t, urls, 1)
+	require.Len(t, store.uploadedKeys, 1)
+	require.Equal(t, "https://oss.lingmi.cc.cd/"+store.uploadedKeys[0], urls[0])
+	require.Zero(t, store.presignCalls)
+}
+
+func TestGeneratedMediaPublicObjectURLEscapesPathSegments(t *testing.T) {
+	got := generatedMediaPublicObjectURL("https://oss.example.com/media/", "/images/openai/a b/图.png")
+	require.Equal(t, "https://oss.example.com/media/images/openai/a%20b/%E5%9B%BE.png", got)
 }

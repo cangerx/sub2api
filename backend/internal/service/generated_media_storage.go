@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -76,7 +77,7 @@ func (s generatedMediaStore) persistImages(ctx context.Context, c *gin.Context, 
 		if _, err := store.Upload(ctx, key, bytes.NewReader(data), contentType); err != nil {
 			return nil, fmt.Errorf("store generated image: %w", err)
 		}
-		mediaURL, err := store.PresignURL(ctx, key, 24*time.Hour)
+		mediaURL, err := generatedMediaObjectURL(ctx, store, cfg, key)
 		if err != nil {
 			return nil, fmt.Errorf("build generated image URL: %w", err)
 		}
@@ -85,6 +86,27 @@ func (s generatedMediaStore) persistImages(ctx context.Context, c *gin.Context, 
 		}
 	}
 	return urls, nil
+}
+
+func generatedMediaObjectURL(ctx context.Context, store BackupObjectStore, cfg *BackupS3Config, key string) (string, error) {
+	if cfg != nil {
+		if publicBaseURL := strings.TrimSpace(cfg.PublicBaseURL); publicBaseURL != "" {
+			return generatedMediaPublicObjectURL(publicBaseURL, key), nil
+		}
+	}
+	return store.PresignURL(ctx, key, 24*time.Hour)
+}
+
+func generatedMediaPublicObjectURL(publicBaseURL string, key string) string {
+	return strings.TrimRight(strings.TrimSpace(publicBaseURL), "/") + "/" + generatedMediaEscapeObjectKey(key)
+}
+
+func generatedMediaEscapeObjectKey(key string) string {
+	parts := strings.Split(strings.TrimLeft(strings.TrimSpace(key), "/"), "/")
+	for i := range parts {
+		parts[i] = url.PathEscape(parts[i])
+	}
+	return strings.Join(parts, "/")
 }
 
 func generatedMediaLocalPublicBaseURL(c *gin.Context) string {

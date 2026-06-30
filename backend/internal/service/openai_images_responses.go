@@ -466,7 +466,7 @@ func (s *OpenAIGatewayService) persistOpenAIImageResults(ctx context.Context, c 
 		if _, err := store.Upload(ctx, key, bytes.NewReader(data), contentType); err != nil {
 			return nil, fmt.Errorf("store generated image: %w", err)
 		}
-		mediaURL, err := store.PresignURL(ctx, key, 24*time.Hour)
+		mediaURL, err := generatedMediaObjectURL(ctx, store, cfg, key)
 		if err != nil {
 			return nil, fmt.Errorf("build generated image URL: %w", err)
 		}
