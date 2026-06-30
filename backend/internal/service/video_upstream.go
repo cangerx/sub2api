@@ -20,9 +20,10 @@ type VideoUpstreamClient interface {
 	Create(ctx context.Context, account *Account, template *VideoCallTemplate, body map[string]any) (*VideoUpstreamCreateResult, error)
 	Query(ctx context.Context, account *Account, template *VideoCallTemplate, upstreamTaskID string) (*VideoUpstreamQueryResult, error)
 	Cancel(ctx context.Context, account *Account, template *VideoCallTemplate, upstreamTaskID string) error
-	// RecognizeTemplate asks an OpenAI-style chat model (reached via the given
-	// account's base_url + credentials) to turn pasted upstream API docs into a
-	// VideoCallTemplate. It is admin-only tooling and fails closed on bad output.
+	// RecognizeTemplate asks a video account's OpenAI-compatible chat endpoint
+	// (reached via that account's base_url + credentials) to turn pasted upstream
+	// API docs into a VideoCallTemplate. It is admin-only tooling and fails
+	// closed on bad output.
 	RecognizeTemplate(ctx context.Context, account *Account, model, doc string) (*VideoCallTemplate, error)
 }
 

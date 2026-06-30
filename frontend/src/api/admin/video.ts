@@ -148,8 +148,9 @@ export async function testTemplateQuery(payload: VideoTemplateQueryTestPayload):
   return data
 }
 
-// recognizeTemplate asks an account's chat model to parse pasted upstream docs
-// into a draft template (id is 0; not persisted until the admin saves it).
+// recognizeTemplate asks a video account's OpenAI-compatible chat endpoint to
+// parse pasted upstream docs into a draft template (id is 0; not persisted
+// until the admin saves it).
 export async function recognizeTemplate(payload: VideoTemplateRecognizePayload): Promise<VideoTemplate> {
   const { data } = await apiClient.post<VideoTemplate>('/admin/video/templates/recognize', payload)
   return data

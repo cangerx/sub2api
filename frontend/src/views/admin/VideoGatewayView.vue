@@ -274,7 +274,7 @@
           </label>
           <label class="space-y-1">
             <span class="input-label">{{ t('admin.video.aiModel') }}</span>
-            <input v-model="recognizeForm.model" class="input font-mono" placeholder="gpt-4o-mini" required />
+            <input v-model="recognizeForm.model" class="input font-mono" placeholder="video-chat-model" required />
           </label>
         </div>
         <label class="space-y-1 block">

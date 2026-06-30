@@ -881,9 +881,9 @@ func (s *VideoService) AdminRequestShapes(ctx context.Context) ([]string, error)
 	return RegisteredVideoRequestShapes(), nil
 }
 
-// AdminRecognizeTemplate uses the chosen account's chat model to parse pasted
-// upstream API docs into a draft template. The result is not persisted; the
-// admin reviews and saves it via the normal create flow.
+// AdminRecognizeTemplate uses the chosen video account's OpenAI-compatible chat
+// endpoint to parse pasted upstream API docs into a draft template. The result
+// is not persisted; the admin reviews and saves it via the normal create flow.
 func (s *VideoService) AdminRecognizeTemplate(ctx context.Context, accountID int64, model, doc string) (*VideoCallTemplate, error) {
 	if accountID <= 0 {
 		return nil, fmt.Errorf("%w: account_id is required", ErrVideoInvalidRequest)
@@ -897,6 +897,15 @@ func (s *VideoService) AdminRecognizeTemplate(ctx context.Context, accountID int
 	account, err := s.accountRepo.GetByID(ctx, accountID)
 	if err != nil {
 		return nil, err
+	}
+	if account == nil || account.Platform != PlatformVideo {
+		return nil, fmt.Errorf("%w: account must be a video platform account", ErrVideoInvalidRequest)
+	}
+	if account.Type != AccountTypeAPIKey {
+		return nil, fmt.Errorf("%w: account must be a video API key account", ErrVideoInvalidRequest)
+	}
+	if account.Status != StatusActive {
+		return nil, fmt.Errorf("%w: account must be active", ErrVideoInvalidRequest)
 	}
 	if s.upstreamClient == nil {
 		return nil, fmt.Errorf("video upstream client is not configured")

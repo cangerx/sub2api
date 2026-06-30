@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
@@ -210,6 +211,111 @@ func TestVideoServiceSelectVideoAccountCanUseExplicitCapabilityPlatform(t *testi
 	}
 }
 
+func TestAdminRecognizeTemplateRejectsNonVideoAccount(t *testing.T) {
+	upstream := &recordingVideoUpstreamClient{}
+	svc := &VideoService{
+		accountRepo: &videoCapabilityAccountRepo{
+			accounts: []Account{{ID: 7, Platform: PlatformOpenAI, Type: AccountTypeAPIKey, Status: StatusActive}},
+		},
+		upstreamClient: upstream,
+	}
+
+	_, err := svc.AdminRecognizeTemplate(context.Background(), 7, "gpt-4o-mini", "POST /v1/videos")
+	if err == nil {
+		t.Fatal("expected non-video account to be rejected")
+	}
+	if !errors.Is(err, ErrVideoInvalidRequest) {
+		t.Fatalf("expected ErrVideoInvalidRequest, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "video platform account") {
+		t.Fatalf("expected video platform account error, got %v", err)
+	}
+	if upstream.recognizeCalls != 0 {
+		t.Fatalf("upstream RecognizeTemplate was called %d times, want 0", upstream.recognizeCalls)
+	}
+}
+
+func TestAdminRecognizeTemplateRejectsInactiveVideoAccount(t *testing.T) {
+	upstream := &recordingVideoUpstreamClient{}
+	svc := &VideoService{
+		accountRepo: &videoCapabilityAccountRepo{
+			accounts: []Account{{ID: 9, Platform: PlatformVideo, Type: AccountTypeAPIKey, Status: StatusDisabled}},
+		},
+		upstreamClient: upstream,
+	}
+
+	_, err := svc.AdminRecognizeTemplate(context.Background(), 9, "video-chat-model", "POST /v1/videos")
+	if err == nil {
+		t.Fatal("expected inactive video account to be rejected")
+	}
+	if !errors.Is(err, ErrVideoInvalidRequest) {
+		t.Fatalf("expected ErrVideoInvalidRequest, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "account must be active") {
+		t.Fatalf("expected active account error, got %v", err)
+	}
+	if upstream.recognizeCalls != 0 {
+		t.Fatalf("upstream RecognizeTemplate was called %d times, want 0", upstream.recognizeCalls)
+	}
+}
+
+func TestAdminRecognizeTemplateRejectsNonAPIKeyVideoAccount(t *testing.T) {
+	upstream := &recordingVideoUpstreamClient{}
+	svc := &VideoService{
+		accountRepo: &videoCapabilityAccountRepo{
+			accounts: []Account{{ID: 10, Platform: PlatformVideo, Type: AccountTypeOAuth, Status: StatusActive}},
+		},
+		upstreamClient: upstream,
+	}
+
+	_, err := svc.AdminRecognizeTemplate(context.Background(), 10, "video-chat-model", "POST /v1/videos")
+	if err == nil {
+		t.Fatal("expected non-API-key video account to be rejected")
+	}
+	if !errors.Is(err, ErrVideoInvalidRequest) {
+		t.Fatalf("expected ErrVideoInvalidRequest, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "video API key account") {
+		t.Fatalf("expected video API key account error, got %v", err)
+	}
+	if upstream.recognizeCalls != 0 {
+		t.Fatalf("upstream RecognizeTemplate was called %d times, want 0", upstream.recognizeCalls)
+	}
+}
+
+func TestAdminRecognizeTemplateAcceptsVideoAccount(t *testing.T) {
+	upstream := &recordingVideoUpstreamClient{
+		template: &VideoCallTemplate{
+			Name:          "Video API",
+			CreateMethod:  "POST",
+			CreatePath:    "/v1/videos",
+			QueryMethod:   "GET",
+			QueryPath:     "/v1/videos/{task_id}",
+			StatusMapping: map[string]string{"completed": VideoStatusCompleted},
+		},
+	}
+	svc := &VideoService{
+		accountRepo: &videoCapabilityAccountRepo{
+			accounts: []Account{{ID: 8, Platform: PlatformVideo, Type: AccountTypeAPIKey, Status: StatusActive}},
+		},
+		upstreamClient: upstream,
+	}
+
+	template, err := svc.AdminRecognizeTemplate(context.Background(), 8, "video-chat-model", "POST /v1/videos")
+	if err != nil {
+		t.Fatalf("expected video account to be accepted: %v", err)
+	}
+	if template == nil || template.CreatePath != "/v1/videos" {
+		t.Fatalf("unexpected template: %+v", template)
+	}
+	if upstream.recognizeCalls != 1 {
+		t.Fatalf("upstream RecognizeTemplate calls = %d, want 1", upstream.recognizeCalls)
+	}
+	if upstream.account == nil || upstream.account.ID != 8 {
+		t.Fatalf("upstream account = %+v, want id 8", upstream.account)
+	}
+}
+
 type videoCapabilityAccountRepo struct {
 	AccountRepository
 	accounts           []Account
@@ -247,4 +353,21 @@ func filterAccountsByPlatforms(accounts []Account, platforms []string) []Account
 		}
 	}
 	return out
+}
+
+type recordingVideoUpstreamClient struct {
+	VideoUpstreamClient
+	recognizeCalls int
+	account        *Account
+	template       *VideoCallTemplate
+	err            error
+}
+
+func (c *recordingVideoUpstreamClient) RecognizeTemplate(_ context.Context, account *Account, _, _ string) (*VideoCallTemplate, error) {
+	c.recognizeCalls++
+	c.account = account
+	if c.err != nil {
+		return nil, c.err
+	}
+	return c.template, nil
 }

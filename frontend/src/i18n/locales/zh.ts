@@ -1586,7 +1586,7 @@ export default {
       selectAccount: '请选择账号',
       aiRecognize: 'AI 识别',
       aiRecognizeTitle: 'AI 识别上游文档',
-      aiRecognizeHint: '粘贴上游视频接口文档，选择一个视频/OpenAI 账号作为识别用的模型来源，AI 会把文档解析成调用模板草稿供你确认。',
+      aiRecognizeHint: '粘贴上游视频接口文档，选择一个视频账号作为识别用的模型来源，AI 会把文档解析成调用模板草稿供你确认。',
       aiModel: '识别模型',
       aiDocument: '上游接口文档',
       aiDocumentPlaceholder: '在此粘贴上游视频生成接口的文档：创建/查询/下载/取消接口的路径、请求参数、任务状态字段、结果字段等。',

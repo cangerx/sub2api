@@ -1565,7 +1565,7 @@ export default {
       selectAccount: 'Select an account',
       aiRecognize: 'AI Recognize',
       aiRecognizeTitle: 'AI: recognize upstream docs',
-      aiRecognizeHint: 'Paste the upstream video API docs and pick a video/OpenAI account as the model source. The AI parses the docs into a draft call template for you to review.',
+      aiRecognizeHint: 'Paste the upstream video API docs and pick a video account as the model source. The AI parses the docs into a draft call template for you to review.',
       aiModel: 'Recognition model',
       aiDocument: 'Upstream API docs',
       aiDocumentPlaceholder: 'Paste the upstream video generation API docs here: create/query/content/cancel paths, request params, task status fields, result fields, etc.',
