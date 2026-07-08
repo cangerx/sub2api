@@ -14,7 +14,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 14 // v14: include force image URL response flag
+const apiKeyAuthSnapshotVersion = 15 // v15: include force image URL response flag + group peak rate fields
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -303,6 +303,10 @@ func groupToAuthGroupSnapshot(g *Group) *APIKeyAuthGroupSnapshot {
 		MessagesDispatchModelConfig:     g.MessagesDispatchModelConfig,
 		ModelsListConfig:                g.ModelsListConfig,
 		RPMLimit:                        g.RPMLimit,
+		PeakRateEnabled:                 g.PeakRateEnabled,
+		PeakStart:                       g.PeakStart,
+		PeakEnd:                         g.PeakEnd,
+		PeakRateMultiplier:              g.PeakRateMultiplier,
 	}
 }
 
@@ -341,6 +345,10 @@ func authGroupSnapshotToGroup(s *APIKeyAuthGroupSnapshot) *Group {
 		MessagesDispatchModelConfig:     s.MessagesDispatchModelConfig,
 		ModelsListConfig:                s.ModelsListConfig,
 		RPMLimit:                        s.RPMLimit,
+		PeakRateEnabled:                 s.PeakRateEnabled,
+		PeakStart:                       s.PeakStart,
+		PeakEnd:                         s.PeakEnd,
+		PeakRateMultiplier:              s.PeakRateMultiplier,
 	}
 }
 
