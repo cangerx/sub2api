@@ -429,6 +429,7 @@ interface VideoTemplatePreset {
   provider: string
   name: string
   payload: VideoTemplatePayload
+  testBody?: Record<string, unknown>
 }
 
 const baseStatusMapping = {
@@ -463,13 +464,21 @@ const baseTimeoutConfig = {
   content_seconds: 300,
 }
 
+const megaByAIVideoTestBody = {
+  model: 'videos-mini',
+  prompt: 'A cinematic close-up shot, realistic lighting',
+  duration: 5,
+  ratio: '16:9',
+  resolution: '720p',
+}
+
 const videoTemplatePresets: VideoTemplatePreset[] = [
   {
     key: 'openai-video',
-    provider: '官方',
+    provider: '内置',
     name: 'OpenAI 风格视频接口',
     payload: {
-      name: '官方 - OpenAI 风格视频接口',
+      name: '内置 - OpenAI 风格视频接口',
       create_method: 'POST',
       create_path: '/v1/videos',
       query_method: 'GET',
@@ -494,19 +503,54 @@ const videoTemplatePresets: VideoTemplatePreset[] = [
     },
   },
   {
+    key: 'megabyai-video',
+    provider: 'MegaByAI',
+    name: '异步视频接口',
+    payload: {
+      name: 'MegaByAI - 异步视频接口',
+      create_method: 'POST',
+      create_path: '/v1/videos',
+      query_method: 'GET',
+      query_path: '/v1/videos/{task_id}',
+      content_method: null,
+      content_path: null,
+      cancel_method: null,
+      cancel_path: null,
+      status_mapping: {
+        queued: 'queued',
+        in_progress: 'in_progress',
+        completed: 'completed',
+        failed: 'failed',
+      },
+      result_mapping: {
+        content_url: 'video_url|url|metadata.content_url',
+        seconds: 'seconds',
+        progress: 'progress',
+      },
+      error_mapping: {
+        code: 'error.code',
+        message: 'error.message',
+      },
+      poll_config: { ...basePollConfig, backoff_max_seconds: 10, max_attempts: 180 },
+      timeout_config: { ...baseTimeoutConfig },
+      status: 'active',
+    },
+    testBody: megaByAIVideoTestBody,
+  },
+  {
     key: 'volcengine-ark-video',
-    provider: '第三方',
+    provider: '内置',
     name: '火山 Ark / 豆包视频',
     payload: {
-      name: '第三方 - 火山 Ark / 豆包视频',
+      name: '内置 - 火山 Ark / 豆包官方视频',
       create_method: 'POST',
       create_path: '/api/v3/contents/generations/tasks',
       query_method: 'GET',
       query_path: '/api/v3/contents/generations/tasks/{task_id}',
-      content_method: 'GET',
-      content_path: '',
-      cancel_method: 'POST',
-      cancel_path: '',
+      content_method: null,
+      content_path: null,
+      cancel_method: null,
+      cancel_path: null,
       status_mapping: { ...baseStatusMapping },
       result_mapping: {
         content_url: 'data.video_url',
@@ -524,16 +568,16 @@ const videoTemplatePresets: VideoTemplatePreset[] = [
   },
   {
     key: 'google-veo-video',
-    provider: '第三方',
-    name: 'Google Veo / Gemini 视频',
+    provider: '内置',
+    name: 'Google Gemini / Veo 视频',
     payload: {
-      name: '第三方 - Google Veo / Gemini 视频',
+      name: '内置 - Google Gemini / Veo 官方视频',
       create_method: 'POST',
       create_path: '/v1beta/models/{model}:predictLongRunning',
       query_method: 'GET',
       query_path: '/v1beta/{task_id}',
-      content_method: 'GET',
-      content_path: '',
+      content_method: null,
+      content_path: null,
       cancel_method: 'POST',
       cancel_path: '/v1beta/{task_id}:cancel',
       status_mapping: {
@@ -549,7 +593,7 @@ const videoTemplatePresets: VideoTemplatePreset[] = [
         code: 'error.code',
         message: 'error.message',
       },
-      poll_config: { ...basePollConfig, interval_seconds: 10, max_attempts: 180 },
+      poll_config: { ...basePollConfig, interval_seconds: 10, backoff_max_seconds: 60, max_attempts: 180 },
       timeout_config: { ...baseTimeoutConfig },
       status: 'active',
     },
@@ -845,9 +889,9 @@ function openTemplateDialog(template?: VideoTemplate) {
     create_path: template?.create_path || '/v1/videos',
     query_method: template?.query_method || 'GET',
     query_path: template?.query_path || '/v1/videos/{task_id}',
-    content_method: template?.content_method || 'GET',
+    content_method: template ? (template.content_method || '') : 'GET',
     content_path: template?.content_path || '',
-    cancel_method: template?.cancel_method || 'POST',
+    cancel_method: template ? (template.cancel_method || '') : 'POST',
     cancel_path: template?.cancel_path || '',
     status: template?.status || 'active',
     status_mapping_json: stringify(template?.status_mapping, '{}'),
@@ -870,9 +914,9 @@ function applyTemplatePresetAction() {
     create_path: payload.create_path || '/v1/videos',
     query_method: payload.query_method || 'GET',
     query_path: payload.query_path || '/v1/videos/{task_id}',
-    content_method: payload.content_method || 'GET',
+    content_method: payload.content_method || '',
     content_path: payload.content_path || '',
-    cancel_method: payload.cancel_method || 'POST',
+    cancel_method: payload.cancel_method || '',
     cancel_path: payload.cancel_path || '',
     status: payload.status || 'active',
     status_mapping_json: stringify(payload.status_mapping, '{}'),
@@ -881,6 +925,9 @@ function applyTemplatePresetAction() {
     poll_config_json: stringify(payload.poll_config, '{}'),
     timeout_config_json: stringify(payload.timeout_config, '{}'),
   })
+  if (preset.testBody) {
+    templateTestForm.body_json = stringify(preset.testBody, '{}')
+  }
   templateDialogOpen.value = true
 }
 

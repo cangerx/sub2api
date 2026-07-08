@@ -85,7 +85,11 @@ const antigravityModels = [
   'tab_flash_lite_preview'
 ]
 
-const videoModels: string[] = []
+const videoModels = [
+  'videos-mini',
+  'videos-fast',
+  'videos-standard'
+]
 
 // 智谱 GLM
 const zhipuModels = [
@@ -306,6 +310,12 @@ const grokPresetMappings = [
   { label: 'Imagine Video', from: 'grok-imagine-video-1.5', to: 'grok-imagine-video-1.5', color: 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400' }
 ]
 
+const videoPresetMappings = [
+  { label: 'Videos Mini', from: 'videos-mini', to: 'videos-mini', color: 'bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400' },
+  { label: 'Videos Fast', from: 'videos-fast', to: 'videos-fast', color: 'bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-400' },
+  { label: 'Videos Standard', from: 'videos-standard', to: 'videos-standard', color: 'bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-400' }
+]
+
 // Antigravity 预设映射（支持通配符）
 const antigravityPresetMappings = [
   // Claude 通配符映射
@@ -429,7 +439,7 @@ export function getPresetMappingsByPlatform(platform: string) {
   if (platform === 'gemini') return geminiPresetMappings
   if (platform === 'grok' || platform === 'xai') return grokPresetMappings
   if (platform === 'antigravity') return antigravityPresetMappings
-  if (platform === 'video') return []
+  if (platform === 'video') return videoPresetMappings
   if (platform === 'bedrock') return bedrockPresetMappings
   return anthropicPresetMappings
 }

@@ -79,6 +79,14 @@ func InitEnt(cfg *config.Config) (*ent.Client, *sql.DB, error) {
 		return nil, nil, fmt.Errorf("validate config after secret bootstrap: %w", err)
 	}
 
+	// 内置视频接口模板（OpenAI / Google Gemini / 火山 Ark），幂等，仅首次补种。
+	videoTplCtx, videoTplCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer videoTplCancel()
+	if err := ensureBuiltinVideoTemplates(videoTplCtx, client); err != nil {
+		_ = client.Close()
+		return nil, nil, fmt.Errorf("seed builtin video templates: %w", err)
+	}
+
 	// SIMPLE 模式：启动时补齐各平台默认分组。
 	// - anthropic/openai/gemini: 确保存在 <platform>-default
 	// - antigravity: 仅要求存在 >=2 个未软删除分组（用于 claude/gemini 混合调度场景）

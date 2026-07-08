@@ -182,7 +182,7 @@
           <div class="space-y-1 text-sm">
             <p class="font-medium text-rose-800 dark:text-rose-200">视频上游账号</p>
             <p class="text-rose-700 dark:text-rose-300">
-              在这里配置上游 base_url、API Key、代理、并发和分组；不同厂商的创建/查询/下载路径在视频调用模板里维护。
+              在这里配置上游 base_url、API Key、代理、并发、分组、模型白名单和模型映射。
             </p>
           </div>
         </div>
@@ -1153,8 +1153,8 @@
           </div>
 
           <template v-else>
-            <!-- Mode Toggle (video 仅支持 mapping，隐藏切换) -->
-            <div v-if="form.platform !== 'video'" class="mb-4 flex gap-2">
+            <!-- Mode Toggle -->
+            <div class="mb-4 flex gap-2">
               <button
                 type="button"
                 @click="modelRestrictionMode = 'whitelist'"
@@ -1205,6 +1205,52 @@
                 </svg>
                 {{ t('admin.accounts.modelMapping') }}
               </button>
+            </div>
+
+            <button
+              v-if="isVideoPlatform"
+              type="button"
+              @click="fetchVideoUpstreamModels"
+              :disabled="fetchingVideoModels || !apiKeyValue"
+              class="mb-3 w-full rounded-lg border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 transition-colors hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300"
+            >
+              <Icon name="refresh" size="sm" class="mr-1.5 inline" :class="fetchingVideoModels ? 'animate-spin' : ''" />
+              {{ fetchingVideoModels ? t('admin.accounts.syncUpstreamModelsLoading') : t('admin.accounts.videoFetchUpstreamModels') }}
+            </button>
+
+            <div
+              v-if="isVideoPlatform"
+              class="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-dark-600 dark:bg-dark-700/40"
+            >
+              <div class="mb-2 flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-sm font-medium text-gray-800 dark:text-gray-100">
+                    {{ t('admin.accounts.videoTemplateSelect') }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.accounts.videoTemplateGlobalHint') }}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  @click="loadVideoModelConfig"
+                  :disabled="loadingVideoModelConfig"
+                  class="shrink-0 rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-600 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-dark-500 dark:text-gray-300 dark:hover:bg-dark-600"
+                >
+                  <Icon name="refresh" size="xs" class="mr-1 inline" :class="loadingVideoModelConfig ? 'animate-spin' : ''" />
+                  {{ t('common.refresh') }}
+                </button>
+              </div>
+              <select
+                v-model.number="selectedVideoTemplateID"
+                class="input"
+                :disabled="videoTemplateOptions.length === 0"
+              >
+                <option :value="0">{{ t('admin.accounts.videoTemplateSelectPlaceholder') }}</option>
+                <option v-for="template in videoTemplateOptions" :key="template.value" :value="template.value">
+                  {{ template.label }}
+                </option>
+              </select>
             </div>
 
             <!-- Whitelist Mode -->
@@ -1287,17 +1333,6 @@
                 </button>
               </div>
             </div>
-
-            <button
-              v-if="isVideoPlatform"
-              type="button"
-              @click="fetchVideoUpstreamModels"
-              :disabled="fetchingVideoModels || !apiKeyValue"
-              class="mb-3 w-full rounded-lg border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 transition-colors hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300"
-            >
-              <Icon name="refresh" size="sm" class="mr-1.5 inline" :class="fetchingVideoModels ? 'animate-spin' : ''" />
-              {{ fetchingVideoModels ? t('admin.accounts.syncUpstreamModelsLoading') : t('admin.accounts.videoFetchUpstreamModels') }}
-            </button>
 
             <button
               type="button"
@@ -3471,6 +3506,7 @@ import ProxyAdBanner from '@/components/common/ProxyAdBanner.vue'
 import GroupSelector from '@/components/common/GroupSelector.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
 import { syncUpstreamModelsPreview } from '@/api/admin/accounts'
+import videoAPI, { type VideoModel, type VideoModelPayload, type VideoTemplate } from '@/api/admin/video'
 import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
 import {
   applyAntigravityProjectID,
@@ -3525,7 +3561,7 @@ const oauthStepTitle = computed(() => {
 const baseUrlHint = computed(() => {
   if (form.platform === 'openai') return t('admin.accounts.openai.baseUrlHint')
   if (form.platform === 'gemini') return t('admin.accounts.gemini.baseUrlHint')
-  if (form.platform === 'video') return '视频上游服务根地址，例如 https://api.example.com；调用模板只配置路径。'
+  if (form.platform === 'video') return '视频上游服务根地址，例如 https://newapi.megabyai.cc。'
   if (form.platform === 'grok') return t('admin.accounts.grok.baseUrlHint')
   return t('admin.accounts.baseUrlHint')
 })
@@ -3533,7 +3569,7 @@ const baseUrlHint = computed(() => {
 const apiKeyHint = computed(() => {
   if (form.platform === 'openai') return t('admin.accounts.openai.apiKeyHint')
   if (form.platform === 'gemini') return t('admin.accounts.gemini.apiKeyHint')
-  if (form.platform === 'video') return '保存到 Account.credentials.api_key，实际鉴权头由视频调用模板按上游要求映射。'
+  if (form.platform === 'video') return '保存为视频上游 Bearer Token，用于拉取模型和提交视频任务。'
   if (form.platform === 'grok') return t('admin.accounts.grok.apiKeyHint')
   return t('admin.accounts.apiKeyHint')
 })
@@ -3599,6 +3635,7 @@ const oauthFlowRef = ref<OAuthFlowExposed | null>(null)
 interface ModelMapping {
   from: string
   to: string
+  template_id?: number | string | null
 }
 
 interface TempUnschedRuleForm {
@@ -3639,6 +3676,10 @@ const modelMappings = ref<ModelMapping[]>([])
 const openAICompactModelMappings = ref<ModelMapping[]>([])
 const modelRestrictionMode = ref<'whitelist' | 'mapping'>('whitelist')
 const allowedModels = ref<string[]>([])
+const videoTemplates = ref<VideoTemplate[]>([])
+const videoModels = ref<VideoModel[]>([])
+const selectedVideoTemplateID = ref(0)
+const loadingVideoModelConfig = ref(false)
 const DEFAULT_POOL_MODE_RETRY_COUNT = 3
 const MAX_POOL_MODE_RETRY_COUNT = 10
 const DEFAULT_POOL_MODE_RETRY_STATUS_CODES = [401, 403, 429]
@@ -3824,6 +3865,131 @@ function buildAntigravityExtra(): Record<string, unknown> | undefined {
 
 const buildOpenAICompactModelMapping = () =>
   buildModelMappingObject('mapping', [], openAICompactModelMappings.value)
+
+const isVideoExactModel = (model: string) => {
+  const normalized = model.trim()
+  return normalized.length > 0 && !normalized.includes('*')
+}
+
+const defaultVideoTemplateID = computed(() => {
+  const activeTemplate = videoTemplates.value.find((template) => template.status === 'active')
+  return activeTemplate?.id || videoTemplates.value[0]?.id || 0
+})
+
+const videoTemplateOptions = computed(() =>
+  videoTemplates.value.map((template) => ({
+    value: template.id,
+    label: template.status === 'active' ? template.name : `${template.name} (${template.status})`
+  }))
+)
+
+const syncVideoTemplateDefaults = () => {
+  if (form.platform !== 'video') return
+  const fallbackTemplateID = defaultVideoTemplateID.value
+  if (fallbackTemplateID <= 0) return
+  if (selectedVideoTemplateID.value <= 0) {
+    selectedVideoTemplateID.value = fallbackTemplateID
+  }
+}
+
+let videoModelConfigPromise: Promise<void> | null = null
+
+const loadVideoModelConfig = async () => {
+  if (videoModelConfigPromise) {
+    await videoModelConfigPromise
+    return
+  }
+  loadingVideoModelConfig.value = true
+  videoModelConfigPromise = (async () => {
+    const [templateResult, modelResult] = await Promise.all([
+      videoAPI.listTemplates(),
+      videoAPI.listModels()
+    ])
+    videoTemplates.value = templateResult.items || []
+    videoModels.value = modelResult.items || []
+    syncVideoTemplateDefaults()
+  })()
+  try {
+    await videoModelConfigPromise
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    appStore.showError(t('admin.accounts.videoModelConfigLoadFailed', { message }))
+  } finally {
+    videoModelConfigPromise = null
+    loadingVideoModelConfig.value = false
+  }
+}
+
+const buildVideoModelPayload = (
+  existing: VideoModel | undefined,
+  publicModel: string,
+  upstreamModel: string,
+  templateID: number
+): VideoModelPayload => ({
+  public_model: publicModel,
+  display_name: existing?.display_name ?? null,
+  template_id: templateID,
+  upstream_model_id: upstreamModel,
+  request_shape: existing?.request_shape || 'videos',
+  status: existing?.status || 'active',
+  capabilities: existing?.capabilities || {},
+  defaults: existing?.defaults || {},
+  limits: existing?.limits || {},
+  supported_options: existing?.supported_options || {},
+  extra_body_allow: existing?.extra_body_allow || [],
+  sort_order: existing?.sort_order || 0
+})
+
+const collectVideoModelSyncItems = () => {
+  const items = new Map<string, { publicModel: string; upstreamModel: string; templateID: number }>()
+  const addItem = (publicModel: string, upstreamModel: string, rawTemplateID: unknown) => {
+    const normalizedPublicModel = publicModel.trim()
+    const normalizedUpstreamModel = upstreamModel.trim()
+    if (!isVideoExactModel(normalizedPublicModel) || !normalizedUpstreamModel || normalizedUpstreamModel.includes('*')) {
+      return
+    }
+    const templateID = Number(rawTemplateID || selectedVideoTemplateID.value || defaultVideoTemplateID.value)
+    items.set(normalizedPublicModel, {
+      publicModel: normalizedPublicModel,
+      upstreamModel: normalizedUpstreamModel,
+      templateID: Number.isFinite(templateID) ? templateID : 0
+    })
+  }
+
+  if (modelRestrictionMode.value === 'whitelist') {
+    for (const model of allowedModels.value) {
+      addItem(model, model, selectedVideoTemplateID.value)
+    }
+  } else {
+    for (const mapping of modelMappings.value) {
+      addItem(mapping.from, mapping.to, mapping.template_id)
+    }
+  }
+  return Array.from(items.values())
+}
+
+const ensureVideoModelsSynced = async () => {
+  if (form.platform !== 'video') return
+  await loadVideoModelConfig()
+  const items = collectVideoModelSyncItems()
+  if (items.length === 0) return
+  if (videoTemplates.value.length === 0) {
+    throw new Error(t('admin.accounts.videoTemplateRequired'))
+  }
+  const existingByPublicModel = new Map(videoModels.value.map((model) => [model.public_model, model]))
+  for (const item of items) {
+    if (item.templateID <= 0) {
+      throw new Error(t('admin.accounts.videoTemplateRequiredForModel', { model: item.publicModel }))
+    }
+    const existing = existingByPublicModel.get(item.publicModel)
+    const payload = buildVideoModelPayload(existing, item.publicModel, item.upstreamModel, item.templateID)
+    const saved = existing
+      ? await videoAPI.updateModel(existing.id, payload)
+      : await videoAPI.createModel(payload)
+    existingByPublicModel.set(saved.public_model, saved)
+  }
+  videoModels.value = Array.from(existingByPublicModel.values())
+}
 
 const showMixedChannelWarning = ref(false)
 const mixedChannelWarningDetails = ref<{ groupName: string; currentPlatform: string; otherPlatform: string } | null>(
@@ -4058,7 +4224,6 @@ watch(
   ([category, method, agType]) => {
     if (form.platform === 'video') {
       form.type = 'apikey'
-      modelRestrictionMode.value = 'mapping'
       return
     }
     // Antigravity upstream 类型（实际创建为 apikey）
@@ -4123,6 +4288,8 @@ watch(
     if (newPlatform === 'video') {
       accountCategory.value = 'apikey'
       addMethod.value = 'oauth'
+      modelRestrictionMode.value = 'whitelist'
+      void loadVideoModelConfig()
     }
     // Reset Bedrock fields when switching platforms
     bedrockAccessKeyId.value = ''
@@ -4213,8 +4380,17 @@ watch(
   ([newMode]) => {
     if (newMode === 'whitelist') {
       allowedModels.value = [...getModelsByPlatform(form.platform)]
+      syncVideoTemplateDefaults()
     }
   }
+)
+
+watch(
+  [allowedModels, modelMappings, defaultVideoTemplateID],
+  () => {
+    syncVideoTemplateDefaults()
+  },
+  { deep: true }
 )
 
 watch(
@@ -4231,8 +4407,8 @@ const addModelMapping = () => {
   modelMappings.value.push({ from: '', to: '' })
 }
 
-// Video: fetch the upstream model list and prefill mapping rows (from = to =
-// upstream model name). Reuses the shared sync-upstream-models preview API.
+// Video: fetch upstream model ids and fill the currently selected restriction
+// mode. Whitelist mode stores identity entries; mapping mode stores rows.
 const fetchingVideoModels = ref(false)
 const isVideoPlatform = computed(() => form.platform === 'video')
 const fetchVideoUpstreamModels = async () => {
@@ -4249,11 +4425,17 @@ const fetchVideoUpstreamModels = async () => {
       appStore.showInfo(t('admin.accounts.syncUpstreamModelsEmpty'))
       return
     }
-    const existing = new Set(modelMappings.value.map(m => m.from))
+    const existing = modelRestrictionMode.value === 'whitelist'
+      ? new Set(allowedModels.value)
+      : new Set(modelMappings.value.map(m => m.from))
     let added = 0
     for (const model of models) {
       if (!existing.has(model)) {
-        modelMappings.value.push({ from: model, to: model })
+        if (modelRestrictionMode.value === 'whitelist') {
+          allowedModels.value.push(model)
+        } else {
+          modelMappings.value.push({ from: model, to: model })
+        }
         existing.add(model)
         added += 1
       }
@@ -4513,7 +4695,7 @@ const ensureAntigravityMixedChannelConfirmed = async (onConfirm: () => Promise<v
     })
     return false
   } catch (error: any) {
-    appStore.showError(error.response?.data?.message || error.response?.data?.detail || t('admin.accounts.failedToCreate'))
+    appStore.showError(error.response?.data?.message || error.response?.data?.detail || error.message || t('admin.accounts.failedToCreate'))
     return false
   }
 }
@@ -4521,6 +4703,9 @@ const ensureAntigravityMixedChannelConfirmed = async (onConfirm: () => Promise<v
 const submitCreateAccount = async (payload: CreateAccountRequest) => {
   submitting.value = true
   try {
+    if (payload.platform === 'video') {
+      await ensureVideoModelsSynced()
+    }
     await adminAPI.accounts.create(withAntigravityConfirmFlag(payload))
     appStore.showSuccess(t('admin.accounts.accountCreated'))
     emit('created')
@@ -4574,6 +4759,7 @@ const resetForm = () => {
   openAICompactModelMappings.value = []
   modelRestrictionMode.value = 'whitelist'
   allowedModels.value = [...claudeModels] // Default fill related models
+  selectedVideoTemplateID.value = 0
 
   antigravityModelRestrictionMode.value = 'mapping'
   antigravityWhitelistModels.value = []

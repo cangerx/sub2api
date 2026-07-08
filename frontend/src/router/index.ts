@@ -470,19 +470,47 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/channels/video',
-    redirect: { path: '/admin/accounts', query: { tab: 'video' } }
+    redirect: '/admin/video'
+  },
+  {
+    path: '/admin/video',
+    name: 'AdminVideoTemplates',
+    component: () => import('@/views/admin/VideoTemplatesView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Video Gateway',
+      titleKey: 'admin.video.title',
+      descriptionKey: 'admin.video.subtitle'
+    }
   },
   {
     path: '/admin/video-templates',
-    redirect: { path: '/admin/accounts', query: { tab: 'video' } }
+    redirect: '/admin/video'
   },
   {
     path: '/admin/video-models',
-    redirect: { path: '/admin/accounts', query: { tab: 'video' } }
+    name: 'AdminVideoModels',
+    component: () => import('@/views/admin/VideoModelsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Video Models',
+      titleKey: 'admin.video.models',
+      descriptionKey: 'admin.video.subtitle'
+    }
   },
   {
     path: '/admin/video-tasks',
-    redirect: { path: '/admin/accounts', query: { tab: 'video' } }
+    name: 'AdminVideoTasks',
+    component: () => import('@/views/admin/VideoTasksView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Video Tasks',
+      titleKey: 'admin.video.tasks',
+      descriptionKey: 'admin.video.subtitle'
+    }
   },
   {
     path: '/monitor',

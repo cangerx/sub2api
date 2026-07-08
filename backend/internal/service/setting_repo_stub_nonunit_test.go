@@ -1,0 +1,55 @@
+//go:build !unit
+
+package service
+
+import (
+	"context"
+)
+
+type settingRepoStub struct {
+	values map[string]string
+	err    error
+}
+
+func (s *settingRepoStub) Get(_ context.Context, _ string) (*Setting, error) {
+	panic("unexpected Get call")
+}
+
+func (s *settingRepoStub) GetValue(_ context.Context, key string) (string, error) {
+	if s.err != nil {
+		return "", s.err
+	}
+	if v, ok := s.values[key]; ok {
+		return v, nil
+	}
+	return "", ErrSettingNotFound
+}
+
+func (s *settingRepoStub) Set(_ context.Context, _, _ string) error {
+	panic("unexpected Set call")
+}
+
+func (s *settingRepoStub) GetMultiple(_ context.Context, keys []string) (map[string]string, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	result := make(map[string]string, len(keys))
+	for _, key := range keys {
+		if v, ok := s.values[key]; ok {
+			result[key] = v
+		}
+	}
+	return result, nil
+}
+
+func (s *settingRepoStub) SetMultiple(_ context.Context, _ map[string]string) error {
+	panic("unexpected SetMultiple call")
+}
+
+func (s *settingRepoStub) GetAll(_ context.Context) (map[string]string, error) {
+	panic("unexpected GetAll call")
+}
+
+func (s *settingRepoStub) Delete(_ context.Context, _ string) error {
+	panic("unexpected Delete call")
+}

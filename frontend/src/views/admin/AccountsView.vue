@@ -1,25 +1,6 @@
 <template>
   <AppLayout>
-    <div class="mb-4 flex flex-wrap gap-2">
-      <button
-        type="button"
-        :class="accountPageTabClass(activeAccountTab === 'accounts')"
-        @click="setAccountTab('accounts')"
-      >
-        <Icon name="globe" size="sm" />
-        <span>{{ t('nav.accountList', 'Account List') }}</span>
-      </button>
-      <button
-        type="button"
-        :class="accountPageTabClass(activeAccountTab === 'video')"
-        @click="setAccountTab('video')"
-      >
-        <Icon name="video" size="sm" />
-        <span>{{ t('admin.video.title', 'Video Gateway') }}</span>
-      </button>
-    </div>
-
-    <TablePageLayout v-if="activeAccountTab === 'accounts'">
+    <TablePageLayout>
       <template #filters>
         <div class="flex flex-wrap-reverse items-start justify-between gap-3">
           <AccountTableFilters
@@ -410,7 +391,6 @@
       </template>
       <template #pagination><Pagination v-if="pagination.total > 0" :page="pagination.page" :total="pagination.total" :page-size="pagination.page_size" @update:page="handlePageChange" @update:pageSize="handlePageSizeChange" /></template>
     </TablePageLayout>
-    <VideoGatewayView v-else embedded />
     <CreateAccountModal :show="showCreate" :proxies="proxies" :groups="groups" @close="showCreate = false" @created="reload" />
     <EditAccountModal :show="showEdit" :account="edAcc" :proxies="proxies" :groups="groups" @close="showEdit = false" @updated="handleAccountUpdated" />
     <ReAuthAccountModal :show="showReAuth" :account="reAuthAcc" @close="closeReAuthModal" @reauthorized="handleAccountUpdated" />
@@ -449,7 +429,6 @@
 import { ref, reactive, computed, onMounted, onUnmounted, toRaw, watch } from 'vue'
 import { useIntervalFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { adminAPI } from '@/api/admin'
@@ -480,7 +459,6 @@ import AccountGroupsCell from '@/components/account/AccountGroupsCell.vue'
 import AccountCapacityCell from '@/components/account/AccountCapacityCell.vue'
 import PlatformTypeBadge from '@/components/common/PlatformTypeBadge.vue'
 import Icon from '@/components/icons/Icon.vue'
-import VideoGatewayView from '@/views/admin/VideoGatewayView.vue'
 import ErrorPassthroughRulesModal from '@/components/admin/ErrorPassthroughRulesModal.vue'
 import TLSFingerprintProfilesModal from '@/components/admin/TLSFingerprintProfilesModal.vue'
 import { buildOpenAIUsageRefreshKey } from '@/utils/accountUsageRefresh'
@@ -491,8 +469,6 @@ import type { Account, AccountPlatform, AccountSchedulerGroupScore, AccountType,
 const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
-const route = useRoute()
-const router = useRouter()
 
 const proxies = ref<AccountProxy[]>([])
 const groups = ref<AdminGroup[]>([])
@@ -566,33 +542,6 @@ const scheduleModelOptions = ref<SelectOption[]>([])
 const togglingSchedulable = ref<number | null>(null)
 const menu = reactive<{show:boolean, acc:Account|null, pos:{top:number, left:number}|null}>({ show: false, acc: null, pos: null })
 const exportingData = ref(false)
-type AccountPageTab = 'accounts' | 'video'
-const activeAccountTab = ref<AccountPageTab>(route.query.tab === 'video' ? 'video' : 'accounts')
-
-const accountPageTabClass = (active: boolean) => [
-  'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-  active
-    ? 'bg-primary-600 text-white shadow-sm'
-    : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-300 dark:hover:bg-dark-700 dark:hover:text-white'
-]
-
-const setAccountTab = (tab: AccountPageTab) => {
-  activeAccountTab.value = tab
-  const query = { ...route.query }
-  if (tab === 'video') {
-    query.tab = 'video'
-  } else {
-    delete query.tab
-  }
-  router.replace({ name: 'AdminAccounts', query })
-}
-
-watch(
-  () => route.query.tab,
-  (tab) => {
-    activeAccountTab.value = tab === 'video' ? 'video' : 'accounts'
-  }
-)
 
 // Account tools dropdown
 const showAccountToolsDropdown = ref(false)

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -96,6 +98,51 @@ func TestVideoUpstreamResultsUseSnakeCaseJSON(t *testing.T) {
 		if !strings.Contains(raw, field) {
 			t.Fatalf("query result json missing %s: %s", field, raw)
 		}
+	}
+}
+
+func TestHTTPVideoUpstreamQuerySupportsContentURLFallbacks(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/videos/task_123" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"task_id": "task_123",
+			"status": "completed",
+			"progress": 100,
+			"seconds": "5",
+			"metadata": {
+				"content_url": "https://cdn.example.com/video.mp4"
+			}
+		}`))
+	}))
+	defer server.Close()
+
+	client := NewHTTPVideoUpstreamClient().(*HTTPVideoUpstreamClient)
+	result, err := client.Query(context.Background(), &Account{
+		Credentials: map[string]any{
+			"base_url": server.URL,
+			"api_key":  "test-key",
+		},
+	}, &VideoCallTemplate{
+		QueryMethod:   "GET",
+		QueryPath:     "/v1/videos/{task_id}",
+		StatusMapping: map[string]string{"completed": VideoStatusCompleted},
+		ResultMapping: map[string]string{
+			"content_url": "video_url|url|metadata.content_url",
+			"seconds":     "seconds",
+			"progress":    "progress",
+		},
+	}, "task_123")
+	if err != nil {
+		t.Fatalf("query upstream: %v", err)
+	}
+	if result.ContentURL == nil || *result.ContentURL != "https://cdn.example.com/video.mp4" {
+		t.Fatalf("content_url = %v, want metadata.content_url fallback", result.ContentURL)
+	}
+	if result.Seconds == nil || *result.Seconds != 5 {
+		t.Fatalf("seconds = %v, want 5", result.Seconds)
 	}
 }
 

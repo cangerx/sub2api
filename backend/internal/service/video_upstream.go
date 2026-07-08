@@ -106,9 +106,9 @@ func (c *HTTPVideoUpstreamClient) Query(ctx context.Context, account *Account, t
 	}
 	contentPath := strings.TrimSpace(template.ResultMapping["content_url"])
 	if contentPath == "" {
-		contentPath = "data.video_url"
+		contentPath = "data.video_url|video_url|url|metadata.content_url|data.url|data.metadata.content_url"
 	}
-	content := strings.TrimSpace(gjson.GetBytes(raw, contentPath).String())
+	content := strings.TrimSpace(firstGJSON(raw, splitGJSONFallbackPaths(contentPath)...))
 	progress := int(gjson.GetBytes(raw, fallbackPath(template.ResultMapping["progress"], "progress")).Int())
 	if progress <= 0 && status == VideoStatusCompleted {
 		progress = 100
@@ -416,6 +416,17 @@ func firstGJSON(raw []byte, paths ...string) string {
 		}
 	}
 	return ""
+}
+
+func splitGJSONFallbackPaths(value string) []string {
+	parts := strings.Split(value, "|")
+	paths := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if path := strings.TrimSpace(part); path != "" {
+			paths = append(paths, path)
+		}
+	}
+	return paths
 }
 
 func fallbackPath(value, fallback string) string {
