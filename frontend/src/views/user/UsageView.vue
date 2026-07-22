@@ -371,20 +371,23 @@
             </div>
           </template>
 
-          <template #cell-first_token="{ row }">
-            <span
-              v-if="row.first_token_ms != null"
-              class="text-sm text-gray-600 dark:text-gray-400"
-            >
-              {{ formatDuration(row.first_token_ms) }}
-            </span>
-            <span v-else class="text-sm text-gray-400 dark:text-gray-500">-</span>
-          </template>
-
-          <template #cell-duration="{ row }">
-            <span class="text-sm text-gray-600 dark:text-gray-400">{{
-              formatDuration(row.duration_ms)
-            }}</span>
+          <template #cell-latency="{ row }">
+            <div class="flex items-stretch gap-2">
+              <span
+                class="w-1 shrink-0 rounded-full"
+                :class="row.first_token_ms != null
+                  ? ['bg-gradient-to-b from-40% to-60%', LATENCY_BAR_FROM_CLASSES[firstTokenSeverity(row.first_token_ms)], LATENCY_BAR_TO_CLASSES[durationSeverity(row.duration_ms ?? 0)]]
+                  : LATENCY_BAR_CLASSES[durationSeverity(row.duration_ms ?? 0)]"
+                aria-hidden="true"
+              ></span>
+              <div class="grid grid-cols-[max-content_max-content] items-baseline gap-x-2 gap-y-0.5 text-xs">
+                <span class="text-gray-400 dark:text-gray-500">{{ t('usage.latencyFirstToken') }}</span>
+                <span v-if="row.first_token_ms != null" class="font-medium tabular-nums" :class="LATENCY_TEXT_CLASSES[firstTokenSeverity(row.first_token_ms)]">{{ formatDuration(row.first_token_ms) }}</span>
+                <span v-else class="text-gray-400 dark:text-gray-500">-</span>
+                <span class="text-gray-400 dark:text-gray-500">{{ t('usage.latencyDuration') }}</span>
+                <span class="font-medium tabular-nums" :class="LATENCY_TEXT_CLASSES[durationSeverity(row.duration_ms ?? 0)]">{{ formatDuration(row.duration_ms) }}</span>
+              </div>
+            </div>
           </template>
 
           <template #cell-created_at="{ value }">
@@ -667,7 +670,16 @@ import { formatTokenPricePerMillion } from '@/utils/usagePricing'
 import { getUsageServiceTierLabel } from '@/utils/usageServiceTier'
 import { resolveUsageRequestType } from '@/utils/usageRequestType'
 import {
+  LATENCY_BAR_CLASSES,
+  LATENCY_BAR_FROM_CLASSES,
+  LATENCY_BAR_TO_CLASSES,
+  LATENCY_TEXT_CLASSES,
+  durationSeverity,
+  firstTokenSeverity,
+} from '@/utils/latencyHealth'
+import {
   BILLING_MODE_TOKEN,
+  BILLING_MODE_VIDEO,
   BILLING_MODE_SECOND,
   BILLING_MODE_SEGMENT,
   getBillingModeBadgeClass,
@@ -731,8 +743,7 @@ const columns = computed<Column[]>(() => [
   { key: 'billing_mode', label: t('admin.usage.billingMode'), sortable: false },
   { key: 'tokens', label: t('usage.tokens'), sortable: false },
   { key: 'cost', label: t('usage.cost'), sortable: false },
-  { key: 'first_token', label: t('usage.firstToken'), sortable: false },
-  { key: 'duration', label: t('usage.duration'), sortable: false },
+  { key: 'latency', label: t('usage.latency'), sortable: false },
   { key: 'created_at', label: t('usage.time'), sortable: true },
   { key: 'user_agent', label: t('usage.userAgent'), sortable: false }
 ])
@@ -806,8 +817,11 @@ const sortState = reactive({
 
 const formatDuration = (ms: number | null | undefined): string => {
   if (ms == null) return '-'
-  if (ms < 1000) return `${ms.toFixed(0)}ms`
-  return `${(ms / 1000).toFixed(2)}s`
+  if (ms < 1000) return `${ms}ms`
+  if (ms < 60_000) return `${(ms / 1000).toFixed(2)}s`
+  const totalSec = Math.round(ms / 1000)
+  if (totalSec < 3600) return `${Math.floor(totalSec / 60)}m ${totalSec % 60}s`
+  return `${Math.floor(totalSec / 3600)}h ${Math.floor((totalSec % 3600) / 60)}m`
 }
 
 
@@ -849,7 +863,7 @@ const formatUsageEndpoints = (log: UsageLog): string => {
 }
 
 const isVideoUsage = (row: UsageLog): boolean => {
-  return Boolean(row.video_task_id?.trim()) || row.billing_mode === BILLING_MODE_SECOND || row.billing_mode === BILLING_MODE_SEGMENT || row.inbound_endpoint === '/v1/videos'
+  return Boolean(row.video_task_id?.trim()) || row.billing_mode === BILLING_MODE_VIDEO || row.billing_mode === BILLING_MODE_SECOND || row.billing_mode === BILLING_MODE_SEGMENT || row.inbound_endpoint === '/v1/videos'
 }
 
 const openMediaDetail = (row: UsageLog) => {

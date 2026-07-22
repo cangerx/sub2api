@@ -25,7 +25,7 @@
     <div class="relative z-10 w-full min-h-screen px-6 py-24 flex items-center justify-center">
       <div class="auth-panel w-full max-w-[392px] relative">
         <div class="auth-brand mb-5 flex flex-col items-center gap-3">
-          <img :src="siteLogo || '/logo.png'" class="h-9 w-auto drop-shadow-lg" alt="Logo" />
+          <img :src="siteLogo || '/logo.svg'" class="h-9 w-auto drop-shadow-lg" alt="Logo" />
           <div class="text-sm font-semibold tracking-[0.18em] text-white drop-shadow-md">{{ siteName }}</div>
         </div>
 

@@ -113,12 +113,6 @@ docker compose logs -f ccapi
 ghcr.io/cangerx/ccapi:latest
 ```
 
-固定版本镜像：
-
-```bash
-ghcr.io/cangerx/ccapi:0.1.142
-```
-
 **脚本功能：**
 - 下载 `docker-compose.local.yml`（本地保存为 `docker-compose.yml`）和 `.env.example`
 - 自动生成安全凭证（JWT_SECRET、TOTP_ENCRYPTION_KEY、POSTGRES_PASSWORD）
@@ -137,6 +131,7 @@ cd sub2api/deploy
 
 # 2. 复制环境配置文件
 cp .env.example .env
+chmod 600 .env
 
 # 3. 编辑配置（生成安全密码）
 nano .env
@@ -207,7 +202,7 @@ docker compose -f docker-compose.local.yml logs -f ccapi
 
 关键点：
 
-- 主进程固定探测：`/tmp/sub2api-datamanagement.sock`
+- 主进程固定探测：`/tmp/ccapi-datamanagement.sock`
 - 只有该 Socket 可连通时，数据管理功能才会开启
 - Docker 场景需将宿主机 Socket 挂载到容器同路径
 
@@ -300,7 +295,6 @@ curl -sSL https://raw.githubusercontent.com/cangerx/sub2api/main/deploy/install.
 
 ```bash
 docker pull ghcr.io/cangerx/ccapi:latest
-docker pull ghcr.io/cangerx/ccapi:0.1.142
 ```
 
 支持平台：
@@ -308,11 +302,26 @@ docker pull ghcr.io/cangerx/ccapi:0.1.142
 | 镜像 | 架构 |
 |------|------|
 | `ghcr.io/cangerx/ccapi:latest` | `linux/amd64`, `linux/arm64` |
-| `ghcr.io/cangerx/ccapi:0.1.142` | `linux/amd64`, `linux/arm64` |
 
 ---
 
-### 方式四：源码编译
+### 方式四：Apple container（macOS）
+
+Apple 芯片 Mac 在 macOS 26 上可使用 Apple `container` 1.1.0 或更高版本运行完整的应用、PostgreSQL 和 Redis：
+
+```bash
+git clone https://github.com/cangerx/sub2api.git
+cd sub2api/deploy
+./apple-container.sh init
+./apple-container.sh up
+./apple-container.sh status
+```
+
+该方式面向本地开发和人工运维，不提供持续重启监管；宿主机重启后需要再次运行 `./apple-container.sh up`。生产部署仍推荐 Docker Compose。当前脚本默认使用与上游 Sub2API 运行时兼容的镜像；镜像兼容性、生命周期命令、持久化、升级和运行时限制见 [deploy/APPLE_CONTAINER.md](deploy/APPLE_CONTAINER.md)。
+
+---
+
+### 方式五：源码编译
 
 从源码编译安装，适合开发或定制需求。
 
@@ -365,7 +374,7 @@ database:
   port: 5432
   user: "postgres"
   password: "your_password"
-  dbname: "sub2api"
+  dbname: "ccapi"
 
 redis:
   host: "localhost"
@@ -420,8 +429,17 @@ gateway:
 - `security.response_headers.enabled` 可启用可配置响应头过滤（关闭时使用默认白名单）
 - `security.csp` 配置 Content-Security-Policy
 - `billing.circuit_breaker` 计费异常时 fail-closed
-- `server.trusted_proxies` 启用可信代理解析 X-Forwarded-For
+- `security.trust_forwarded_ip_for_api_key_acl` 控制旧版原始转发头接管（为升级兼容默认开启）；关闭后严格使用 `server.trusted_proxies`，其中只应填写直接连接 CCAPI 的精确代理 CIDR
+- `security.forwarded_client_ip_headers` 最多配置 16 个第三方 CDN 客户端 IP 请求头；仅在旧版接管开启时按顺序优先于内置请求头解析
 - `turnstile.required` 在 release 模式强制启用 Turnstile
+
+自定义客户端 IP 请求头可通过 YAML 配置，也可使用逗号分隔的环境变量：
+
+```bash
+SECURITY_FORWARDED_CLIENT_IP_HEADERS=True-Client-IP,X-CDN-Client-IP
+```
+
+请求头名称会经过合法性校验、规范化和大小写无关去重。管理员可在安全设置中动态更新列表，无需重启；新安装会持久化 YAML/环境变量默认值，旧安装缺少数据库字段时会自动回填。关闭旧版接管后，自定义头和内置原始转发头均被忽略，只使用 `server.trusted_proxies`。开启接管时必须限制源站仅允许 CDN/代理访问，并确保边缘代理覆盖所有受信客户端 IP 请求头。完整迁移规则和信任边界见 [`deploy/EDGE_SECURITY.md`](deploy/EDGE_SECURITY.md)。
 
 **网关防御纵深建议（重点）**
 
@@ -433,20 +451,20 @@ gateway:
 
 **⚠️ 安全警告：HTTP URL 配置**
 
-当 `security.url_allowlist.enabled=false` 时，系统默认执行最小 URL 校验，**拒绝 HTTP URL**，仅允许 HTTPS。要允许 HTTP URL（例如用于开发或内网测试），必须显式设置：
+当 `security.url_allowlist.enabled=false` 时，为兼容开发与可信内网环境，系统默认允许 HTTP URL。生产环境应显式要求 HTTPS：
 
 ```yaml
 security:
   url_allowlist:
     enabled: false                # 禁用白名单检查
-    allow_insecure_http: true     # 允许 HTTP URL（⚠️ 不安全）
+    allow_insecure_http: false    # 生产环境要求 HTTPS
 ```
 
 **或通过环境变量：**
 
 ```bash
 SECURITY_URL_ALLOWLIST_ENABLED=false
-SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP=true
+SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP=false
 ```
 
 **允许 HTTP 的风险：**
@@ -460,16 +478,19 @@ SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP=true
 - ✅ 获取 HTTPS 前测试账号连通性
 - ❌ 生产环境（仅使用 HTTPS）
 
-**未设置此项时的错误示例：**
-```
-Invalid base URL: invalid url scheme: http
-```
-
 如关闭 URL 校验或响应头过滤，请加强网络层防护：
 - 出站访问白名单限制上游域名/IP
 - 阻断私网/回环/链路本地地址
 - 强制仅允许 TLS 出站
 - 在反向代理层移除敏感响应头
+
+#### 重要：创建管理员账号
+
+初始管理员账号**只能通过首次设置向导创建**（首次启动后访问 `http://<host>:8080`）。`config.yaml` 中的 `default.admin_email` / `default.admin_password` 是历史兼容字段，不会创建管理员。
+
+上面的第 5 步会预先创建 `config.yaml`，从而跳过首次设置向导。推荐跳过第 5 步，直接运行 `./ccapi`，由向导收集数据库、Redis 和初始管理员信息并生成 `config.yaml`。
+
+如果已经创建了 `config.yaml`，请先将其临时移走，运行 `./ccapi` 完成向导，停止服务后再把备份中的必要自定义配置合并到向导生成的配置文件中。
 
 ```bash
 # 6. 运行应用

@@ -32,7 +32,7 @@
           :class="[isScrolled ? 'translate-x-1 scale-95 md:scale-100' : 'translate-x-0 scale-100']"
         >
           <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-zinc-200/20 bg-white/10 shadow-sm dark:border-white/10">
-            <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain p-1" />
+            <img :src="siteLogo || '/logo.svg'" alt="Logo" class="h-full w-full object-contain p-1" />
           </div>
           <div class="min-w-0">
             <div class="truncate text-sm font-semibold leading-5 text-zinc-900 dark:text-white tracking-tight">{{ siteName }}</div>
@@ -688,6 +688,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore, useAppStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
+import { sanitizeUrl } from '@/utils/url'
 
 type PaperShadersModule = typeof import('@paper-design/shaders')
 type HeroShaderInstance = InstanceType<PaperShadersModule['ShaderMount']>
@@ -709,10 +710,10 @@ const authStore = useAuthStore()
 const appStore = useAppStore()
 
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'CCAPI')
-const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
+const siteLogo = computed(() => sanitizeUrl(appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '', { allowRelative: true, allowDataUrl: true }))
 const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || '')
 const navSubtitle = computed(() => siteSubtitle.value || 'AI API Gateway')
-const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
+const docUrl = computed(() => sanitizeUrl(appStore.cachedPublicSettings?.doc_url || appStore.docUrl || ''))
 const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
 
 const isHomeContentUrl = computed(() => {

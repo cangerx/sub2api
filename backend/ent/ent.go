@@ -20,6 +20,9 @@ import (
 	"github.com/Wei-Shaw/ccapi/ent/apikeygroupbinding"
 	"github.com/Wei-Shaw/ccapi/ent/authidentity"
 	"github.com/Wei-Shaw/ccapi/ent/authidentitychannel"
+	"github.com/Wei-Shaw/ccapi/ent/batchimageevent"
+	"github.com/Wei-Shaw/ccapi/ent/batchimageitem"
+	"github.com/Wei-Shaw/ccapi/ent/batchimagejob"
 	"github.com/Wei-Shaw/ccapi/ent/channelmonitor"
 	"github.com/Wei-Shaw/ccapi/ent/channelmonitordailyrollup"
 	"github.com/Wei-Shaw/ccapi/ent/channelmonitorhistory"
@@ -119,6 +122,9 @@ func checkColumn(t, c string) error {
 			announcementread.Table:              announcementread.ValidColumn,
 			authidentity.Table:                  authidentity.ValidColumn,
 			authidentitychannel.Table:           authidentitychannel.ValidColumn,
+			batchimageevent.Table:               batchimageevent.ValidColumn,
+			batchimageitem.Table:                batchimageitem.ValidColumn,
+			batchimagejob.Table:                 batchimagejob.ValidColumn,
 			channelmonitor.Table:                channelmonitor.ValidColumn,
 			channelmonitordailyrollup.Table:     channelmonitordailyrollup.ValidColumn,
 			channelmonitorhistory.Table:         channelmonitorhistory.ValidColumn,
